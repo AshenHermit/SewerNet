@@ -4,26 +4,46 @@
 ```
 /
 ├─ apps/
-│   ├─ web/           # Веб-клиент на React + Vite + Tauri bridge
-│   ├─ desktop/       # Desktop Tauri wrapper (reuse web)
-│   ├─ backend/       # NestJS, Matrix REST proxy, кастомное API
-│   └─ landing/       # Next.js: landing page, dev log
+│   ├─ web/           # Веб-клиент: React + Vite + Tailwind + zustand + lingui
+│   ├─ desktop/       # (план) Desktop Tauri wrapper поверх web
+│   ├─ backend/       # NestJS, REST proxy к Matrix Client-Server API v3
+│   └─ landing/       # Next.js: лендинг + dev log
 ├─ libs/
-│   ├─ ui/            # Proxy UI-компоненты, темы, иконки, theming engine
-│   ├─ icons/         # Proxy-компоненты для иконок
-│   ├─ utils/         # Общие утилиты, shared code
-│   ├─ types/         # Общие (TS) типы сущностей, контракты API, etc.
-│   ├─ themes/        # Пакеты тем, пользовательские настройки
+│   ├─ ui/            # Proxy UI-компоненты, реестр kits, Storybook
+│   ├─ icons/         # Proxy-иконки, реестр icon sets
+│   ├─ themes/        # ThemeSettings, CSS-переменные, zustand store
+│   ├─ types/         # Общие типы (Matrix DTO, контракты API)
+│   └─ utils/         # Общие утилиты (cn и др.)
 ├─ scripts/           # Вспомогательные и DevOps/CI скрипты
-├─ .github/           # Github Actions
-├─ docker/            # Прод-окружение (docker-compose)
-├─ AGENTS.md          # Процесс разработки, правила коммитов, ревью, ветки
-├─ README.md
-└─ nx.json, workspace.json, package.json, tsconfig.base.json и т.д.
+├─ docker/            # (план) Прод-окружение docker-compose
+├─ .github/           # (план) GitHub Actions
+├─ AGENTS.md          # Процесс разработки
+├─ README.md, SPECIFICATION.md, ARCHITECTURE.md, ROADMAP.md
+└─ nx.json, package.json, tsconfig.base.json, lingui.config.ts
 ```
 
-## Особенности
-- Используется Nx workspace: из коробки поддерживаются разделённые пакеты и отдельные таргеты (build, lint, test).
-- Модули для UI и иконок поддерживают расширяемость и подмену (theme switching, proxy).
-- Landing/devlog — отдельный Next.js сайт в apps/landing.
-- В будущем будет добавлен mobile-пакет.
+## Утверждённые решения
+1. **Nx-монорепо**, npm workspaces; библиотеки non-buildable, потребление через `package.json exports`.
+2. **Backend — REST proxy** к Matrix API (GraphQL отклонён на данном этапе; возможен позже отдельным слоем).
+3. **Локализация — Lingui** (en/ru, `.po` каталоги, macro `@lingui/react/macro`).
+4. **Docker-compose — только для production.**
+5. **Темизация**: пользователь выбирает UI kit из предложенных (старт — shadcn; позже собственный kit) и настраивает параметры темы (акцентный цвет, шрифт, радиус, режим light/dark/system).
+6. **Proxy-компоненты**: UI и иконки рендерятся через proxy по текущему `kitId` из темы; расширение — добавление наборов в реестр.
+7. **Storybook** — в `libs/ui` для proxy-компонентов.
+8. **Лендинг/dev log** — отдельный Next.js сайт (`apps/landing`).
+9. **Этап 1: web + desktop** (Tauri позже); архитектурно учесть mobile.
+10. **Кастомные HTML/CSS/JS-обёртки сообщений** — выполняются без iframe/sandbox при появлении сообщения на экране; JS получает вспомогательные API. Помечено как **experimental/на свой риск**, документируется в спеке безопасности.
+11. **Приоритет готовых решений/библиотек** при реализации.
+
+## Функциональные требования (MVP)
+- Авторизация по паролю на любом homeserver (указывается пользователем).
+- Список комнат, история сообщений, отправка сообщений (m.text).
+- Markdown в сообщениях (react-markdown + remark-gfm).
+- Реакции кастомными эмодзи, стикеры, магазин — следующий этап.
+- Переключение темы и kit'а в настройках, применение без перезагрузки.
+- Локализация EN/RU с автоопределением и persist-выбором.
+
+## Безопасность (базовый контур)
+- Backend stateless: не хранит токены/креды; клиент передаёт homeserver и Bearer-токен сам.
+- E2E-шифрование (Megolm/OLM) — отдельный этап, не в MVP.
+- Кастомные скрипты сообщений: без изоляции; запуск только по явному доверию (UI-предупреждение) — проработать CSP/политики на следующем этапе.

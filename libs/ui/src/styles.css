@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+
+/* Same token set as the app shell (apps/web/src/styles.css). */
+:root {
+  color-scheme: dark;
+  --sn-bg: #0b0f0d;
+  --sn-surface-1: #101713;
+  --sn-surface-2: #161f1a;
+  --sn-surface-3: #1d2823;
+  --sn-border: #223029;
+  --sn-border-strong: #30443a;
+  --sn-text: #e8f0ea;
+  --sn-text-muted: #9db0a5;
+  --sn-text-dim: #6d8177;
+  --sn-accent: #22c55e;
+  --sn-accent-contrast: #0a0a0a;
+  --sn-font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --sn-radius: 10px;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --sn-bg: #eef3f0;
+  --sn-surface-1: #ffffff;
+  --sn-surface-2: #eef3f0;
+  --sn-surface-3: #e2eae5;
+  --sn-border: #d9e3dd;
+  --sn-border-strong: #bfcfc6;
+  --sn-text: #0d1512;
+  --sn-text-muted: #4f6359;
+  --sn-text-dim: #7d8d85;
+}
+
+body {
+  font-family: var(--sn-font-sans);
+}

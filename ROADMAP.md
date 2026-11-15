@@ -1,28 +1,33 @@
 # Дорожная карта SewerNet
 
-## MVP (1-2 спринта):
-- Nx workspace, базовая структура (+shared types/utils/ui)
-- Простейший NestJS backend: public REST proxy для Matrix API (auth, send/receive messages)
-- Веб-клиент: базовый layout, авторизация, комната, чат, отправка/приём md сообщений через Matrix REST
-- Подключённая lingui-локализация
-- Storybook (libs/ui)
-- Кастомизация темы (цвет/шрифт из настроек)
-- Switchable UI библиотека (shadcn starter)
-- Next.js landing/devlog scaffold
+## MVP — база (выполнено)
+- [x] Nx workspace в корне: apps/{web,backend,landing}, libs/{ui,icons,themes,types,utils}
+- [x] NestJS REST proxy к Matrix API: login, whoami, joined_rooms, messages, send
+- [x] Веб-клиент: логин, список комнат, история, отправка, Markdown (react-markdown + remark-gfm)
+- [x] Lingui EN/RU + автоопределение, каталоги в apps/web/src/locales
+- [x] Storybook в libs/ui (proxy Button/Input, темы-переменные)
+- [x] Proxy UI-компоненты (ProxyButton/ProxyInput) + реестр kits (shadcn)
+- [x] Proxy-иконки (ProxyIcon) + реестр icon sets (lucide)
+- [x] Тема: kit/mode/accent/font/radius → CSS-переменные --sn-*, zustand persist
+- [x] Next.js лендинг + dev log (apps/landing)
+- [x] Общая проверка: nx run-many -t typecheck,lint,test,build — зелёная
 
-## Сразу после MVP:
-- Кастомные стикеры/эмодзи, reactions
-- Магазин стикеров, интеграция кастомизированных emoji
-- База для proxy icons
-- Docker-compose для продакшна
-- CI для github actions (build web/desktop, publish landing)
-- Начальный groundwork для мобильного клиента
-- Система кастомных html/js-обёрток в сообщениях (базовая, helpers API, предупреждения по безопасности)
-- AGENTS.md, стандарт PR/release/issue процессов, подробная дока
+## MVP — доводка
+- [ ] Tauri desktop-обёртка apps/desktop
+- [ ] GitHub Actions CI (typecheck,lint,test,build) + сборки
+- [ ] docker-compose для prod (backend + landing + reverse proxy)
+- [ ] Синхронизация сообщений: /sync long-poll вместо ручного обновления
+- [ ] Пагинация истории (from/pagination tokens), загрузка превью комнат (state events)
+- [ ] Переключатель языка в UI (сейчас автоопределение + persist)
+
+## Сразу после MVP
+- Кастомные стикеры/эмодзи, реакции, магазин стикеров
+- Кастомные html/js-обёртки сообщений (базовая helpers API + предупреждения)
+- Расширение наборов kits/icons (вторая библиотека, кастомные иконки)
+- Groundwork mobile (Tauri mobile / capacitor-подход), e2e-шифрование (vodozemac)
 
 ## Будущие направления
-- Подсистема плагинов/скриптов для расширения клиента, полноценный маркет скриптов/эмодзи
-- Прокси над Matrix API для federation/bridge функциональности
-- Расширяемый UI registry
-- Динамические темы, конфигуратор тем (color schemes, акценты, кастомный css)
-- Склад онлайн-документации со Storybook/examples.
+- Подсистема плагинов/скриптов, маркет скриптов/эмодзи
+- Federation/bridge-функциональность через proxy
+- Расширяемый UI registry, динамические темы, конфигуратор тем
+- Онлайн-дока на Storybook/examples

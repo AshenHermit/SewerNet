@@ -1,26 +1,65 @@
 # SewerNet
 
-## Описание
-SewerNet – кастомный кроссплатформенный Matrix-клиент, ориентированный на расширяемость, кастомизацию, современный UI и простоту поддержки.
+Кастомный кроссплатформенный мессенджер на протоколе [Matrix](https://matrix.org/): web + desktop (позже mobile), с глубокой кастомизацией интерфейса.
 
-## Архитектура
-- **Backend**: NestJS-приложение как REST proxy к Matrix API, с возможностью расширения кастомных endpoints (стики, магазин стикеров, кастомные эмодзи).
-- **Frontend**: React с Zustand для state management, Tailwind для CSS, shadcn/ui как начальная библиотека компонентов. Локализация через lingui.
-- **Система тем**: Пользователь может выбирать разные библиотеки UI-компонентов и настраивать параметры тем (цвет, шрифт).
-- **Proxy UI-компоненты**: Используются для поддержки кастомизации и динамической подмены компонентов и иконок по задаваемой теме.
-- **DevOps**: CI/CD через GitHub Actions, docker-compose для продакшн.
+## Структура монорепозитория (Nx)
 
-## Спецификация
-- **Frontend**: Базовый layout, маршрутизация (react-router), поддержка Markdown сообщений, локализация, смена темы.
-- **Backend**: Поддержка Matrix REST API с кастомными endpoint и аутентификацией.
-- **Базовая функциональность**: Отправка и получение сообщений, локализация интерфейса, кастомизации UI-компонентов через proxy.
-- **Документы**: AGENTS.md для процесса разработки, README для каждой библиотеки и приложения.
+```
+apps/
+  web/        # веб-клиент: React + Vite + Tailwind + zustand + lingui
+  desktop/    # (план) Tauri-обёртка вокруг web-клиента
+  backend/    # NestJS REST proxy к Matrix Client-Server API
+  landing/    # Next.js сайт: лендинг + dev log
+libs/
+  ui/         # proxy UI-компоненты, реестр kits (shadcn/...), Storybook
+  icons/      # proxy иконки (наборы icon sets по теме)
+  themes/     # тема: настройки, CSS-переменные, zustand store
+  types/      # общие типы (Matrix API DTO)
+  utils/      # общие утилиты (cn и др.)
+scripts/      # вспомогательные скрипты
+docker/       # (план) prod docker-compose
+.github/      # (план) GitHub Actions
+```
 
-## Дорожная карта
-- **MVP**:
-  - Основные функции веб- и десктоп-клиентов, включая локализацию и базовую поддержу тем.
-  - Подключение Storybook для тестирования UI-компонентов.
-  - Разработка базового REST proxy на NestJS.
-- **Дальнейшие улучшения**:
-  - Поддержка кастомных стикеров, расширение функциональности интерфейса, интеграция магазина.
-  - Запуск CI с Github Actions для сборки и тестирования.
+## Быстрый старт
+
+Требуется Node.js (LTS) и npm.
+
+```bash
+npm install
+
+# веб-клиент (http://localhost:4200, /api проксируется на :3000)
+npx nx serve web
+
+# backend proxy (http://localhost:3000/api)
+npx nx serve backend
+
+# лендинг / dev log
+npx nx serve landing
+
+# Storybook proxy-компонентов
+npx nx storybook ui
+```
+
+Проверка всего воркспейса:
+
+```bash
+npx nx run-many -t typecheck,lint,test,build
+```
+
+## Локализация
+
+Интерфейс на en/ru через Lingui. Извлечение строк:
+
+```bash
+npx nx run web:extract-i18n
+```
+
+Каталоги: `apps/web/src/locales/{en,ru}.po`.
+
+## Документы
+
+- [SPECIFICATION.md](./SPECIFICATION.md) — функциональная спецификация.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — архитектура и решения.
+- [ROADMAP.md](./ROADMAP.md) — roadmap.
+- [AGENTS.md](./AGENTS.md) — процесс разработки.
