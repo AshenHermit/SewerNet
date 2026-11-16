@@ -7,6 +7,7 @@ import type {
   MatrixWhoamiResponse,
   OauthTokenRequest,
   OauthTokenResponse,
+  SyncedRoomInfo,
 } from '@sewer-net/types';
 import { useAuthStore } from '../app/stores/auth-store';
 
@@ -280,6 +281,47 @@ export const matrixClient = {
     return request<MatrixMessagesResponse>(
       `/rooms/${encodeURIComponent(roomId)}/messages?${params}`,
       { session },
+    );
+  },
+
+  /** Один запрос sliding-sync за списком комнат с названиями/превью. */
+  getSyncedRooms(session: AuthSession) {
+    return request<SyncedRoomInfo[]>('/sync/room-list', {
+      method: 'POST',
+      session,
+    });
+  },
+
+  getRoomMembers(session: AuthSession, roomId: string) {
+    return request<unknown>(
+      `/rooms/${encodeURIComponent(roomId)}/members`,
+      { session },
+    );
+  },
+
+  getRoomThreads(session: AuthSession, roomId: string) {
+    const params = new URLSearchParams({ limit: '30' });
+    return request<unknown>(
+      `/rooms/${encodeURIComponent(roomId)}/threads?${params}`,
+      { session },
+    );
+  },
+
+  getRoomAliases(session: AuthSession, roomId: string) {
+    return request<unknown>(
+      `/rooms/${encodeURIComponent(roomId)}/aliases`,
+      { session },
+    );
+  },
+
+  setReadMarkers(
+    session: AuthSession,
+    roomId: string,
+    body: Record<string, string>,
+  ) {
+    return request<unknown>(
+      `/rooms/${encodeURIComponent(roomId)}/read_markers`,
+      { method: 'POST', body, session },
     );
   },
 

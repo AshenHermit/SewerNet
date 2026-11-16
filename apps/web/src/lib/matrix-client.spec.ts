@@ -7,6 +7,7 @@ import {
   refreshOauthToken,
   type AuthSession,
 } from './matrix-client';
+import type { SyncedRoomInfo } from '@sewer-net/types';
 
 interface FetchCall {
   url: string;
@@ -291,5 +292,85 @@ describe('auto-refresh on 401', () => {
 
     await expect(refreshOauthToken(session)).rejects.toMatchObject({ status: 400 });
     expect(calls.filter((call) => call.url === '/api/matrix/rooms')).toHaveLength(0);
+  });
+});
+
+describe('matrixClient.getSyncedRooms', () => {
+  it('calls sync/room-list once and returns rooms with names', async () => {
+    const rooms: SyncedRoomInfo[] = [
+      { room_id: '!r1:matrix.org', name: 'Room 1', lastTs: 100 },
+      { room_id: '!r2:matrix.org', lastTs: 50 },
+    ];
+    const calls = installFetch((url) => {
+      if (url === '/api/matrix/sync/room-list') {
+        return new Response(JSON.stringify(rooms), { status: 200 });
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    const result = await matrixClient.getSyncedRooms(session);
+
+    expect(result).toEqual(rooms);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe('/api/matrix/sync/room-list');
+    expect((calls[0]?.init as { method?: string }).method).toBe('POST');
+    expect(calls[0]?.init.headers).toMatchObject({
+      Authorization: 'Bearer expired',
+      'x-matrix-homeserver': 'https://matrix.org',
+    });
+  });
+});
+
+describe('matrixClient room endpoints', () => {
+  it('getRoomMembers', async () => {
+    const calls = installFetch((url) =>
+      url === '/api/matrix/rooms/!r%3Amatrix.org/members'
+        ? new Response(JSON.stringify({ chunk: [] }), { status: 200 })
+        : new Response('{}', { status: 404 }),
+    );
+    await matrixClient.getRoomMembers(session, '!r:matrix.org');
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.init.headers).toMatchObject({
+      Authorization: 'Bearer expired',
+      'x-matrix-homeserver': 'https://matrix.org',
+    });
+  });
+
+  it('getRoomThreads with limit=30', async () => {
+    const calls = installFetch((url) =>
+      url === '/api/matrix/rooms/!r%3Amatrix.org/threads?limit=30'
+        ? new Response(JSON.stringify({ chunk: [] }), { status: 200 })
+        : new Response('{}', { status: 404 }),
+    );
+    await matrixClient.getRoomThreads(session, '!r:matrix.org');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('getRoomAliases', async () => {
+    const calls = installFetch((url) =>
+      url === '/api/matrix/rooms/!r%3Amatrix.org/aliases'
+        ? new Response(JSON.stringify({ aliases: [] }), { status: 200 })
+        : new Response('{}', { status: 404 }),
+    );
+    await matrixClient.getRoomAliases(session, '!r:matrix.org');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('setReadMarkers posts JSON body', async () => {
+    const calls = installFetch((url) =>
+      url === '/api/matrix/rooms/!r%3Amatrix.org/read_markers'
+        ? new Response(JSON.stringify({}), { status: 200 })
+        : new Response('{}', { status: 404 }),
+    );
+    await matrixClient.setReadMarkers(session, '!r:matrix.org', {
+      'm.fully_read': 'evt1',
+      'm.read': 'evt2',
+    });
+    expect(calls).toHaveLength(1);
+    expect((calls[0]?.init as { method?: string }).method).toBe('POST');
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+      'm.fully_read': 'evt1',
+      'm.read': 'evt2',
+    });
   });
 });
