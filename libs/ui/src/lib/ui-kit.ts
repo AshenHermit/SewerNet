@@ -30,7 +30,7 @@ export interface PanelProps extends HTMLAttributes<HTMLDivElement> {
 
 export type RoomListPanelProps = HTMLAttributes<HTMLDivElement>;
 
-export interface RoomListItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface RoomListItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onSelect'> {
   id: string;
   active?: boolean;
   unread?: number;
@@ -64,7 +64,7 @@ export interface ChatViewMessageListProps extends HTMLAttributes<HTMLDivElement>
 }
 
 /** Одно сообщение в списке чата. */
-export interface ChatViewMessageProps extends HTMLAttributes<HTMLDivElement> {
+export interface ChatViewMessageProps extends HTMLAttributes<HTMLLIElement> {
   event: MatrixRoomEvent;
   own?: boolean;
 }
@@ -75,7 +75,7 @@ export interface ChatViewErrorProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /** Форма ввода сообщения. */
-export interface ChatViewInputFormProps extends HTMLAttributes<HTMLFormElement> {
+export interface ChatViewInputFormProps extends Omit<HTMLAttributes<HTMLFormElement>, 'onChange'> {
   draft: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
@@ -84,7 +84,7 @@ export interface ChatViewInputFormProps extends HTMLAttributes<HTMLFormElement> 
 }
 
 /** Поле поиска в списке комнат. */
-export interface RoomListSearchProps extends HTMLAttributes<HTMLDivElement> {
+export interface RoomListSearchProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   query: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -150,7 +150,7 @@ export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /** Вариант выбора UI-kit. */
-export interface KitOptionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface KitOptionProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onSelect'> {
   kitId: string;
   label: string;
   active: boolean;
@@ -202,7 +202,7 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /** Общий экран чата (рельса + список комнат + вид чата). */
-export interface ChatScreenProps extends HTMLAttributes<HTMLDivElement> {}
+export type ChatScreenProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * A UI kit is a set of concrete component implementations.
