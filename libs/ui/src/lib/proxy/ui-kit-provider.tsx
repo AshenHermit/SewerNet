@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { useThemeStore } from '@sewer-net/themes';
-import { DEFAULT_UI_KIT, UI_KITS } from '../kits/index.js';
-import type { UiKit } from '../ui-kit.js';
+import { DEFAULT_UI_KIT, UI_KITS } from '../kits/index';
+import type { UiKit } from '../ui-kit';
 
 const UiKitContext = createContext<UiKit>(DEFAULT_UI_KIT);
 
@@ -22,3 +22,4 @@ export function UiKitProvider({ kitId, children }: UiKitProviderProps) {
 export function useUiKit(): UiKit {
   return useContext(UiKitContext);
 }
+

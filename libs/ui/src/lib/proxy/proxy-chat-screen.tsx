@@ -1,5 +1,5 @@
-import type { ChatScreenProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { ChatScreenProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyChatScreenProps = ChatScreenProps;
 
@@ -8,3 +8,4 @@ export function ProxyChatScreen(props: ChatScreenProps) {
   const kit = useUiKit();
   return <kit.ChatScreen {...props} />;
 }
+

@@ -1,5 +1,5 @@
-import type { RoomListEmptyProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { RoomListEmptyProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyRoomListEmptyProps = RoomListEmptyProps;
 
@@ -8,3 +8,4 @@ export function ProxyRoomListEmpty(props: RoomListEmptyProps) {
   const kit = useUiKit();
   return <kit.RoomListEmpty {...props} />;
 }
+

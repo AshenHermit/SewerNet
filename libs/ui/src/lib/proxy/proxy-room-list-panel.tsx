@@ -1,5 +1,5 @@
-import type { RoomListPanelProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { RoomListPanelProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyRoomListPanelProps = RoomListPanelProps;
 
@@ -8,3 +8,4 @@ export function ProxyRoomListPanel(props: RoomListPanelProps) {
   const kit = useUiKit();
   return <kit.RoomListPanel {...props} />;
 }
+

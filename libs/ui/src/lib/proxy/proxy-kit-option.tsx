@@ -1,5 +1,5 @@
-import type { KitOptionProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { KitOptionProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyKitOptionProps = KitOptionProps;
 
@@ -8,3 +8,4 @@ export function ProxyKitOption(props: KitOptionProps) {
   const kit = useUiKit();
   return <kit.KitOption {...props} />;
 }
+

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ProxyRoomListItem } from './proxy-room-list-item.js';
+import { ProxyRoomListItem } from './proxy-room-list-item';
 
 describe('ProxyRoomListItem', () => {
   it('renders room name', () => {
@@ -27,3 +27,4 @@ describe('ProxyRoomListItem', () => {
     expect(onSelect).toHaveBeenCalledWith('general');
   });
 });
+

@@ -1,5 +1,5 @@
-import type { RailButtonProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { RailButtonProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyRailButtonProps = RailButtonProps;
 
@@ -8,3 +8,4 @@ export function ProxyRailButton(props: RailButtonProps) {
   const kit = useUiKit();
   return <kit.RailButton {...props} />;
 }
+

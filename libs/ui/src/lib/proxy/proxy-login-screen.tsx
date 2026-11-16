@@ -1,5 +1,5 @@
-import type { LoginScreenProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { LoginScreenProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyLoginScreenProps = LoginScreenProps;
 
@@ -8,3 +8,4 @@ export function ProxyLoginScreen(props: LoginScreenProps) {
   const kit = useUiKit();
   return <kit.LoginScreen {...props} />;
 }
+

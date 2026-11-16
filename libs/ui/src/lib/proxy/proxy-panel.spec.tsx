@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ProxyPanel } from './proxy-panel.js';
+import { ProxyPanel } from './proxy-panel';
 
 describe('ProxyPanel', () => {
   it('renders children', () => {
@@ -18,3 +18,4 @@ describe('ProxyPanel', () => {
     expect(screen.getByText('No border').className).not.toContain('border');
   });
 });
+

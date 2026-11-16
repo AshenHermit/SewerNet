@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ProxyButton } from './proxy-button.js';
+import { ProxyButton } from './proxy-button';
 
 describe('ProxyButton', () => {
   it('renders the active kit button', () => {
@@ -13,3 +13,4 @@ describe('ProxyButton', () => {
     expect(screen.getByRole('button', { name: 'Sending' }).hasAttribute('disabled')).toBe(true);
   });
 });
+

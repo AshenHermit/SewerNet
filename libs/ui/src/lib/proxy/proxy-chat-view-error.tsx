@@ -1,5 +1,5 @@
-import type { ChatViewErrorProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { ChatViewErrorProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyChatViewErrorProps = ChatViewErrorProps;
 
@@ -8,3 +8,4 @@ export function ProxyChatViewError(props: ChatViewErrorProps) {
   const kit = useUiKit();
   return <kit.ChatViewError {...props} />;
 }
+

@@ -1,5 +1,5 @@
-import type { ChatViewInputFormProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { ChatViewInputFormProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyChatViewInputFormProps = ChatViewInputFormProps;
 
@@ -8,3 +8,4 @@ export function ProxyChatViewInputForm(props: ChatViewInputFormProps) {
   const kit = useUiKit();
   return <kit.ChatViewInputForm {...props} />;
 }
+

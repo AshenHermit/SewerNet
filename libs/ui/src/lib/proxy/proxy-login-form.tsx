@@ -1,5 +1,5 @@
-import type { LoginFormProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { LoginFormProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyLoginFormProps = LoginFormProps;
 
@@ -8,3 +8,4 @@ export function ProxyLoginForm(props: LoginFormProps) {
   const kit = useUiKit();
   return <kit.LoginForm {...props} />;
 }
+

@@ -1,5 +1,5 @@
-import type { SettingsPanelProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { SettingsPanelProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxySettingsPanelProps = SettingsPanelProps;
 
@@ -8,3 +8,4 @@ export function ProxySettingsPanel(props: SettingsPanelProps) {
   const kit = useUiKit();
   return <kit.SettingsPanel {...props} />;
 }
+

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ProxyMessageBubble } from './proxy-message-bubble.js';
+import { ProxyMessageBubble } from './proxy-message-bubble';
 
 describe('ProxyMessageBubble', () => {
   it('renders message text', () => {
@@ -18,3 +18,4 @@ describe('ProxyMessageBubble', () => {
     expect(screen.getByText('Theirs').className).toContain('mr-auto');
   });
 });
+

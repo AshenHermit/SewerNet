@@ -1,5 +1,5 @@
-import type { RailProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { RailProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyRailProps = RailProps;
 
@@ -8,3 +8,4 @@ export function ProxyRail(props: RailProps) {
   const kit = useUiKit();
   return <kit.Rail {...props} />;
 }
+

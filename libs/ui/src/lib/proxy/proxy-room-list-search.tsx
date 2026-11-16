@@ -1,5 +1,5 @@
-import type { RoomListSearchProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { RoomListSearchProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyRoomListSearchProps = RoomListSearchProps;
 
@@ -8,3 +8,4 @@ export function ProxyRoomListSearch(props: RoomListSearchProps) {
   const kit = useUiKit();
   return <kit.RoomListSearch {...props} />;
 }
+

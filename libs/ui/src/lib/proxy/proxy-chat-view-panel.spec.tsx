@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ProxyChatViewPanel } from './proxy-chat-view-panel.js';
+import { ProxyChatViewPanel } from './proxy-chat-view-panel';
 
 describe('ProxyChatViewPanel', () => {
   it('renders children', () => {
@@ -8,3 +8,4 @@ describe('ProxyChatViewPanel', () => {
     expect(screen.getByText('Chat view')).toBeTruthy();
   });
 });
+

@@ -1,5 +1,5 @@
-import type { MessageBubbleProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { MessageBubbleProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyMessageBubbleProps = MessageBubbleProps;
 
@@ -8,3 +8,4 @@ export function ProxyMessageBubble(props: MessageBubbleProps) {
   const kit = useUiKit();
   return <kit.MessageBubble {...props} />;
 }
+

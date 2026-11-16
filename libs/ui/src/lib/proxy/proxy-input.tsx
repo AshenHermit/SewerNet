@@ -1,5 +1,5 @@
-import type { InputProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { InputProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyInputProps = InputProps;
 
@@ -8,3 +8,4 @@ export function ProxyInput(props: ProxyInputProps) {
   const kit = useUiKit();
   return <kit.Input {...props} />;
 }
+

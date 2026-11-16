@@ -1,5 +1,5 @@
-import type { PanelProps } from '../ui-kit.js';
-import { useUiKit } from './ui-kit-provider.js';
+import type { PanelProps } from '../ui-kit';
+import { useUiKit } from './ui-kit-provider';
 
 export type ProxyPanelProps = PanelProps;
 
@@ -8,3 +8,4 @@ export function ProxyPanel(props: PanelProps) {
   const kit = useUiKit();
   return <kit.Panel {...props} />;
 }
+
