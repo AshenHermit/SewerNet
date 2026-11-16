@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
-import { ProxyIcon } from '@sewer-net/icons';
 import { useThemeStore, type ThemeMode } from '@sewer-net/themes';
 import { useAuthStore } from '../stores/auth-store';
+import { ProxyRail, ProxyRailButton } from '@sewer-net/ui';
 import { SettingsPanel } from './settings-panel';
 
 const NAV_ITEMS = [
@@ -23,68 +23,42 @@ export function Rail() {
   };
 
   return (
-    <nav className="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-[var(--sn-border)] bg-[var(--sn-surface-1)] py-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-[var(--sn-radius)] bg-[var(--sn-accent)] text-[var(--sn-accent-contrast)]">
-        <ProxyIcon name="message" size={20} />
-      </div>
-
-      <div className="mt-4 flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.icon}
-            title={item.label}
-            className="flex h-10 w-10 items-center justify-center rounded-[var(--sn-radius)] bg-[var(--sn-accent)]/15 text-[var(--sn-accent)]"
-          >
-            <ProxyIcon name={item.icon} />
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-auto flex flex-col items-center gap-1">
-        <RailButton
-          title={
-            settings.mode === 'dark'
-              ? t`Switch to light theme`
-              : t`Switch to dark theme`
-          }
-          onClick={() => setMode(nextMode[settings.mode])}
-          icon={settings.mode === 'dark' ? 'sun' : 'moon'}
+    <ProxyRail
+      mode={settings.mode}
+      onThemeToggle={() => setMode(nextMode[settings.mode])}
+      onSettings={() => setSettingsOpen((open) => !open)}
+      onLogout={() => clearSession()}
+    >
+      {NAV_ITEMS.map((item) => (
+        <ProxyRailButton
+          key={item.icon}
+          icon={item.icon}
+          title={item.label}
+          active={item.active}
         />
-        <RailButton
-          title={t`Settings`}
-          onClick={() => setSettingsOpen((open) => !open)}
-          icon="settings"
-        />
-        <RailButton
-          title={t`Log out`}
-          onClick={() => clearSession()}
-          icon="logout"
-        />
-      </div>
-
+      ))}
+      <ProxyRailButton
+        title={
+          settings.mode === 'dark'
+            ? t`Switch to light theme`
+            : t`Switch to dark theme`
+        }
+        icon={settings.mode === 'dark' ? 'sun' : 'moon'}
+        onClick={() => setMode(nextMode[settings.mode])}
+      />
+      <ProxyRailButton
+        title={t`Settings`}
+        icon="settings"
+        onClick={() => setSettingsOpen((open) => !open)}
+      />
+      <ProxyRailButton
+        title={t`Log out`}
+        icon="logout"
+        onClick={() => clearSession()}
+      />
       {settingsOpen ? (
         <SettingsPanel onClose={() => setSettingsOpen(false)} />
       ) : null}
-    </nav>
-  );
-}
-
-function RailButton({
-  icon,
-  title,
-  onClick,
-}: {
-  icon: Parameters<typeof ProxyIcon>[0]['name'];
-  title: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className="flex h-10 w-10 items-center justify-center rounded-[var(--sn-radius)] text-[var(--sn-text-muted)] hover:bg-[var(--sn-surface-2)] hover:text-[var(--sn-text)]"
-    >
-      <ProxyIcon name={icon} />
-    </button>
+    </ProxyRail>
   );
 }
