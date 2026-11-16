@@ -22,6 +22,11 @@ export interface MatrixCredentials {
   deviceName?: string;
 }
 
+/** Размер окна списка комнат sliding-sync. */
+const ROOM_LIST_PAGE = 20;
+/** Предохранитель: максимум 200 комнат за холодную загрузку (10 окон). */
+const ROOM_LIST_MAX_PAGES = 10;
+
 /**
  * Stateless HTTP proxy to a Matrix homeserver (Client-Server API v3).
  * The client supplies the homeserver base URL with each request via the
@@ -30,7 +35,6 @@ export interface MatrixCredentials {
 @Injectable()
 export class MatrixService {
   private readonly logger = new Logger(MatrixService.name);
-
   private homeserverUrl(homeserver: string): string {
     const url = homeserver?.replace(/\/+$/, '');
     if (!url || !/^https?:\/\//.test(url)) {
@@ -99,39 +103,70 @@ export class MatrixService {
     homeserver: string,
     token?: string,
   ): Promise<SlidingSyncRoomListResponse> {
-    const body: SlidingSyncRoomListRequest = {
-      conn_id: 'room-list',
-      lists: {
-        all_rooms: {
-          ranges: [[0, 19]],
-          required_state: [
-            ['m.room.name', ''],
-            ['m.room.avatar', ''],
-            ['m.room.topic', ''],
-            ['m.room.member', '$ME'],
-            ['m.room.member', '$LAZY'],
-          ],
-          timeline_limit: 1,
-          filters: {},
-        },
-      },
-      extensions: {
-        account_data: {},
-        receipts: {},
-        typing: {},
-      },
-    };
+    const rooms: SlidingSyncRoomListResponse['rooms'] = {};
+    const ops: SlidingSyncRoomListResponse['lists']['all_rooms']['ops'] = [];
+    let count = 0;
+    let pos = '';
+    let extensions: SlidingSyncRoomListResponse['extensions'] = {};
 
-    return this.proxy(
-      homeserver,
-      '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
-      {
-        method: 'POST',
-        token,
-        body,
-        timeoutMs: 30_000,
-      },
-    ) as Promise<SlidingSyncRoomListResponse>;
+    // Список комнат листается окнами по 20: без этого аккаунты с 20+ комнатами
+    // видели бы только первые 20 и не имели способа достать остальные.
+    for (let page = 0; page < ROOM_LIST_MAX_PAGES; page += 1) {
+      const from = page * ROOM_LIST_PAGE;
+      const body: SlidingSyncRoomListRequest = {
+        conn_id: 'room-list',
+        lists: {
+          all_rooms: {
+            ranges: [[from, from + ROOM_LIST_PAGE - 1]],
+            required_state: [
+              ['m.room.name', ''],
+              ['m.room.avatar', ''],
+              ['m.room.topic', ''],
+              ['m.room.canonical_alias', ''],
+              ['m.room.member', '$ME'],
+              ['m.room.member', '$LAZY'],
+            ],
+            timeline_limit: 1,
+            filters: {},
+          },
+        },
+        extensions: {
+          account_data: {},
+          receipts: {},
+          typing: {},
+        },
+        ...(pos ? { pos } : {}),
+      };
+
+      const response = (await this.proxy(
+        homeserver,
+        '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
+        {
+          method: 'POST',
+          token,
+          body,
+          timeoutMs: 30_000,
+          // Слабый homeserver: один медленный запрос уже стоит 30 секунд.
+          // Повторять его 3 раза — гарантированный минутный висяк у клиента.
+          retries: 0,
+        },
+      )) as SlidingSyncRoomListResponse;
+
+      Object.assign(rooms, response.rooms ?? {});
+      ops.push(...(response.lists?.all_rooms?.ops ?? []));
+      extensions = response.extensions ?? extensions;
+      count = response.lists?.all_rooms?.count ?? count;
+      pos = response.pos ?? '';
+
+      if (!pos || from + ROOM_LIST_PAGE >= count) break;
+    }
+
+    return {
+      pos,
+      lists: { all_rooms: { count, ops } },
+      rooms,
+      extensions,
+    };
   }
 
   async getRoomMembers(

@@ -153,7 +153,8 @@ describe('MatrixService', () => {
       }) as unknown as typeof fetch;
       try {
         const result = await service.syncRoomList('https://matrix.org', 'token');
-        expect(result).toEqual({ pos: '123', rooms: {} });
+        expect(result.rooms).toEqual({});
+        expect(result.pos).toBe('123');
         expect(calls[0]?.url).toBe(
           'https://matrix.org/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
         );
@@ -167,9 +168,82 @@ describe('MatrixService', () => {
         expect(body.conn_id).toBe('room-list');
         expect(body.lists.all_rooms.ranges).toEqual([[0, 19]]);
         expect(body.lists.all_rooms.required_state).toEqual(
-          expect.arrayContaining([['m.room.name', '']]),
+          expect.arrayContaining([
+            ['m.room.name', ''],
+            ['m.room.canonical_alias', ''],
+          ]),
         );
         expect(body.lists.all_rooms.timeline_limit).toBe(1);
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('paginates with pos until every room is loaded', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const pages = [
+        {
+          pos: 'p1',
+          lists: {
+            all_rooms: {
+              count: 25,
+              ops: [{ op: 'SYNC', range: [0, 19], room_ids: ['!r0:matrix.org'] }],
+            },
+          },
+          rooms: { '!r0:matrix.org': { name: 'Room 0' } },
+        },
+        {
+          pos: 'p2',
+          lists: {
+            all_rooms: {
+              count: 25,
+              ops: [{ op: 'SYNC', range: [20, 39], room_ids: ['!r20:matrix.org'] }],
+            },
+          },
+          rooms: { '!r20:matrix.org': { name: 'Room 20' } },
+        },
+      ];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify(pages[calls.length - 1]), {
+          status: 200,
+        });
+      }) as unknown as typeof fetch;
+      try {
+        const result = await service.syncRoomList('https://matrix.org', 'token');
+        expect(calls).toHaveLength(2);
+        const body = JSON.parse(
+          String(calls[1]?.init.body),
+        ) as SlidingSyncRoomListRequest;
+        expect(body.pos).toBe('p1');
+        expect(body.lists.all_rooms.ranges).toEqual([[20, 39]]);
+        expect(Object.keys(result.rooms)).toEqual([
+          '!r0:matrix.org',
+          '!r20:matrix.org',
+        ]);
+        expect(result.lists.all_rooms.count).toBe(25);
+        expect(result.lists.all_rooms.ops.flatMap((op) => op.room_ids)).toEqual([
+          '!r0:matrix.org',
+          '!r20:matrix.org',
+        ]);
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('makes a single attempt: a slow homeserver must not multiply the timeout', async () => {
+      let calls = 0;
+      const original = global.fetch;
+      global.fetch = (async () => {
+        calls += 1;
+        throw new TypeError('fetch failed');
+      }) as unknown as typeof fetch;
+      try {
+        await expect(
+          service.syncRoomList('https://matrix.org', 'token'),
+        ).rejects.toMatchObject({ status: 502 });
+        expect(calls).toBe(1);
       } finally {
         global.fetch = original;
       }

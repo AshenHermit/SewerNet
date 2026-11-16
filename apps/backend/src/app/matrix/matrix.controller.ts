@@ -201,52 +201,113 @@ function extractToken(authorization?: string): string | undefined {
 export function mapSyncedRooms(
   response: SlidingSyncRoomListResponse,
 ): SyncedRoomInfo[] {
+  const rawRooms = (response.rooms ?? {}) as Record<
+    string,
+    {
+      name?: unknown;
+      avatar?: unknown;
+      required_state?: unknown;
+      timeline?: unknown;
+    }
+  >;
+
+  // `ops` — авторитетный (и упорядоченный) список комнат. `rooms` может быть
+  // пустым, если состояние уже в кэше homeserver'а: ориентироваться только на
+  // ключи `rooms` значит показать пустой список вместо комнат.
+  const orderedIds: string[] = [];
+  const seen = new Set<string>();
+  for (const op of response.lists?.all_rooms?.ops ?? []) {
+    for (const roomId of op.room_ids ?? []) {
+      if (!seen.has(roomId)) {
+        seen.add(roomId);
+        orderedIds.push(roomId);
+      }
+    }
+  }
+  for (const roomId of Object.keys(rawRooms)) {
+    if (!seen.has(roomId)) {
+      seen.add(roomId);
+      orderedIds.push(roomId);
+    }
+  }
+
+  const directCounterparts = directRoomCounterparts(response.extensions);
   const rooms: SyncedRoomInfo[] = [];
-  const rawRooms = response.rooms ?? {};
-  for (const [roomId, raw] of Object.entries(rawRooms)) {
-    const state = (Array.isArray(raw?.required_state) ? raw.required_state : []) as {
-      type: string;
+
+  for (const roomId of orderedIds) {
+    const raw = rawRooms[roomId] ?? {};
+    const state = (Array.isArray(raw.required_state) ? raw.required_state : []) as {
+      type?: string;
+      state_key?: string;
       content?: Record<string, unknown>;
     }[];
 
     const nameEvent = state.find((e) => e.type === 'm.room.name');
     const avatarEvent = state.find((e) => e.type === 'm.room.avatar');
     const topicEvent = state.find((e) => e.type === 'm.room.topic');
+    const aliasEvent = state.find((e) => e.type === 'm.room.canonical_alias');
 
     // matrix.org liefert timeline direkt als Array (nicht { events: [...] }).
-    const timeline = Array.isArray(raw?.timeline) ? raw.timeline : [];
+    const timeline = Array.isArray(raw.timeline) ? raw.timeline : [];
     const last = timeline[0] as {
       origin_server_ts?: unknown;
       content?: Record<string, unknown>;
     } | undefined;
 
+    const counterpartId = directCounterparts.get(roomId);
+    const counterpartName = counterpartId
+      ? state.find(
+          (e) => e.type === 'm.room.member' && e.state_key === counterpartId,
+        )?.content?.displayname
+      : undefined;
+
     rooms.push({
       room_id: roomId,
-      name:
-        typeof nameEvent?.content?.name === 'string'
-          ? (nameEvent.content.name as string)
-          : typeof raw.name === 'string'
-            ? raw.name
-            : undefined,
-      avatar:
-        typeof avatarEvent?.content?.url === 'string'
-          ? (avatarEvent.content.url as string)
-          : typeof raw.avatar === 'string'
-            ? raw.avatar
-            : undefined,
-      topic:
-        typeof topicEvent?.content?.topic === 'string'
-          ? (topicEvent.content.topic as string)
-          : undefined,
-      preview:
-        typeof last?.content?.body === 'string'
-          ? (last.content.body as string)
-          : undefined,
+      name: firstString(
+        nameEvent?.content?.name,
+        raw.name,
+        aliasEvent?.content?.alias,
+        counterpartName,
+      ),
+      avatar: firstString(avatarEvent?.content?.url, raw.avatar),
+      topic: firstString(topicEvent?.content?.topic),
+      preview: firstString(last?.content?.body),
       lastTs:
         typeof last?.origin_server_ts === 'number'
           ? (last.origin_server_ts as number)
           : undefined,
     });
   }
+
   return rooms.sort((a, b) => (b.lastTs ?? 0) - (a.lastTs ?? 0));
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === 'string' && value.length > 0) return value;
+  }
+  return undefined;
+}
+
+/**
+ * Карта `roomId → userId` из account data `m.direct`: без неё DM-комнаты
+ * остались бы без имени (у них нет `m.room.name`).
+ */
+function directRoomCounterparts(extensions: unknown): Map<string, string> {
+  const result = new Map<string, string>();
+  const events = (
+    extensions as { account_data?: { events?: unknown } } | undefined
+  )?.account_data?.events;
+  if (!Array.isArray(events)) return result;
+
+  const direct = events.find(
+    (event) => (event as { type?: string })?.type === 'm.direct',
+  ) as { content?: Record<string, unknown> } | undefined;
+  for (const [userId, roomIds] of Object.entries(direct?.content ?? {})) {
+    if (!Array.isArray(roomIds)) continue;
+    for (const roomId of roomIds) {
+      if (typeof roomId === 'string') result.set(roomId, userId);
+    }
+  }
+  return result;
 }

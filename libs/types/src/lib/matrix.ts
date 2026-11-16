@@ -96,13 +96,15 @@ export interface SlidingSyncRoomListRequest {
   lists: {
     all_rooms: {
       ranges: [number, number][];
-      /** Каждое событие как строка (type, пустой state_key) oder Tupel [type, state_key]. */
+      /** Каждое событие как строка (type, пустой state_key) или пара [type, state_key]. */
       required_state: (string | [string, string])[];
       timeline_limit: number;
       filters: Record<string, unknown>;
     };
   };
   extensions: Record<string, unknown>;
+  /** Позиция из предыдущего ответа: продолжение окна списка комнат. */
+  pos?: string;
 }
 
 /** Ответ эндпоинта sliding-sync /sync для списка комнат. */
