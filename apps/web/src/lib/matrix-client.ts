@@ -175,8 +175,22 @@ export async function discoverMasAuth(
   }
 }
 
+/** One in-flight refresh shared by every concurrent 401: MAS rotates refresh
+ *  tokens, so two parallel grants would invalidate each other and log the
+ *  user out. */
+let inflightRefresh: Promise<AuthSession> | null = null;
+
 /** Refresh grant through the backend; persists the updated session. */
 export async function refreshOauthToken(session: AuthSession): Promise<AuthSession> {
+  if (!inflightRefresh) {
+    inflightRefresh = doRefreshOauthToken(session).finally(() => {
+      inflightRefresh = null;
+    });
+  }
+  return inflightRefresh;
+}
+
+async function doRefreshOauthToken(session: AuthSession): Promise<AuthSession> {
   const res = await request<OauthTokenResponse>('/oauth/token', {
     method: 'POST',
     body: {

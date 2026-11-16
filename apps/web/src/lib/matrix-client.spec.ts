@@ -216,6 +216,45 @@ describe('auto-refresh on 401', () => {
     expect(calls.filter((call) => call.url === '/api/matrix/oauth/token')).toHaveLength(1);
   });
 
+  it('shares one refresh between parallel 401s (single flight)', async () => {
+    let tokenCalls = 0;
+    installFetch((url, init) => {
+      if (url === '/api/matrix/oauth/token') {
+        tokenCalls += 1;
+        return tokenCalls === 1
+          ? new Response(
+              JSON.stringify({
+                accessToken: 'new_at',
+                refreshToken: 'rt_new',
+                expiresIn: 3600,
+              }),
+              { status: 200 },
+            )
+          : new Response(JSON.stringify({ error: 'invalid_grant' }), { status: 400 });
+      }
+      if (url === '/api/matrix/rooms') {
+        const authorization = (init.headers as Record<string, string>)['Authorization'];
+        return authorization === 'Bearer new_at'
+          ? new Response(JSON.stringify({ joined_rooms: ['!r'] }), { status: 200 })
+          : new Response(
+              JSON.stringify({ errcode: 'M_UNKNOWN_TOKEN', error: 'bad' }),
+              { status: 401 },
+            );
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    // MAS rotates refresh tokens: a second parallel grant would fail with
+    // invalid_grant and log the user out, so both requests must share one.
+    const [a, b] = await Promise.all([
+      matrixClient.getJoinedRooms(session),
+      matrixClient.getJoinedRooms(session),
+    ]);
+    expect(a).toEqual({ joined_rooms: ['!r'] });
+    expect(b).toEqual({ joined_rooms: ['!r'] });
+    expect(tokenCalls).toBe(1);
+  });
+
   it('surfaces the original 401 when the refresh itself fails', async () => {
     const calls = installFetch((url) => {
       if (url === '/api/matrix/oauth/token') {

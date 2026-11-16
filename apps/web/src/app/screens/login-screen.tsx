@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { ProxyButton, ProxyInput } from '@sewer-net/ui';
 import { ProxyIcon } from '@sewer-net/icons';
@@ -29,18 +29,24 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const discoverSeq = useRef(0);
   const discover = useCallback(async (input: string) => {
+    // A discovery that settles after a newer one must not overwrite its result.
+    const seq = ++discoverSeq.current;
     setResolving(true);
     setError(null);
     try {
       const resolved = await normalizeHomeserver(input);
+      const metadata = await discoverMasAuth(resolved);
+      if (seq !== discoverSeq.current) return;
       setResolvedHomeserver(resolved);
-      setMas(await discoverMasAuth(resolved));
+      setMas(metadata);
     } catch {
+      if (seq !== discoverSeq.current) return;
       // No MAS announcement (or network trouble): password form fallback.
       setMas(null);
     } finally {
-      setResolving(false);
+      if (seq === discoverSeq.current) setResolving(false);
     }
   }, []);
 

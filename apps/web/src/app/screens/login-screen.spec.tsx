@@ -94,6 +94,35 @@ describe('LoginScreen', () => {
     expect(screen.getByLabelText('Username').closest('details')).toBeNull();
   });
 
+  it('ignores a stale discovery that resolves after a newer one', async () => {
+    let resolveOld: ((value: typeof MAS_METADATA | null) => void) | undefined;
+    mockedNormalize.mockImplementation(async (input: string) => input);
+    mockedDiscover.mockImplementation(((input: string) => {
+      if (input === 'https://matrix.org') {
+        return new Promise((resolve) => {
+          resolveOld = resolve;
+        });
+      }
+      return Promise.resolve(null);
+    }) as typeof discoverMasAuth);
+
+    renderLogin();
+    const homeserver = await screen.findByLabelText('Homeserver URL');
+    fireEvent.change(homeserver, { target: { value: 'https://example.org' } });
+    fireEvent.blur(homeserver);
+    // example.org resolves fast: no MAS → password form.
+    await waitFor(() =>
+      expect(mockedDiscover).toHaveBeenCalledWith('https://example.org'),
+    );
+    expect(await screen.findByLabelText('Username')).toBeTruthy();
+    // The stale matrix.org discovery settles late with MAS present — must not win.
+    resolveOld?.(MAS_METADATA);
+    await waitFor(() => expect(mockedDiscover).toHaveBeenCalledTimes(2));
+    expect(
+      screen.queryByRole('button', { name: 'Continue with Matrix' }),
+    ).toBeNull();
+  });
+
   it('starts the OAuth flow: registers the client, stores pending state and redirects', async () => {
     mockedDiscover.mockResolvedValue(MAS_METADATA);
     mockedRegister.mockResolvedValue('cid');
