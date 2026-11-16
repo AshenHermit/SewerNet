@@ -10,11 +10,7 @@ import {
 import { ProxyIcon } from '@sewer-net/icons';
 import { matrixClient } from '../../lib/matrix-client';
 import { useAuthStore } from '../stores/auth-store';
-import {
-  previewFromEvent,
-  roomNameFromEvents,
-  useChatStore,
-} from '../stores/chat-store';
+import { useChatStore } from '../stores/chat-store';
 
 interface ChatViewProps {
   onAuthError: (err: unknown) => void;
@@ -42,11 +38,12 @@ export function ChatView({ onAuthError }: ChatViewProps) {
 
   const activeRoom = rooms.find((room) => room.id === activeRoomId) ?? null;
   const events = activeRoomId ? (messages[activeRoomId] ?? []) : [];
-  const roomName = activeRoom
-    ? roomNameFromEvents(activeRoom.id, events) || activeRoom.name
-    : '';
+  const roomName = activeRoom ? activeRoom.name : '';
 
-  // Load history when a room is opened.
+  // Load the full room payload when a room is opened: /state (имя комнаты),
+  // /messages (история), /members, /threads, /aliases — пять запросов в одном
+  // круге, затем read_markers для последнего события. Имя берётся из
+  // m.room.name, не дожидаемся загрузки истории.
   useEffect(() => {
     if (!activeRoomId || !session || loadedRoomRef.current === activeRoomId)
       return;
@@ -54,37 +51,46 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     const roomId = activeRoomId;
     const currentSession = session;
 
-    async function loadMessages() {
+    async function loadRoom() {
       setLoadingMessages(true);
       setError(null);
       try {
-        const res = await matrixClient.getMessages(currentSession, roomId, {
-          limit: 50,
-        });
+        // 5 независимых запроса параллельно + read_markers после истории.
+        const [stateRes, messagesRes] = await Promise.all([
+          matrixClient.getRoomState(currentSession, roomId, 'm.room.name'),
+          matrixClient.getMessages(currentSession, roomId, { limit: 50 }),
+          matrixClient.getRoomMembers(currentSession, roomId),
+          matrixClient.getRoomThreads(currentSession, roomId),
+          matrixClient.getRoomAliases(currentSession, roomId),
+        ]);
         if (cancelled) return;
+
+        // Имя из m.room.name — не дожидаемся истории.
+        const name = stateRes['name'] as string | undefined;
+        if (name) {
+          useChatStore.setState((state) => ({
+            rooms: state.rooms.map((r) =>
+              r.id === roomId ? { ...r, name } : r,
+            ),
+          }));
+        }
+
+        setMessages(roomId, messagesRes.chunk);
         loadedRoomRef.current = roomId;
-        setMessages(roomId, res.chunk);
-        // Enrich the room list with name/preview derived from history.
-        const name = roomNameFromEvents(roomId, res.chunk);
-        const lastEvent = [...res.chunk]
-          .reverse()
-          .find((e) => e.type === 'm.room.message');
-        useChatStore.setState((state) => ({
-          rooms: state.rooms.map((room) =>
-            room.id === roomId
-              ? {
-                  ...room,
-                  name: name || room.name,
-                  preview: previewFromEvent(lastEvent),
-                }
-              : room,
-          ),
-        }));
+
+        // Отмечаем последнее событие прочитанным.
+        const lastEvent = messagesRes.chunk[0];
+        if (lastEvent?.event_id && !cancelled) {
+          await matrixClient.setReadMarkers(currentSession, roomId, {
+            'm.fully_read': lastEvent.event_id,
+            'm.read': lastEvent.event_id,
+          });
+        }
       } catch (err) {
         if (!cancelled) {
           onAuthError(err);
           setError(
-            err instanceof Error ? err.message : 'Failed to load messages',
+            err instanceof Error ? err.message : 'Failed to load room',
           );
         }
       } finally {
@@ -92,10 +98,11 @@ export function ChatView({ onAuthError }: ChatViewProps) {
       }
     }
 
-    void loadMessages();
+    void loadRoom();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeRoomId,
     session,
@@ -107,7 +114,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
 
   // Keep the newest message visible.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [events.length]);
 
   async function handleSend() {
