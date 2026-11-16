@@ -47,6 +47,17 @@ npx nx storybook ui
 npx nx run-many -t typecheck,lint,test,build
 ```
 
+## Авторизация
+
+Вход через **Matrix Authentication Service** (OAuth 2.0 authorization code + PKCE S256,
+MSC2964/2965/2966) по образцу Element X: «Продолжить с Matrix» → логин/consent на
+issuer'е (для matrix.org — `account.matrix.org`) → возврат на `/callback` с токенами.
+Парольная форма остаётся запасным вариантом (для homeserver'ов без MAS).
+
+- Discovery MAS у homeserver'а: `_matrix/client/v1/auth_metadata` → `.well-known/matrix/client` (`authentication`) → парольный fallback.
+- Динамическая регистрация клиента (RFC 7591) и обмен/refresh токенов — через stateless backend (`/api/matrix/oauth/*`); PKCE/state живут на фронте (`sessionStorage`).
+- Access token MAS работает как обычный Matrix Bearer; при 401 — прозрачный refresh и один retry.
+
 ## Локализация
 
 Интерфейс на en/ru через Lingui. Извлечение строк:
