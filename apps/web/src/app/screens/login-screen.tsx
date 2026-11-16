@@ -12,6 +12,7 @@ import {
   buildAuthorizationUrl,
   codeChallengeS256,
   generateCodeVerifier,
+  generateDeviceId,
   generateState,
   savePendingOAuth,
 } from '../../lib/oauth-pkce';
@@ -84,6 +85,7 @@ export function LoginScreen() {
       const state = generateState();
       const codeVerifier = generateCodeVerifier();
       const codeChallenge = await codeChallengeS256(codeVerifier);
+      const deviceId = generateDeviceId();
       const clientId = await matrixClient.registerOauthClient(mas.issuer, redirectUri);
       savePendingOAuth({
         homeserverUrl: resolvedHomeserver ?? homeserverUrl,
@@ -100,6 +102,7 @@ export function LoginScreen() {
           redirectUri,
           state,
           codeChallenge,
+          deviceId,
           prompt,
         }),
       );

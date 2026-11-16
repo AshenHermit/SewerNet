@@ -6,8 +6,10 @@ import {
   clearPendingOAuth,
   codeChallengeS256,
   generateCodeVerifier,
+  generateDeviceId,
   generateState,
   getPendingOAuth,
+  oauthScope,
   parseCallbackParams,
   savePendingOAuth,
   type OAuthSessionState,
@@ -69,8 +71,31 @@ describe('oauth-pkce', () => {
     });
   });
 
+  describe('generateDeviceId', () => {
+    it('returns a fresh device id of at least 10 base64url characters', () => {
+      const first = generateDeviceId();
+      const second = generateDeviceId();
+      expect(first.length).toBeGreaterThanOrEqual(10);
+      expect(first).not.toBe(second);
+      expect(first).toMatch(/^[A-Za-z0-9_-]{10,}$/);
+    });
+  });
+
+  describe('oauthScope', () => {
+    it('builds the stable MSC2966/2967 scope with a concrete device id', () => {
+      expect(oauthScope('device1234567890')).toBe(
+        'openid urn:matrix:client:api:* urn:matrix:client:device:device1234567890',
+      );
+    });
+
+    it('never mixes unstable scopes into the request', () => {
+      expect(oauthScope(generateDeviceId())).not.toContain('urn:matrix:org.matrix.msc2967');
+    });
+  });
+
   describe('buildAuthorizationUrl', () => {
     const metadata = { authorizationEndpoint: 'https://account.matrix.org/authorize' };
+    const deviceId = 'device1234567';
 
     it('includes every authorization-code+PKCE parameter', () => {
       const url = new URL(
@@ -79,6 +104,7 @@ describe('oauth-pkce', () => {
           redirectUri: 'http://localhost:4200/callback',
           state: 'st',
           codeChallenge: 'cc',
+          deviceId,
         }),
       );
       expect(url.origin).toBe('https://account.matrix.org');
@@ -87,7 +113,7 @@ describe('oauth-pkce', () => {
       expect(url.searchParams.get('client_id')).toBe('cid');
       expect(url.searchParams.get('redirect_uri')).toBe('http://localhost:4200/callback');
       expect(url.searchParams.get('scope')).toBe(
-        'openid urn:matrix:client:api:* urn:matrix:org.matrix.msc2967.client:device:*',
+        'openid urn:matrix:client:api:* urn:matrix:client:device:device1234567',
       );
       expect(url.searchParams.get('state')).toBe('st');
       expect(url.searchParams.get('code_challenge')).toBe('cc');
@@ -102,6 +128,7 @@ describe('oauth-pkce', () => {
           redirectUri: 'http://localhost:4200/callback',
           state: 'st',
           codeChallenge: 'cc',
+          deviceId,
         }),
       );
       expect(url.searchParams.get('response_mode')).toBe('query');
@@ -114,6 +141,7 @@ describe('oauth-pkce', () => {
           redirectUri: 'http://127.0.0.1:4200/callback',
           state: 'st',
           codeChallenge: 'cc',
+          deviceId,
         }),
       );
       expect(url.searchParams.get('response_mode')).toBe('query');
@@ -126,6 +154,7 @@ describe('oauth-pkce', () => {
           redirectUri: 'https://app.example/callback',
           state: 'st',
           codeChallenge: 'cc',
+          deviceId,
         }),
       );
       expect(url.searchParams.get('response_mode')).toBe('fragment');
@@ -138,6 +167,7 @@ describe('oauth-pkce', () => {
           redirectUri: 'https://app.example/callback',
           state: 'st',
           codeChallenge: 'cc',
+          deviceId,
           prompt: 'create',
         }),
       );

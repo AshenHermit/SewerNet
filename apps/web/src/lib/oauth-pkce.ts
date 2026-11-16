@@ -1,8 +1,8 @@
 import type { MasOidcMetadata } from '@sewer-net/types';
 
-/** MSC2964 scope: basic identity + full client API + device registration. */
-export const OAUTH_SCOPE =
-  'openid urn:matrix:client:api:* urn:matrix:org.matrix.msc2967.client:device:*';
+/** MSC2966/2967 stable scopes: basic identity + full client API.
+ *  The device scope is appended per flow with a concrete device id. */
+export const OAUTH_SCOPE = 'openid urn:matrix:client:api:*';
 
 const PENDING_KEY = 'sewernet:oauth';
 
@@ -58,6 +58,17 @@ export function generateCodeVerifier(): string {
   return randomBase64Url(32);
 }
 
+/** 9 random bytes → 12 base64url characters: a device id that satisfies the
+ *  MAS device-scope policy (≥10 chars from the base64url-compatible charset). */
+export function generateDeviceId(): string {
+  return randomBase64Url(9);
+}
+
+/** MSC2967 stable scopes: full client API + registration of OUR device. */
+export function oauthScope(deviceId: string): string {
+  return `${OAUTH_SCOPE} urn:matrix:client:device:${deviceId}`;
+}
+
 /** RFC 7636 S256: base64url(SHA-256(verifier)), no padding. */
 export async function codeChallengeS256(verifier: string): Promise<string> {
   const digest = await crypto.subtle.digest(
@@ -83,6 +94,7 @@ export function buildAuthorizationUrl(
     redirectUri: string;
     state: string;
     codeChallenge: string;
+    deviceId: string;
     prompt?: 'create';
   },
 ): string {
@@ -91,7 +103,7 @@ export function buildAuthorizationUrl(
   params.set('response_type', 'code');
   params.set('client_id', opts.clientId);
   params.set('redirect_uri', opts.redirectUri);
-  params.set('scope', OAUTH_SCOPE);
+  params.set('scope', oauthScope(opts.deviceId));
   params.set('state', opts.state);
   params.set('code_challenge', opts.codeChallenge);
   params.set('code_challenge_method', 'S256');

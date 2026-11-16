@@ -25,6 +25,7 @@ vi.mock('../../lib/matrix-client', () => ({
 vi.mock('../../lib/oauth-pkce', () => ({
   generateState: vi.fn(() => 'st'),
   generateCodeVerifier: vi.fn(() => 'cv'),
+  generateDeviceId: vi.fn(() => 'device1234567'),
   codeChallengeS256: vi.fn(async () => 'cc'),
   buildAuthorizationUrl: vi.fn(
     () => 'https://account.matrix.org/authorize?response_type=code',
