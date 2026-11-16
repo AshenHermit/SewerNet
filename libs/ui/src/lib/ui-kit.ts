@@ -3,7 +3,10 @@ import type {
   ComponentType,
   HTMLAttributes,
   InputHTMLAttributes,
+  ReactNode,
 } from 'react';
+import type { MatrixRoomEvent, MasOidcMetadata } from '@sewer-net/types';
+import type { FontId, ThemeMode } from '@sewer-net/themes';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
@@ -41,6 +44,166 @@ export interface MessageBubbleProps extends HTMLAttributes<HTMLDivElement> {
   text: string;
 }
 
+/** Заголовок чата: кнопка "назад", иконка комнаты, название, ID комнаты. */
+export interface ChatViewHeaderProps extends HTMLAttributes<HTMLDivElement> {
+  onBack?: () => void;
+  backLabel?: ReactNode;
+  avatar?: ReactNode;
+  title: string;
+  subtitle?: string;
+}
+
+/** Список сообщений: состояние загрузки / пусто / список событий. */
+export interface ChatViewMessageListProps extends HTMLAttributes<HTMLDivElement> {
+  events: MatrixRoomEvent[];
+  loading?: boolean;
+  /** ID текущего пользователя, чтобы вычислять own для каждого сообщения. */
+  currentUserId?: string;
+  /** Ссылка на sentinel-элемент в конце списка (для скролла вниз). */
+  bottomRef?: React.RefObject<HTMLDivElement>;
+}
+
+/** Одно сообщение в списке чата. */
+export interface ChatViewMessageProps extends HTMLAttributes<HTMLDivElement> {
+  event: MatrixRoomEvent;
+  own?: boolean;
+}
+
+/** Блок ошибки чата. */
+export interface ChatViewErrorProps extends HTMLAttributes<HTMLDivElement> {
+  error?: string;
+}
+
+/** Форма ввода сообщения. */
+export interface ChatViewInputFormProps extends HTMLAttributes<HTMLFormElement> {
+  draft: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  sending?: boolean;
+  onAttach?: () => void;
+}
+
+/** Поле поиска в списке комнат. */
+export interface RoomListSearchProps extends HTMLAttributes<HTMLDivElement> {
+  query: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+/** Пустое состояние списка комнат (загрузка / нет чатов). */
+export interface RoomListEmptyProps extends HTMLAttributes<HTMLDivElement> {
+  loading?: boolean;
+  loadingLabel?: ReactNode;
+  emptyLabel?: ReactNode;
+}
+
+/** Содержимое элемента списка комнат: иконка, имя, превью. */
+export interface RoomListItemContentProps extends HTMLAttributes<HTMLDivElement> {
+  icon?: ReactNode;
+  name: string;
+  preview?: string;
+  unread?: number;
+}
+
+/** Левая навигационная панель (кнопки: тема, настройки, выход). */
+export interface RailProps extends HTMLAttributes<HTMLDivElement> {
+  mode?: ThemeMode;
+  onThemeToggle?: () => void;
+  onSettings?: () => void;
+  onLogout?: () => void;
+}
+
+/** Кнопка навигации на рельсе. */
+export interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  icon: string;
+  title: string;
+  active?: boolean;
+}
+
+/** Панель внешнего вида (кит, режим, акцент, шрифт, радиус).
+ *  Весь пользовательский текст приходит через props (переводы — в apps/web). */
+export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
+  onClose: () => void;
+  closeAriaLabel: string;
+  appearanceLabel: string;
+  interfaceLabel: string;
+  colorSchemeLabel: string;
+  accentLabel: string;
+  fontLabel: string;
+  radiusLabel: string;
+  resetLabel: string;
+  kitId: string;
+  kitLabel: string;
+  onKitChange: (kitId: string) => void;
+  mode: ThemeMode;
+  onModeChange: (mode: ThemeMode) => void;
+  modeOptions: { value: ThemeMode; label: string }[];
+  accent: string;
+  onAccentChange: (accent: string) => void;
+  accentPresets: { id: string; label: string; value: string }[];
+  font: FontId;
+  onFontChange: (font: FontId) => void;
+  fontOptions: { id: FontId; label: string }[];
+  radius: number;
+  onRadiusChange: (radius: number) => void;
+  onReset: () => void;
+}
+
+/** Вариант выбора UI-kit. */
+export interface KitOptionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  kitId: string;
+  label: string;
+  active: boolean;
+  onSelect: (kitId: string) => void;
+}
+
+/** Форма входа по паролю. */
+export interface LoginFormProps extends HTMLAttributes<HTMLFormElement> {
+  usernameLabel: ReactNode;
+  passwordLabel: ReactNode;
+  submitLabel: ReactNode;
+  onSubmit: () => void;
+  user: string;
+  onUserChange: (value: string) => void;
+  password: string;
+  onPasswordChange: (value: string) => void;
+  invalid: boolean;
+  error?: string;
+  loading: boolean;
+}
+
+/** Экран входа. Весь пользовательский текст приходит через props. */
+export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
+  appName: string;
+  subtitle: string;
+  homeserverUrl: string;
+  homeserverLabel: string;
+  usernameLabel: ReactNode;
+  passwordLabel: ReactNode;
+  signInLabel: ReactNode;
+  onHomeserverChange: (value: string) => void;
+  onHomeserverBlur: () => void;
+  mas: MasOidcMetadata | null;
+  resolving: boolean;
+  starting: boolean;
+  error: string | null;
+  onContinueWithMatrix: (prompt?: string) => void;
+  continueLabel: string;
+  createAccountLabel: string;
+  onTogglePasswordForm: () => void;
+  passwordFormLabel: ReactNode;
+  user: string;
+  onUserChange: (value: string) => void;
+  password: string;
+  onPasswordChange: (value: string) => void;
+  passwordLoading: boolean;
+  passwordError: string | null;
+  onSignIn: () => void;
+}
+
+/** Общий экран чата (рельса + список комнат + вид чата). */
+export interface ChatScreenProps extends HTMLAttributes<HTMLDivElement> {}
+
 /**
  * A UI kit is a set of concrete component implementations.
  * Proxy components render the kit that is currently selected in the theme settings,
@@ -56,4 +219,19 @@ export interface UiKit {
   RoomListItem: ComponentType<RoomListItemProps>;
   ChatViewPanel: ComponentType<ChatViewPanelProps>;
   MessageBubble: ComponentType<MessageBubbleProps>;
+  ChatViewHeader: ComponentType<ChatViewHeaderProps>;
+  ChatViewMessageList: ComponentType<ChatViewMessageListProps>;
+  ChatViewMessage: ComponentType<ChatViewMessageProps>;
+  ChatViewError: ComponentType<ChatViewErrorProps>;
+  ChatViewInputForm: ComponentType<ChatViewInputFormProps>;
+  RoomListSearch: ComponentType<RoomListSearchProps>;
+  RoomListEmpty: ComponentType<RoomListEmptyProps>;
+  RoomListItemContent: ComponentType<RoomListItemContentProps>;
+  Rail: ComponentType<RailProps>;
+  RailButton: ComponentType<RailButtonProps>;
+  SettingsPanel: ComponentType<SettingsPanelProps>;
+  KitOption: ComponentType<KitOptionProps>;
+  LoginScreen: ComponentType<LoginScreenProps>;
+  LoginForm: ComponentType<LoginFormProps>;
+  ChatScreen: ComponentType<ChatScreenProps>;
 }

@@ -19,6 +19,8 @@
     ]
   },
   "dependencies": {
+    "@sewer-net/themes": "^0.0.1",
+    "@sewer-net/types": "^0.0.1",
     "@sewer-net/utils": "^0.0.1"
   }
 }

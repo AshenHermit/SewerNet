@@ -21,6 +21,18 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 5. **Монорепо-резолюция**: без `tsconfig` paths — через `package.json exports` (`@sewer-net/*`) + npm workspaces + `customConditions: ["@sewer-net/source"]`; библиотеки non-buildable (source-потребление).
 6. **Авторизация через MAS (OAuth 2.0)**: frontend ведёт браузер на `authorization_endpoint` (authorization code + PKCE S256, MSC2964/2965/2966); backend stateless проксирует динамическую регистрацию клиента (RFC 7591, без кэша — MAS дедуплицирует по хэшу метаданных), обмен кода и refresh grant (`/api/matrix/oauth/discover|register|token`, OIDC-эндпоинты всегда из `{issuer}/.well-known/openid-configuration`). PKCE/state — на фронте (`sessionStorage sewernet:oauth`); `response_mode`: `query` для loopback http, `fragment` для https; callback читает оба. Access token MAS — обычный Matrix Bearer в существующем proxy; при 401 — один refresh + retry, неудача refresh → logout. Парольный вход сохранён как fallback (homeserver'ы без MAS).
 
+## 7. Правила рендеринга UI (ui-kit)
+
+Клиентское приложение (`apps/web`) не должно содержать inline-стили (классы Tailwind, `className`, атрибут `style`) и голые HTML-элементы для оформления. Вся разметка, стили и темизация живут в ui-kit (`libs/ui`).
+
+1. **`apps/web` — только данные и логика.** Компоненты приложения передают данные через props и обрабатывают события. Никаких `className`, `style`, CSS-переменных `--sn-*` напрямую в разметке приложения, никаких голых `<div>`, `<section>`, `<header>`, `<nav>`, `<form>`, `<button>`, `<input>`, `<label>`, `<span>`, `<h1>`, `<h2>`, `<h3>`, `<p>`, `<ul>`, `<li>` и т.п. для оформления.
+2. **`libs/ui` — только разметка и стили.** UI-kit содержит конкретные реализации компонентов (shadcn kit и др.). Всё оформление — Tailwind классы и CSS-переменные `--sn-*` внутри kits.
+3. **Compound Components + props.** Для композиции используется паттерн Compound Components: родительский компонент (например, `ProxyChatViewPanel`) принимает дочерние элементы, а дочерние части рендерятся через отдельные компоненты из ui-kit (`ChatViewHeader`, `ChatViewMessageList`, `ChatViewMessage`, `ChatViewError`, `ChatViewInputForm` и т.п.). Данные передаются через props.
+4. **Proxy-компоненты.** Каждый компонент из ui-kit имеет соответствующий `Proxy*` компонент, который берёт актуальный kit из `UiKitProvider` и рендерит `kit.<Component>`. Приложение импортирует только `Proxy*` из `@sewer-net/ui`.
+5. **forwardRef / callbacks ref.** Где приложению нужен прямой доступ к DOM-узлу (например, `bottomRef` для скролла в `ChatView`), используется `forwardRef` или callback ref, передаваемый через props.
+6. **Переводы.** `Trans` / `t()` остаются в `apps/web` (логика приложения), ui-kit компоненты принимают уже готовые строки/ноды через props (`label`, `placeholder`, `title`, `children`).
+7. **Исключений нет.** Любой новый экран/компонент в `apps/web` пишется без стилей с первого коммита.
+
 ## Поток данных
 ```
 web (React)
