@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { ProxyButton, ProxyChatViewPanel, ProxyInput } from '@sewer-net/ui';
+import {
+  ProxyButton,
+  ProxyChatViewPanel,
+  ProxyChatViewMessage,
+  ProxyInput,
+} from '@sewer-net/ui';
 import { ProxyIcon } from '@sewer-net/icons';
 import { matrixClient } from '../../lib/matrix-client';
 import { useAuthStore } from '../stores/auth-store';
@@ -9,7 +14,6 @@ import {
   roomNameFromEvents,
   useChatStore,
 } from '../stores/chat-store';
-import { MessageBubble } from './message-bubble';
 
 interface ChatViewProps {
   onAuthError: (err: unknown) => void;
@@ -183,7 +187,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
           ) : (
             <ul className="flex flex-col gap-1.5">
               {events.map((event) => (
-                <MessageBubble
+                <ProxyChatViewMessage
                   key={event.event_id}
                   event={event}
                   own={event.sender === session.userId}
