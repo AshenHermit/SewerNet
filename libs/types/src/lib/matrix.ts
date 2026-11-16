@@ -49,3 +49,43 @@ export interface MatrixErrorBody {
   errcode: string;
   error: string;
 }
+
+/** OIDC discovery document of a Matrix Authentication Service, camelCased. */
+export interface MasOidcMetadata {
+  issuer: string;
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  registrationEndpoint: string;
+  responseModesSupported: string[];
+  promptValuesSupported?: string[];
+}
+
+export interface OauthDiscoverRequest {
+  issuer: string;
+}
+
+export interface OauthRegisterRequest {
+  issuer: string;
+  redirectUri: string;
+}
+
+export interface OauthRegisterResponse {
+  clientId: string;
+}
+
+export interface OauthTokenRequest {
+  issuer: string;
+  clientId: string;
+  redirectUri?: string;
+  code?: string;
+  codeVerifier?: string;
+  grantType: 'authorization_code' | 'refresh_token';
+  refreshToken?: string;
+}
+
+export interface OauthTokenResponse {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  scope?: string;
+}
