@@ -17,8 +17,9 @@
 - [ ] Tauri desktop-обёртка apps/desktop
 - [ ] GitHub Actions CI (typecheck,lint,test,build) + сборки
 - [ ] docker-compose для prod (backend + landing + reverse proxy)
+- [x] Холодная загрузка списка комнат: один sliding-sync room-list запрос (окна по 20 через `pos`), имена/топик/превью сразу; фолбэк на `joined_rooms` для старых homeserver'ов
 - [ ] Синхронизация сообщений: /sync long-poll вместо ручного обновления
-- [ ] Пагинация истории (from/pagination tokens), загрузка превью комнат (state events)
+- [ ] Пагинация истории (from/pagination tokens)
 - [ ] Переключатель языка в UI (сейчас автоопределение + persist)
 
 ## Сразу после MVP

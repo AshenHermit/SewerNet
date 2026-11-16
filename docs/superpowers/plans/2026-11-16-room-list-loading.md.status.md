@@ -47,17 +47,22 @@
 
 ## Осталось (добирается в этой сессии)
 
-## Task 8: Фолбэк при отсутствии sliding-sync (Review Focus #1)
-- [ ] Failing тест: sync → 404/400 ⇒ `joined_rooms` + обогащение (`m.room.name` + `messages?limit=1`), ошибки нет
-- [ ] Реализовать фолбэк в `chat-screen.tsx` (только 404/400, остальные ошибки — как раньше)
-- [ ] Коммит `feat(web): fall back to joined_rooms when sliding-sync is unavailable`
+## Task 8: Фолбэк при отсутствии sliding-sync (Review Focus #1) — DONE (5cca416)
+- [x] Failing тест: sync → 404/400 ⇒ `joined_rooms` + обогащение (`m.room.name` + `messages?limit=1`), ошибки нет
+- [x] Реализовано в `chat-screen.tsx`: `loadRoomList` → `getSyncedRooms`, при `MatrixApiError` 400/404 → `loadLegacyRooms`
+- [x] Прочие ошибки по-прежнему пробрасываются в `setError`
 
-## Task 9: Превью комнаты из `topic` (RoomInfo.topic в списке)
-- [ ] Failing тест ui-kit/app: при пустом `preview` вторая строка показывает `topic`
-- [ ] `RoomListItemContent` получает `topic`; `room-list.tsx` передаёт `room.topic`
-- [ ] Аватары (`mxc://`) отложены: нет media-proxy на бэкенде — отдельная задача.
+## Task 9: Превью комнаты из `topic` (RoomInfo.topic в списке) — DONE (207931a)
+- [x] Failing тест `proxy-room-list-item-content.spec.tsx`: при пустом `preview` показывается `topic`
+- [x] `RoomListItemContentProps.topic` + shadcn-реализация (`preview ?? topic`), `room-list.tsx` передаёт `room.topic`
+- Аватары (`mxc://`) отложены: нет media-proxy на бэкенде — отдельная задача.
 
-## Task 10: Открытие комнаты не должно падать из-за опциональных запросов
-- [ ] Failing тест: `/threads`/`/aliases` → 403/404, история всё равно загружается
-- [ ] `Promise.all` → `Promise.allSettled` для опциональных запросов в `chat-view.tsx`
-- [ ] Финальный прогон `typecheck,lint,test,build` + коммит
+## Task 10: Открытие комнаты не должно падать из-за опциональных запросов — DONE (406a403)
+- [x] Failing тест: `/members`, `/threads`, `/aliases` → 403, история всё равно загружается, `error === null`
+- [x] `Promise.all` → `Promise.allSettled`; падение `/messages` по-прежнему даёт ошибку
+- [x] Финальный прогон `typecheck,lint,test,build` → 8/8 проектов зелёные; unused `eslint-disable` убран
+
+## Итог
+
+Все таски плана (1–10) выполнены. `npx nx run-many -t typecheck,lint,test,build --skip-nx-cache`
+→ 8/8 проектов зелёные (web: 52 теста, backend: 3 suites / 27 тестов, ui: 17 тестов).

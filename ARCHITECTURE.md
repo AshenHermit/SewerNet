@@ -33,6 +33,32 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 6. **Переводы.** `Trans` / `t()` остаются в `apps/web` (логика приложения), ui-kit компоненты принимают уже готовые строки/ноды через props (`label`, `placeholder`, `title`, `children`).
 7. **Исключений нет.** Любой новый экран/компонент в `apps/web` пишется без стилей с первого коммита.
 
+## Загрузка списка комнат
+
+```
+web chat-screen
+  └─ matrixClient.getSyncedRooms()      → POST /api/matrix/sync/room-list
+       └─ NestJS: MatrixService.syncRoomList()
+            └─ POST {hs}/_matrix/client/unstable/org.matrix.simplified_msc3575/sync
+                 body: conn_id=room-list, ranges=[[0,19]], timeline_limit=1
+                 required_state: m.room.name|avatar|topic|canonical_alias|member($ME,$LAZY)
+                 → окна по 20 комнат через `pos`, максимум 10 окон (200 комнат)
+       └─ mapSyncedRooms(): порядок из lists.all_rooms.ops, имя =
+          m.room.name → canonical_alias → собеседник из m.direct → room id
+  └─ 400/404 от sliding-sync (старый homeserver) → фолбэк:
+       joined_rooms + m.room.name + messages?limit=1 по каждой комнате
+```
+
+- Открытие комнаты: пять запросов в одном круге (`/state m.room.name`,
+  `/messages?limit=50`, `/members`, `/threads?limit=30`, `/aliases`);
+  `/state` и `/messages` обязательны, остальные через `Promise.allSettled` —
+  их 403/404 не мешает показать историю. `read_markers` — побочный эффект,
+  ошибка не выводится.
+- Backend может ходить на homeserver через системный прокси: если задан
+  `HTTPS_PROXY`/`HTTP_PROXY` (или в нижнем регистре), `apps/backend/src/main.ts`
+  ставит undici `EnvHttpProxyAgent` (`NO_PROXY` соблюдается). Без прокси
+  dispatcher не меняется.
+
 ## Поток данных
 ```
 web (React)
