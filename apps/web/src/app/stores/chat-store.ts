@@ -6,6 +6,8 @@ export interface RoomInfo {
   name: string;
   preview: string;
   lastTs: number;
+  avatar?: string;
+  topic?: string;
 }
 
 interface ChatState {

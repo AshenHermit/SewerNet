@@ -89,3 +89,44 @@ export interface OauthTokenResponse {
   expiresIn?: number;
   scope?: string;
 }
+
+/** Тело запроса списка комнат sliding-sync (MSC3575, комната "все комнаты"). */
+export interface SlidingSyncRoomListRequest {
+  conn_id: string;
+  lists: {
+    all_rooms: {
+      ranges: [number, number][];
+      required_state: string[];
+      timeline_limit: number;
+      filters: Record<string, unknown>;
+    };
+  };
+  extensions: Record<string, unknown>;
+}
+
+/** Ответ эндпоинта sliding-sync /sync для списка комнат. */
+export interface SlidingSyncRoomListResponse {
+  pos: string;
+  lists: {
+    all_rooms: {
+      count: number;
+      ops: Array<{
+        op: string;
+        range: [number, number];
+        room_ids: string[];
+      }>;
+    };
+  };
+  rooms: Record<string, any>;
+  extensions: any;
+}
+
+/** Комната, приведённая из sliding-sync к клиентскому виду. */
+export interface SyncedRoomInfo {
+  room_id: string;
+  name?: string;
+  avatar?: string;
+  topic?: string;
+  preview?: string;
+  lastTs?: number;
+}
