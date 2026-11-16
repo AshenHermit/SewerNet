@@ -100,6 +100,63 @@ describe('ChatScreen', () => {
     expect(stored[0].id).toBe('!r1:matrix.org');
   });
 
+  it('фолбэк на joined_rooms, когда sliding-sync не поддерживается', async () => {
+    const calls = installFetch((url) => {
+      if (url === '/api/matrix/sync/room-list') {
+        return new Response(
+          JSON.stringify({
+            errcode: 'M_UNRECOGNIZED',
+            error: 'Unrecognized request',
+          }),
+          { status: 404 },
+        );
+      }
+      if (url === '/api/matrix/rooms') {
+        return new Response(
+          JSON.stringify({ joined_rooms: ['!a:matrix.org'] }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith('/state/m.room.name')) {
+        return new Response(JSON.stringify({ name: 'Fallback Room' }), {
+          status: 200,
+        });
+      }
+      if (url.includes('/messages?')) {
+        return new Response(
+          JSON.stringify({
+            chunk: [
+              {
+                event_id: '$e',
+                type: 'm.room.message',
+                content: { body: 'last msg' },
+                origin_server_ts: 777,
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response('{}', { status: 404 });
+    });
+    useAuthStore.setState({ session });
+
+    renderScreen();
+
+    await waitFor(() =>
+      expect(useChatStore.getState().rooms).toHaveLength(1),
+    );
+
+    expect(useChatStore.getState().rooms[0]).toMatchObject({
+      id: '!a:matrix.org',
+      name: 'Fallback Room',
+      preview: 'last msg',
+      lastTs: 777,
+    });
+    expect(useChatStore.getState().error).toBeNull();
+    expect(calls.some((call) => call.url === '/api/matrix/rooms')).toBe(true);
+  });
+
   it('ставит ошибку в стор при неудаче getSyncedRooms', async () => {
     installFetch(() =>
       new Response(
