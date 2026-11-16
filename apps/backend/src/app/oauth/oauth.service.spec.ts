@@ -123,6 +123,38 @@ describe('OauthService', () => {
         restore();
       }
     });
+
+    it('registers a loopback http redirect as a native application', async () => {
+      const { calls, restore } = mockFetch((url) => {
+        if (url === 'https://account.matrix.org/oauth2/registration') {
+          return new Response(JSON.stringify({ client_id: 'cid_native' }), {
+            status: 201,
+          });
+        }
+        return oidcResponder(url);
+      });
+      try {
+        const result = await service.register(
+          'https://account.matrix.org',
+          'http://localhost:4200/callback',
+        );
+        expect(result).toEqual({ clientId: 'cid_native' });
+        const registration = calls.find(
+          (call) => call.url === 'https://account.matrix.org/oauth2/registration',
+        );
+        expect(JSON.parse(String(registration?.init.body))).toEqual({
+          client_name: 'SewerNet',
+          client_uri: 'https://sewernet.dev',
+          redirect_uris: ['http://localhost:4200/callback'],
+          response_types: ['code'],
+          grant_types: ['authorization_code', 'refresh_token'],
+          token_endpoint_auth_method: 'none',
+          application_type: 'native',
+        });
+      } finally {
+        restore();
+      }
+    });
   });
 
   describe('token', () => {

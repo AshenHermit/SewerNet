@@ -78,14 +78,20 @@ export class OauthService {
   /** RFC7591 dynamic client registration; the redirect URI defines the client. */
   async register(issuer: string, redirectUri: string): Promise<{ clientId: string }> {
     const metadata = await this.oidcMetadata(issuer);
+    // MAS policy: https-only client_uri (localhost even over https is rejected)
+    // and plain-http redirects only as `native` loopback apps.
+    const redirect = new URL(redirectUri);
+    const loopbackHttp =
+      redirect.protocol === 'http:' &&
+      ['localhost', '127.0.0.1', '[::1]', '::1'].includes(redirect.hostname);
     const clientMetadata = {
       client_name: 'SewerNet',
-      client_uri: new URL(redirectUri).origin,
+      client_uri: loopbackHttp ? 'https://sewernet.dev' : redirect.origin,
       redirect_uris: [redirectUri],
       response_types: ['code'],
       grant_types: ['authorization_code', 'refresh_token'],
       token_endpoint_auth_method: 'none',
-      application_type: 'web',
+      application_type: loopbackHttp ? 'native' : 'web',
     };
     const response = await fetch(metadata.registrationEndpoint, {
       method: 'POST',
