@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Trans } from '@lingui/react/macro';
-import { ProxyButton, ProxyInput } from '@sewer-net/ui';
-import { ProxyIcon } from '@sewer-net/icons';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLingui } from '@lingui/react/macro';
+import { ProxyLoginScreen } from '@sewer-net/ui';
 import {
   discoverMasAuth,
   matrixClient,
@@ -20,6 +19,7 @@ import { useAuthStore } from '../stores/auth-store';
 
 export function LoginScreen() {
   const setSession = useAuthStore((state) => state.setSession);
+  const { t } = useLingui();
   const [homeserverUrl, setHomeserverUrl] = useState('https://matrix.org');
   const [resolvedHomeserver, setResolvedHomeserver] = useState<string | null>(null);
   const [mas, setMas] = useState<MasAuthMetadata | null>(null);
@@ -32,7 +32,6 @@ export function LoginScreen() {
 
   const discoverSeq = useRef(0);
   const discover = useCallback(async (input: string) => {
-    // A discovery that settles after a newer one must not overwrite its result.
     const seq = ++discoverSeq.current;
     setResolving(true);
     setError(null);
@@ -44,7 +43,6 @@ export function LoginScreen() {
       setMas(metadata);
     } catch {
       if (seq !== discoverSeq.current) return;
-      // No MAS announcement (or network trouble): password form fallback.
       setMas(null);
     } finally {
       if (seq === discoverSeq.current) setResolving(false);
@@ -55,10 +53,8 @@ export function LoginScreen() {
     void discover('https://matrix.org');
   }, [discover]);
 
-  async function handlePasswordSubmit(event: FormEvent) {
-    event.preventDefault();
+  const onSignIn = useCallback(async () => {
     if (!homeserverUrl || !user || !password) return;
-
     setLoading(true);
     setError(null);
     try {
@@ -74,138 +70,74 @@ export function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [homeserverUrl, user, password, setSession, setLoading, setError]);
 
-  async function startOAuth(prompt?: 'create') {
-    if (!mas || starting) return;
-    setStarting(true);
-    setError(null);
-    try {
-      const redirectUri = `${window.location.origin}/callback`;
-      const state = generateState();
-      const codeVerifier = generateCodeVerifier();
-      const codeChallenge = await codeChallengeS256(codeVerifier);
-      const deviceId = generateDeviceId();
-      const clientId = await matrixClient.registerOauthClient(mas.issuer, redirectUri);
-      savePendingOAuth({
-        homeserverUrl: resolvedHomeserver ?? homeserverUrl,
-        issuer: mas.issuer,
-        clientId,
-        redirectUri,
-        state,
-        codeVerifier,
-        ...(prompt ? { prompt } : {}),
-      });
-      window.location.assign(
-        buildAuthorizationUrl(mas, {
+  const startOAuth = useCallback(
+    async (prompt?: 'create') => {
+      if (!mas || starting) return;
+      setStarting(true);
+      setError(null);
+      try {
+        const redirectUri = `${window.location.origin}/callback`;
+        const state = generateState();
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await codeChallengeS256(codeVerifier);
+        const deviceId = generateDeviceId();
+        const clientId = await matrixClient.registerOauthClient(mas.issuer, redirectUri);
+        savePendingOAuth({
+          homeserverUrl: resolvedHomeserver ?? homeserverUrl,
+          issuer: mas.issuer,
           clientId,
           redirectUri,
           state,
-          codeChallenge,
-          deviceId,
-          prompt,
-        }),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-      setStarting(false);
-    }
-  }
-
-  const passwordForm = (
-    <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-[var(--sn-text-muted)]">
-          <Trans>Username</Trans>
-        </span>
-        <ProxyInput
-          value={user}
-          onChange={(e) => setUser(e.target.value)}
-          placeholder="alice"
-          autoComplete="username"
-        />
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-[var(--sn-text-muted)]">
-          <Trans>Password</Trans>
-        </span>
-        <ProxyInput
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          invalid={Boolean(error)}
-        />
-      </label>
-
-      {error ? (
-        <p className="text-xs text-red-400" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <ProxyButton type="submit" loading={loading} className="mt-2">
-        <Trans>Sign in</Trans>
-      </ProxyButton>
-    </form>
+          codeVerifier,
+          ...(prompt ? { prompt } : {}),
+        });
+        window.location.assign(
+          buildAuthorizationUrl(mas, {
+            clientId,
+            redirectUri,
+            state,
+            codeChallenge,
+            deviceId,
+            prompt,
+          }),
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Login failed');
+        setStarting(false);
+      }
+    },
+    [mas, starting, resolvedHomeserver, homeserverUrl],
   );
 
   return (
-    <div className="flex h-full items-center justify-center bg-[var(--sn-bg)] p-4">
-      <div className="w-full max-w-sm rounded-[calc(var(--sn-radius)*1.5)] border border-[var(--sn-border)] bg-[var(--sn-surface-1)] p-6 shadow-lg">
-        <div className="mb-6 flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--sn-accent)] text-[var(--sn-accent-contrast)]">
-            <ProxyIcon name="message" size={24} />
-          </div>
-          <h1 className="text-lg font-semibold text-[var(--sn-text)]">SewerNet</h1>
-          <p className="text-xs text-[var(--sn-text-muted)]">
-            <Trans>Sign in to your Matrix account</Trans>
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[var(--sn-text-muted)]">
-              <Trans>Homeserver URL</Trans>
-            </span>
-            <ProxyInput
-              value={homeserverUrl}
-              onChange={(e) => setHomeserverUrl(e.target.value)}
-              onBlur={() => void discover(homeserverUrl)}
-              placeholder="https://matrix.org"
-              autoComplete="url"
-              required
-            />
-          </label>
-
-          {mas ? (
-            <>
-              <ProxyButton
-                onClick={() => void startOAuth()}
-                loading={starting || resolving}
-                className="mt-2"
-              >
-                <Trans>Continue with Matrix</Trans>
-              </ProxyButton>
-              <ProxyButton
-                variant="secondary"
-                onClick={() => void startOAuth('create')}
-                disabled={starting}
-              >
-                <Trans>Create account</Trans>
-              </ProxyButton>
-              <details className="mt-1">
-                <summary className="cursor-pointer text-xs text-[var(--sn-text-muted)]">
-                  <Trans>Sign in with password</Trans>
-                </summary>
-                <div className="mt-3">{passwordForm}</div>
-              </details>
-            </>
-          ) : (
-            passwordForm
-          )}
-        </div>
-      </div>
-    </div>
+    <ProxyLoginScreen
+      appName={t`SewerNet`}
+      subtitle={t`Sign in to your Matrix account`}
+      homeserverUrl={homeserverUrl}
+      homeserverLabel={t`Homeserver URL`}
+      usernameLabel={t`Username`}
+      passwordLabel={t`Password`}
+      signInLabel={t`Sign in`}
+      onHomeserverChange={(value) => setHomeserverUrl(value)}
+      onHomeserverBlur={() => void discover(homeserverUrl)}
+      mas={mas}
+      resolving={resolving}
+      starting={starting}
+      error={error}
+      onContinueWithMatrix={(prompt) => void startOAuth(prompt as 'create' | undefined)}
+      continueLabel={t`Continue with Matrix`}
+      createAccountLabel={t`Create account`}
+      onTogglePasswordForm={() => undefined}
+      passwordFormLabel={t`Sign in with password`}
+      user={user}
+      onUserChange={(value) => setUser(value)}
+      password={password}
+      onPasswordChange={(value) => setPassword(value)}
+      passwordLoading={loading}
+      passwordError={error}
+      onSignIn={onSignIn}
+    />
   );
 }

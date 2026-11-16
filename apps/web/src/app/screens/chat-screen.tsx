@@ -5,6 +5,7 @@ import { useChatStore, type RoomInfo } from '../stores/chat-store';
 import { RoomList } from '../components/room-list';
 import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
+import { ProxyChatScreen } from '@sewer-net/ui';
 
 export function ChatScreen() {
   const session = useAuthStore((state) => state.session);
@@ -55,10 +56,10 @@ export function ChatScreen() {
   }, [session, handleAuthError]);
 
   return (
-    <div className="flex h-full overflow-hidden bg-[var(--sn-bg)]">
+    <ProxyChatScreen>
       <Rail />
       <RoomList />
       <ChatView onAuthError={handleAuthError} />
-    </div>
+    </ProxyChatScreen>
   );
 }
