@@ -168,7 +168,10 @@ describe('ChatView', () => {
         );
       }
       if (url.includes('/read_markers')) {
-        return new Response(JSON.stringify({}), { status: 200 });
+        return new Response(
+          JSON.stringify({ errcode: 'M_FORBIDDEN', error: 'Forbidden' }),
+          { status: 403 },
+        );
       }
       // /members, /threads, /aliases — 403 на чужих/старых homeserver'ах.
       return new Response(

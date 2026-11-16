@@ -94,7 +94,7 @@ describe('ChatScreen', () => {
     expect(r1?.lastTs).toBe(100);
     expect(r1?.avatar).toBe('a');
     expect(r1?.topic).toBe('t');
-    expect(r2?.name).toBe('!…:matrix.org');
+    expect(r2?.name).toBe('!r2:matrix.org');
     expect(r2?.lastTs).toBe(50);
     // Сортировка по lastTs по убыванию.
     expect(stored[0].id).toBe('!r1:matrix.org');
@@ -155,6 +155,32 @@ describe('ChatScreen', () => {
     });
     expect(useChatStore.getState().error).toBeNull();
     expect(calls.some((call) => call.url === '/api/matrix/rooms')).toBe(true);
+  });
+
+  it('показывает полный room id, если имени нет ни в state, ни в sliding-sync', async () => {
+    installFetch((url) => {
+      if (url === '/api/matrix/sync/room-list') {
+        return new Response(JSON.stringify({ errcode: 'M_UNRECOGNIZED' }), {
+          status: 404,
+        });
+      }
+      if (url === '/api/matrix/rooms') {
+        return new Response(
+          JSON.stringify({ joined_rooms: ['!a:matrix.org'] }),
+          { status: 200 },
+        );
+      }
+      return new Response('{}', { status: 404 });
+    });
+    useAuthStore.setState({ session });
+
+    renderScreen();
+
+    await waitFor(() =>
+      expect(useChatStore.getState().rooms).toHaveLength(1),
+    );
+
+    expect(useChatStore.getState().rooms[0].name).toBe('!a:matrix.org');
   });
 
   it('ставит ошибку в стор при неудаче getSyncedRooms', async () => {

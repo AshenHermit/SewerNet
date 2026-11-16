@@ -11,9 +11,12 @@ import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
 import { ProxyChatScreen } from '@sewer-net/ui';
 
-/** Заглушка имени, когда у комнаты нет m.room.name. */
+/**
+ * Имя комнаты, когда у неё нет ни `m.room.name`, ни алиаса, ни собеседника в
+ * DM. Полный room id полезнее заглушки: по нему комнаты хотя бы различимы.
+ */
 function fallbackRoomName(roomId: string): string {
-  return roomId.replace(/![^:]*:/, '!…:');
+  return roomId;
 }
 
 /**

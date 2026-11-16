@@ -88,13 +88,17 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         setMessages(roomId, messagesRes.chunk);
         loadedRoomRef.current = roomId;
 
-        // Отмечаем последнее событие прочитанным.
+        // Отмечаем последнее событие прочитанным. Это побочный эффект, а не
+        // условие открытия комнаты: homeserver'ы, которые отказывают в
+        // read_markers, не должны рисовать ошибку поверх загруженной истории.
         const lastEvent = messagesRes.chunk[0];
         if (lastEvent?.event_id && !cancelled) {
-          await matrixClient.setReadMarkers(currentSession, roomId, {
-            'm.fully_read': lastEvent.event_id,
-            'm.read': lastEvent.event_id,
-          });
+          void matrixClient
+            .setReadMarkers(currentSession, roomId, {
+              'm.fully_read': lastEvent.event_id,
+              'm.read': lastEvent.event_id,
+            })
+            .catch(() => undefined);
         }
       } catch (err) {
         if (!cancelled) {
