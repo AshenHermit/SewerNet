@@ -1,5 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { MatrixService } from './matrix.service';
+import type { SlidingSyncRoomListRequest } from '@sewer-net/types';
 
 describe('MatrixService', () => {
   let service: MatrixService;
@@ -137,6 +138,55 @@ describe('MatrixService', () => {
       await expect(
         service.getRoomState('not-a-url', '!room:matrix.org', 'm.room.name'),
       ).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('syncRoomList', () => {
+    it('posts a room-list sliding-sync body and returns the parsed response', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({ pos: '123', rooms: {} }), {
+          status: 200,
+        });
+      }) as unknown as typeof fetch;
+      try {
+        const result = await service.syncRoomList('https://matrix.org', 'token');
+        expect(result).toEqual({ pos: '123', rooms: {} });
+        expect(calls[0]?.url).toBe(
+          'https://matrix.org/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
+        );
+        expect((calls[0]?.init.headers as Record<string, string>)['Authorization']).toBe(
+          'Bearer token',
+        );
+        expect((calls[0]?.init.headers as Record<string, string>)['Content-Type']).toBe(
+          'application/json',
+        );
+        const body = JSON.parse(String(calls[0]?.init.body)) as SlidingSyncRoomListRequest;
+        expect(body.conn_id).toBe('room-list');
+        expect(body.lists.all_rooms.ranges).toEqual([[0, 19]]);
+        expect(body.lists.all_rooms.required_state).toContain('m.room.name');
+        expect(body.lists.all_rooms.timeline_limit).toBe(1);
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('throws HttpException when the homeserver returns 404', async () => {
+      const original = global.fetch;
+      global.fetch = (async () =>
+        new Response(
+          JSON.stringify({ errcode: 'M_UNRECOGNIZED', error: 'Unknown endpoint' }),
+          { status: 404 },
+        )) as unknown as typeof fetch;
+      try {
+        await expect(
+          service.syncRoomList('https://matrix.org', 'token'),
+        ).rejects.toMatchObject({ status: 404 });
+      } finally {
+        global.fetch = original;
+      }
     });
   });
 

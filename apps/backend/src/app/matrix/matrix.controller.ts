@@ -10,7 +10,11 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import type { MatrixLoginRequest } from '@sewer-net/types';
+import type {
+  MatrixLoginRequest,
+  SlidingSyncRoomListResponse,
+  SyncedRoomInfo,
+} from '@sewer-net/types';
 import { MatrixService } from './matrix.service';
 
 const HS = 'x-matrix-homeserver';
@@ -63,6 +67,19 @@ export class MatrixController {
       '/_matrix/client/v3/joined_rooms',
       { token: extractToken(authorization) },
     );
+  }
+
+  @Post('sync/room-list')
+  @HttpCode(200)
+  async getSyncedRoomList(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+  ): Promise<SyncedRoomInfo[]> {
+    const response = await this.matrix.syncRoomList(
+      requireHomeserver(homeserver),
+      extractToken(authorization),
+    );
+    return mapSyncedRooms(response as SlidingSyncRoomListResponse);
   }
 
   @Get('rooms/:roomId/state/:eventType')
@@ -123,4 +140,54 @@ function extractToken(authorization?: string): string | undefined {
   return authorization?.startsWith('Bearer ')
     ? authorization.slice('Bearer '.length)
     : undefined;
+}
+
+/** Превращает ответ sliding-sync в массив SyncedRoomInfo. */
+function mapSyncedRooms(
+  response: SlidingSyncRoomListResponse,
+): SyncedRoomInfo[] {
+  const rooms: SyncedRoomInfo[] = [];
+  const rawRooms = response.rooms ?? {};
+  for (const [roomId, raw] of Object.entries(rawRooms)) {
+    const state = (Array.isArray(raw?.state) ? raw.state : []) as {
+      type: string;
+      content?: Record<string, unknown>;
+    }[];
+    const nameEvent = state.find((e) => e.type === 'm.room.name');
+    const avatarEvent = state.find((e) => e.type === 'm.room.avatar');
+    const topicEvent = state.find((e) => e.type === 'm.room.topic');
+    const timeline = raw?.timeline as { events?: unknown } | undefined;
+    const events = (Array.isArray(timeline?.events)
+      ? timeline.events
+      : []) as {
+      origin_server_ts?: unknown;
+      content?: Record<string, unknown>;
+    }[];
+    const last = events[0];
+
+    rooms.push({
+      room_id: roomId,
+      name:
+        typeof nameEvent?.content?.name === 'string'
+          ? (nameEvent.content.name as string)
+          : undefined,
+      avatar:
+        typeof avatarEvent?.content?.url === 'string'
+          ? (avatarEvent.content.url as string)
+          : undefined,
+      topic:
+        typeof topicEvent?.content?.topic === 'string'
+          ? (topicEvent.content.topic as string)
+          : undefined,
+      preview:
+        typeof last?.content?.body === 'string'
+          ? (last.content.body as string)
+          : undefined,
+      lastTs:
+        typeof last?.origin_server_ts === 'number'
+          ? (last.origin_server_ts as number)
+          : undefined,
+    });
+  }
+  return rooms.sort((a, b) => (b.lastTs ?? 0) - (a.lastTs ?? 0));
 }

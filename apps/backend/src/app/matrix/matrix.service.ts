@@ -1,4 +1,5 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
+import type { SlidingSyncRoomListRequest, SlidingSyncRoomListResponse } from '@sewer-net/types';
 
 export interface ProxyOptions {
   method?: string;
@@ -59,6 +60,51 @@ export class MatrixService {
       `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}`,
       { token },
     );
+  }
+
+  /**
+   * Один запрос sliding-sync (MSC3575) за списком комнат с названиями,
+   * аватарами, темами и превью последнего сообщения.
+   * Таймаут больше обычного: слабые homeserver'ы могут долго отвечать.
+   */
+  async syncRoomList(
+    homeserver: string,
+    token?: string,
+  ): Promise<SlidingSyncRoomListResponse> {
+    const body: SlidingSyncRoomListRequest = {
+      conn_id: 'room-list',
+      lists: {
+        all_rooms: {
+          ranges: [[0, 19]],
+          required_state: [
+            'm.room.name',
+            'm.room.avatar',
+            'm.room.topic',
+            'm.room.member',
+            '$LAZY',
+            '$ME',
+          ],
+          timeline_limit: 1,
+          filters: {},
+        },
+      },
+      extensions: {
+        account_data: {},
+        receipts: {},
+        typing: {},
+      },
+    };
+
+    return this.proxy(
+      homeserver,
+      '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
+      {
+        method: 'POST',
+        token,
+        body,
+        timeoutMs: 30_000,
+      },
+    ) as Promise<SlidingSyncRoomListResponse>;
   }
 
   async proxy(
