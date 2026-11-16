@@ -3,3 +3,8 @@ export * from './lib/kits/index.js';
 export * from './lib/proxy/ui-kit-provider.js';
 export * from './lib/proxy/proxy-button.js';
 export * from './lib/proxy/proxy-input.js';
+export * from './lib/proxy/proxy-panel.js';
+export * from './lib/proxy/proxy-room-list-panel.js';
+export * from './lib/proxy/proxy-room-list-item.js';
+export * from './lib/proxy/proxy-chat-view-panel.js';
+export * from './lib/proxy/proxy-message-bubble.js';

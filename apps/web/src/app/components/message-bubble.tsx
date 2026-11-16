@@ -1,7 +1,6 @@
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { MatrixRoomEvent } from '@sewer-net/types';
 import { cn } from '@sewer-net/utils';
+import { ProxyMessageBubble } from '@sewer-net/ui';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], {
@@ -11,8 +10,8 @@ function formatTime(ts: number): string {
 }
 
 /**
- * A single message. The body is rendered as GitHub-flavored Markdown;
- * custom HTML wrappers (per-message styling/effects) arrive later — see ROADMAP.
+ * A single message. Delegates the bubble rendering to the active UI kit
+ * via ProxyMessageBubble; sender name and timestamp are kept as metadata.
  */
 export function MessageBubble({
   event,
@@ -30,31 +29,31 @@ export function MessageBubble({
 
   return (
     <li className={cn('flex', own ? 'justify-end' : 'justify-start')}>
-      <div
+      {!own ? (
+        <p className="mb-0.5 text-xs font-medium text-[var(--sn-text-muted)]">
+          {event.sender}
+        </p>
+      ) : null}
+      <ProxyMessageBubble
+        own={own}
+        text={body}
         className={cn(
           'max-w-[75%] rounded-2xl px-3.5 py-2 text-sm',
           own
             ? 'rounded-br-sm bg-[var(--sn-accent)] text-[var(--sn-accent-contrast)]'
             : 'rounded-bl-sm bg-[var(--sn-surface-2)] text-[var(--sn-text)]',
         )}
+      />
+      <p
+        className={cn(
+          'mt-0.5 text-right text-[10px]',
+          own
+            ? 'text-[var(--sn-accent-contrast)]/60'
+            : 'text-[var(--sn-text-dim)]',
+        )}
       >
-        {!own ? (
-          <p className="mb-0.5 text-xs font-medium text-[var(--sn-text-muted)]">
-            {event.sender}
-          </p>
-        ) : null}
-        <div className="[&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-current/40 [&_blockquote]:pl-2 [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_p]:m-0 [&_p+p]:mt-1 [&_pre]:my-1 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-black/20 [&_pre]:p-2">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
-        </div>
-        <p
-          className={cn(
-            'mt-0.5 text-right text-[10px]',
-            own ? 'text-[var(--sn-accent-contrast)]/60' : 'text-[var(--sn-text-dim)]',
-          )}
-        >
-          {formatTime(event.origin_server_ts)}
-        </p>
-      </div>
+        {formatTime(event.origin_server_ts)}
+      </p>
     </li>
   );
 }
