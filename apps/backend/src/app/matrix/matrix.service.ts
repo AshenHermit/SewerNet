@@ -107,6 +107,55 @@ export class MatrixService {
     ) as Promise<SlidingSyncRoomListResponse>;
   }
 
+  async getRoomMembers(
+    homeserver: string,
+    roomId: string,
+    token?: string,
+  ): Promise<unknown> {
+    return this.proxy(
+      homeserver,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/members`,
+      { token },
+    );
+  }
+
+  async getRoomThreads(
+    homeserver: string,
+    roomId: string,
+    token?: string,
+  ): Promise<unknown> {
+    return this.proxy(
+      homeserver,
+      `/_matrix/client/v1/rooms/${encodeURIComponent(roomId)}/threads`,
+      { token, query: { limit: '30' } },
+    );
+  }
+
+  async getRoomAliases(
+    homeserver: string,
+    roomId: string,
+    token?: string,
+  ): Promise<unknown> {
+    return this.proxy(
+      homeserver,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/aliases`,
+      { token },
+    );
+  }
+
+  async setReadMarkers(
+    homeserver: string,
+    roomId: string,
+    token?: string,
+    body?: Record<string, string>,
+  ): Promise<unknown> {
+    return this.proxy(
+      homeserver,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/read_markers`,
+      { method: 'POST', token, body },
+    );
+  }
+
   async proxy(
     homeserver: string,
     path: string,

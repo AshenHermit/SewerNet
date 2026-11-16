@@ -82,6 +82,61 @@ export class MatrixController {
     return mapSyncedRooms(response as SlidingSyncRoomListResponse);
   }
 
+  @Get('rooms/:roomId/members')
+  roomMembers(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+    @Param('roomId') roomId: string,
+  ) {
+    return this.matrix.getRoomMembers(
+      requireHomeserver(homeserver),
+      roomId,
+      extractToken(authorization),
+    );
+  }
+
+  @Get('rooms/:roomId/threads')
+  roomThreads(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+    @Param('roomId') roomId: string,
+  ) {
+    return this.matrix.getRoomThreads(
+      requireHomeserver(homeserver),
+      roomId,
+      extractToken(authorization),
+    );
+  }
+
+  @Get('rooms/:roomId/aliases')
+  roomAliases(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+    @Param('roomId') roomId: string,
+  ) {
+    return this.matrix.getRoomAliases(
+      requireHomeserver(homeserver),
+      roomId,
+      extractToken(authorization),
+    );
+  }
+
+  @Post('rooms/:roomId/read_markers')
+  @HttpCode(200)
+  setReadMarkers(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+    @Param('roomId') roomId: string,
+    @Body() body: Record<string, string>,
+  ) {
+    return this.matrix.setReadMarkers(
+      requireHomeserver(homeserver),
+      roomId,
+      extractToken(authorization),
+      body,
+    );
+  }
+
   @Get('rooms/:roomId/state/:eventType')
   roomState(
     @Headers(HS) homeserver: string | undefined,

@@ -190,6 +190,94 @@ describe('MatrixService', () => {
     });
   });
 
+  describe('room endpoints', () => {
+    const roomId = '!room:matrix.org';
+
+    it('gets room members', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({ chunk: [] }), { status: 200 });
+      }) as unknown as typeof fetch;
+      try {
+        await service.getRoomMembers('https://matrix.org', roomId, 'token');
+        expect(calls[0]?.url).toBe(
+          'https://matrix.org/_matrix/client/v3/rooms/!room%3Amatrix.org/members',
+        );
+        expect((calls[0]?.init.headers as Record<string, string>)['Authorization']).toBe(
+          'Bearer token',
+        );
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('gets room threads with limit=30', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({ chunk: [] }), { status: 200 });
+      }) as unknown as typeof fetch;
+      try {
+        await service.getRoomThreads('https://matrix.org', roomId, 'token');
+        expect(calls[0]?.url).toBe(
+          'https://matrix.org/_matrix/client/v1/rooms/!room%3Amatrix.org/threads?limit=30',
+        );
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('gets room aliases', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({ aliases: [] }), { status: 200 });
+      }) as unknown as typeof fetch;
+      try {
+        await service.getRoomAliases('https://matrix.org', roomId, 'token');
+        expect(calls[0]?.url).toBe(
+          'https://matrix.org/_matrix/client/v3/rooms/!room%3Amatrix.org/aliases',
+        );
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('sets read markers with JSON body', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({}), { status: 200 });
+      }) as unknown as typeof fetch;
+      try {
+        await service.setReadMarkers('https://matrix.org', roomId, 'token', {
+          'm.fully_read': 'evt1',
+          'm.read': 'evt2',
+        });
+        expect(calls[0]?.url).toBe(
+          'https://matrix.org/_matrix/client/v3/rooms/!room%3Amatrix.org/read_markers',
+        );
+        expect((calls[0]?.init.headers as Record<string, string>)['Authorization']).toBe(
+          'Bearer token',
+        );
+        expect((calls[0]?.init.headers as Record<string, string>)['Content-Type']).toBe(
+          'application/json',
+        );
+        expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+          'm.fully_read': 'evt1',
+          'm.read': 'evt2',
+        });
+      } finally {
+        global.fetch = original;
+      }
+    });
+  });
+
   describe('login', () => {
     it('posts password login payload to the homeserver', async () => {
       const calls: Array<{ url: string; init: RequestInit }> = [];
