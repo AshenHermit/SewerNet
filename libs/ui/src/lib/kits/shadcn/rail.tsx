@@ -1,6 +1,6 @@
 import { cn } from '@sewer-net/utils';
 import { ProxyIcon } from '@sewer-net/icons';
-import type { RailProps } from '../../ui-kit.js';
+import type { RailProps } from '../../ui-kit';
 
 const NAV_ITEMS = [
   { icon: 'chats', label: 'Chats', active: true },
@@ -45,3 +45,4 @@ export function ShadcnRail({
     </nav>
   );
 }
+

@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { ChatScreenProps } from '../../ui-kit.js';
+import type { ChatScreenProps } from '../../ui-kit';
 
 export function ShadcnChatScreen({ className, children, ...props }: ChatScreenProps) {
   return (
@@ -11,3 +11,4 @@ export function ShadcnChatScreen({ className, children, ...props }: ChatScreenPr
     </div>
   );
 }
+

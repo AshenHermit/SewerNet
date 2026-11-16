@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyRailButton } from '../../proxy/proxy-rail-button.js';
+import { ProxyRailButton } from '../../proxy/proxy-rail-button';
 
 const meta: Meta<typeof ProxyRailButton> = {
   title: 'Proxy/RailButton',
@@ -17,3 +17,4 @@ export const Default: Story = {
 export const Active: Story = {
   args: { icon: 'chats', title: 'Chats', active: true },
 };
+

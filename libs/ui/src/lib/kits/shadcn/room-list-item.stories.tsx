@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyRoomListItem } from '../../proxy/proxy-room-list-item.js';
+import { ProxyRoomListItem } from '../../proxy/proxy-room-list-item';
 
 const meta: Meta<typeof ProxyRoomListItem> = {
   title: 'Proxy/RoomListItem',
@@ -27,3 +27,4 @@ export const WithUnread: Story = {
 export const UnreadInactive: Story = {
   args: { id: 'dev', children: 'Development', unread: 2 },
 };
+

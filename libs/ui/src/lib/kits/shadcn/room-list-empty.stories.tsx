@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyRoomListEmpty } from '../../proxy/proxy-room-list-empty.js';
+import { ProxyRoomListEmpty } from '../../proxy/proxy-room-list-empty';
 
 const meta: Meta<typeof ProxyRoomListEmpty> = {
   title: 'Proxy/RoomListEmpty',
@@ -11,9 +11,10 @@ export default meta;
 type Story = StoryObj<typeof ProxyRoomListEmpty>;
 
 export const Loading: Story = {
-  args: { loading: true, loadingLabel: 'Loading chats…' },
+  args: { loading: true, loadingLabel: 'Loading chatsвЂ¦' },
 };
 
 export const Empty: Story = {
   args: { emptyLabel: 'No chats yet' },
 };
+

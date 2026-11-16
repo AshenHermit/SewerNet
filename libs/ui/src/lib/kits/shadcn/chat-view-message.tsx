@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { ChatViewMessageProps } from '../../ui-kit.js';
+import type { ChatViewMessageProps } from '../../ui-kit';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], {
@@ -55,3 +55,4 @@ export function ShadcnChatViewMessage({
     </li>
   );
 }
+

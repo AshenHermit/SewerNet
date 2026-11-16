@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyLoginForm } from '../../proxy/proxy-login-form.js';
+import { ProxyLoginForm } from '../../proxy/proxy-login-form';
 
 const meta: Meta<typeof ProxyLoginForm> = {
   title: 'Proxy/LoginForm',
@@ -14,12 +14,12 @@ export const Default: Story = {
   args: {
     usernameLabel: 'Username',
     passwordLabel: 'Password',
-    signInLabel: 'Sign in',
-    onSubmit: () => {},
+    submitLabel: 'Sign in',
+    onSubmit: () => undefined,
     user: '',
-    onUserChange: () => {},
+    onUserChange: () => undefined,
     password: '',
-    onPasswordChange: () => {},
+    onPasswordChange: () => undefined,
     invalid: false,
     loading: false,
   },
@@ -29,14 +29,15 @@ export const WithError: Story = {
   args: {
     usernameLabel: 'Username',
     passwordLabel: 'Password',
-    signInLabel: 'Sign in',
-    onSubmit: () => {},
+    submitLabel: 'Sign in',
+    onSubmit: () => undefined,
     user: '',
-    onUserChange: () => {},
+    onUserChange: () => undefined,
     password: '',
-    onPasswordChange: () => {},
+    onPasswordChange: () => undefined,
     invalid: true,
     error: 'Invalid credentials',
     loading: false,
   },
 };
+

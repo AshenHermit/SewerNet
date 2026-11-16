@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { RoomListPanelProps } from '../../ui-kit.js';
+import type { RoomListPanelProps } from '../../ui-kit';
 
 export function ShadcnRoomListPanel({ children, className, ...props }: RoomListPanelProps) {
   return (
@@ -14,3 +14,4 @@ export function ShadcnRoomListPanel({ children, className, ...props }: RoomListP
     </div>
   );
 }
+

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyPanel } from '../../proxy/proxy-panel.js';
+import { ProxyPanel } from '../../proxy/proxy-panel';
 
 const meta: Meta<typeof ProxyPanel> = {
   title: 'Proxy/Panel',
@@ -27,3 +27,4 @@ export const LargePadding: Story = {
 export const Unbordered: Story = {
   args: { children: 'No border', bordered: false, p: 'md' },
 };
+

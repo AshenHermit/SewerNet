@@ -1,12 +1,7 @@
-import {
-  ACCENT_PRESETS,
-  useThemeStore,
-  type FontId,
-  type ThemeMode,
-} from '@sewer-net/themes';
-import { ProxyIcon, ProxyKitOption } from '../../proxy/index.js';
+import { ProxyKitOption } from '../../proxy/index';
+import { ProxyIcon } from '@sewer-net/icons';
 import { cn } from '@sewer-net/utils';
-import type { SettingsPanelProps } from '../../ui-kit.js';
+import type { SettingsPanelProps } from '../../ui-kit';
 
 export function ShadcnSettingsPanel({
   onClose,
@@ -146,7 +141,7 @@ export function ShadcnSettingsPanel({
           min={0}
           max={24}
           value={radius}
-          onChange={(e) => onRadiusChange(Number(e.target.value))}
+          onChange={(e) => onRadiusChange(Number((e.target as HTMLInputElement).value))}
           className="w-full accent-[var(--sn-accent)]"
         />
       </section>
@@ -160,3 +155,4 @@ export function ShadcnSettingsPanel({
     </div>
   );
 }
+

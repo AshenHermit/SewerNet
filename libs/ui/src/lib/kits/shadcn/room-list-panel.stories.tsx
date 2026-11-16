@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyRoomListPanel } from '../../proxy/proxy-room-list-panel.js';
-import { ProxyRoomListItem } from '../../proxy/proxy-room-list-item.js';
+import { ProxyRoomListPanel } from '../../proxy/proxy-room-list-panel';
+import { ProxyRoomListItem } from '../../proxy/proxy-room-list-item';
 
 const meta: Meta<typeof ProxyRoomListPanel> = {
   title: 'Proxy/RoomListPanel',
@@ -24,3 +24,4 @@ export const Default: Story = {
     ),
   },
 };
+

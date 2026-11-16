@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyInput } from '../../proxy/proxy-input.js';
+import { ProxyInput } from '../../proxy/proxy-input';
 
 const meta: Meta<typeof ProxyInput> = {
   title: 'Proxy/Input',
@@ -13,7 +13,7 @@ export default meta;
 type Story = StoryObj<typeof ProxyInput>;
 
 export const Default: Story = {
-  args: { placeholder: 'Type a message…' },
+  args: { placeholder: 'Type a messageвЂ¦' },
 };
 
 export const Invalid: Story = {
@@ -23,3 +23,4 @@ export const Invalid: Story = {
 export const Disabled: Story = {
   args: { placeholder: 'Disabled', disabled: true },
 };
+

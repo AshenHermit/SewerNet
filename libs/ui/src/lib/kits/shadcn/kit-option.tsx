@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { KitOptionProps } from '../../ui-kit.js';
+import type { KitOptionProps } from '../../ui-kit';
 
 export function ShadcnKitOption({
   kitId,
@@ -25,3 +25,4 @@ export function ShadcnKitOption({
     </button>
   );
 }
+

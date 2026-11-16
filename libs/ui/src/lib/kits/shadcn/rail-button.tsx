@@ -1,6 +1,6 @@
 import { cn } from '@sewer-net/utils';
-import { ProxyIcon } from '@sewer-net/icons';
-import type { RailButtonProps } from '../../ui-kit.js';
+import { ProxyIcon, type IconName } from '@sewer-net/icons';
+import type { RailButtonProps } from '../../ui-kit';
 
 export function ShadcnRailButton({
   icon,
@@ -21,7 +21,8 @@ export function ShadcnRailButton({
         className,
       )}
     >
-      <ProxyIcon name={icon} />
+      <ProxyIcon name={icon as IconName} />
     </button>
   );
 }
+

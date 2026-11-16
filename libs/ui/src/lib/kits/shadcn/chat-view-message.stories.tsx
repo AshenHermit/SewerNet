@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyChatViewMessage } from '../../proxy/proxy-chat-view-message.js';
+import { ProxyChatViewMessage } from '../../proxy/proxy-chat-view-message';
 
 const meta: Meta<typeof ProxyChatViewMessage> = {
   title: 'Proxy/ChatViewMessage',
@@ -34,3 +34,4 @@ export const Ours: Story = {
     own: true,
   },
 };
+

@@ -1,7 +1,8 @@
 import { FormEvent, useCallback } from 'react';
 import { cn } from '@sewer-net/utils';
-import { ProxyButton, ProxyInput, ProxyIcon } from '../../proxy/index.js';
-import type { ChatViewInputFormProps } from '../../ui-kit.js';
+import { ProxyButton, ProxyInput } from '../../proxy/index';
+import { ProxyIcon } from '@sewer-net/icons';
+import type { ChatViewInputFormProps } from '../../ui-kit';
 
 export function ShadcnChatViewInputForm({
   draft,
@@ -42,7 +43,7 @@ export function ShadcnChatViewInputForm({
       ) : null}
       <ProxyInput
         value={draft}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange((e.target as HTMLInputElement).value)}
         placeholder="Message"
         aria-label="Message"
         className="flex-1"
@@ -58,3 +59,4 @@ export function ShadcnChatViewInputForm({
     </form>
   );
 }
+

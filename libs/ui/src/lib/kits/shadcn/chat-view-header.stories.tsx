@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyChatViewHeader } from '../../proxy/proxy-chat-view-header.js';
+import { ProxyChatViewHeader } from '../../proxy/proxy-chat-view-header';
 
 const meta: Meta<typeof ProxyChatViewHeader> = {
   title: 'Proxy/ChatViewHeader',
@@ -14,6 +14,7 @@ export const Default: Story = {
   args: {
     title: 'General',
     subtitle: '!example:matrix.org',
-    onBack: () => {},
+    onBack: () => undefined,
   },
 };
+

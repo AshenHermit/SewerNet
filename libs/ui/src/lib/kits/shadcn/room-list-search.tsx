@@ -1,6 +1,7 @@
 import { cn } from '@sewer-net/utils';
-import { ProxyIcon, ProxyInput } from '../../proxy/index.js';
-import type { RoomListSearchProps } from '../../ui-kit.js';
+import { ProxyInput } from '../../proxy/index';
+import { ProxyIcon } from '@sewer-net/icons';
+import type { RoomListSearchProps } from '../../ui-kit';
 
 export function ShadcnRoomListSearch({
   query,
@@ -18,7 +19,7 @@ export function ShadcnRoomListSearch({
         <ProxyIcon name="search" size={16} />
         <ProxyInput
           value={query}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange((e.target as HTMLInputElement).value)}
           placeholder={placeholder ?? 'Search'}
           className="w-full bg-transparent text-sm text-[var(--sn-text)] outline-none placeholder:text-[var(--sn-text-dim)]"
         />
@@ -26,3 +27,4 @@ export function ShadcnRoomListSearch({
     </div>
   );
 }
+

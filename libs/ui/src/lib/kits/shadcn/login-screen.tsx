@@ -1,11 +1,11 @@
 import { cn } from '@sewer-net/utils';
 import {
   ProxyButton,
-  ProxyIcon,
   ProxyInput,
   ProxyLoginForm,
-} from '../../proxy/index.js';
-import type { LoginScreenProps } from '../../ui-kit.js';
+} from '../../proxy/index';
+import { ProxyIcon } from '@sewer-net/icons';
+import type { LoginScreenProps } from '../../ui-kit';
 
 export function ShadcnLoginScreen({
   appName,
@@ -47,7 +47,7 @@ export function ShadcnLoginScreen({
       password={password}
       onPasswordChange={onPasswordChange}
       invalid={Boolean(passwordError)}
-      error={passwordError}
+      error={passwordError ?? undefined}
       loading={passwordLoading}
     />
   );
@@ -77,7 +77,7 @@ export function ShadcnLoginScreen({
             </span>
             <ProxyInput
               value={homeserverUrl}
-              onChange={(e) => onHomeserverChange(e.target.value)}
+              onChange={(e) => onHomeserverChange((e.target as HTMLInputElement).value)}
               onBlur={onHomeserverBlur}
               placeholder="https://matrix.org"
               autoComplete="url"
@@ -116,3 +116,4 @@ export function ShadcnLoginScreen({
     </div>
   );
 }
+

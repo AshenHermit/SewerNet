@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyChatViewInputForm } from '../../proxy/proxy-chat-view-input-form.js';
+import { ProxyChatViewInputForm } from '../../proxy/proxy-chat-view-input-form';
 
 const meta: Meta<typeof ProxyChatViewInputForm> = {
   title: 'Proxy/ChatViewInputForm',
@@ -13,17 +13,18 @@ type Story = StoryObj<typeof ProxyChatViewInputForm>;
 export const Default: Story = {
   args: {
     draft: '',
-    onChange: () => {},
-    onSubmit: () => {},
-    onAttach: () => {},
+    onChange: () => undefined,
+    onSubmit: () => undefined,
+    onAttach: () => undefined,
   },
 };
 
 export const Sending: Story = {
   args: {
     draft: '',
-    onChange: () => {},
-    onSubmit: () => {},
+    onChange: () => undefined,
+    onSubmit: () => undefined,
     sending: true,
   },
 };
+

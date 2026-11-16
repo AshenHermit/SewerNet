@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { ChatViewErrorProps } from '../../ui-kit.js';
+import type { ChatViewErrorProps } from '../../ui-kit';
 
 export function ShadcnChatViewError({ error, className, ...props }: ChatViewErrorProps) {
   if (!error) return null;
@@ -16,3 +16,4 @@ export function ShadcnChatViewError({ error, className, ...props }: ChatViewErro
     </p>
   );
 }
+

@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { RoomListEmptyProps } from '../../ui-kit.js';
+import type { RoomListEmptyProps } from '../../ui-kit';
 
 export function ShadcnRoomListEmpty({
   loading = false,
@@ -15,7 +15,7 @@ export function ShadcnRoomListEmpty({
     >
       {loading ? (
         <p className="p-3 text-xs text-[var(--sn-text-dim)]">
-          {loadingLabel ?? 'Loading chats…'}
+          {loadingLabel ?? 'Loading chatsвЂ¦'}
         </p>
       ) : (
         <p className="p-3 text-xs text-[var(--sn-text-dim)]">
@@ -25,3 +25,4 @@ export function ShadcnRoomListEmpty({
     </div>
   );
 }
+

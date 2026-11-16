@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { ChatViewPanelProps } from '../../ui-kit.js';
+import type { ChatViewPanelProps } from '../../ui-kit';
 
 export function ShadcnChatViewPanel({ children, className, ...props }: ChatViewPanelProps) {
   return (
@@ -11,3 +11,4 @@ export function ShadcnChatViewPanel({ children, className, ...props }: ChatViewP
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
 import { cn } from '@sewer-net/utils';
 import { ProxyIcon } from '@sewer-net/icons';
-import type { ChatViewHeaderProps } from '../../ui-kit.js';
+import type { ChatViewHeaderProps } from '../../ui-kit';
 
 export function ShadcnChatViewHeader({
   onBack,
@@ -23,7 +23,7 @@ export function ShadcnChatViewHeader({
         <button
           onClick={onBack}
           className="text-[var(--sn-text-muted)] hover:text-[var(--sn-text)] md:hidden"
-          aria-label={backLabel}
+          aria-label={typeof backLabel === 'string' ? backLabel : undefined}
         >
           <ProxyIcon name="back" />
         </button>
@@ -44,3 +44,4 @@ export function ShadcnChatViewHeader({
     </header>
   );
 }
+

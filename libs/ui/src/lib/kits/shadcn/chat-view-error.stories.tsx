@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyChatViewError } from '../../proxy/proxy-chat-view-error.js';
+import { ProxyChatViewError } from '../../proxy/proxy-chat-view-error';
 
 const meta: Meta<typeof ProxyChatViewError> = {
   title: 'Proxy/ChatViewError',
@@ -17,3 +17,4 @@ export const WithError: Story = {
 export const WithoutError: Story = {
   args: {},
 };
+

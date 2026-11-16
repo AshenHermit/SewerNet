@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { RoomListItemProps } from '../../ui-kit.js';
+import type { RoomListItemProps } from '../../ui-kit';
 
 export function ShadcnRoomListItem({
   id,
@@ -38,3 +38,4 @@ export function ShadcnRoomListItem({
     </button>
   );
 }
+

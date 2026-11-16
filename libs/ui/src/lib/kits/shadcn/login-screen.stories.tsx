@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyLoginScreen } from '../../proxy/proxy-login-screen.js';
+import { ProxyLoginScreen } from '../../proxy/proxy-login-screen';
 
 const meta: Meta<typeof ProxyLoginScreen> = {
   title: 'Proxy/LoginScreen',
@@ -19,8 +19,8 @@ export const WithMas: Story = {
     usernameLabel: 'Username',
     passwordLabel: 'Password',
     signInLabel: 'Sign in',
-    onHomeserverChange: () => {},
-    onHomeserverBlur: () => {},
+    onHomeserverChange: () => undefined,
+    onHomeserverBlur: () => undefined,
     mas: {
       issuer: 'https://account.matrix.org/',
       authorizationEndpoint: 'https://account.matrix.org/_matrix/client/v3/authorize',
@@ -31,18 +31,18 @@ export const WithMas: Story = {
     resolving: false,
     starting: false,
     error: null,
-    onContinueWithMatrix: () => {},
+    onContinueWithMatrix: () => undefined,
     continueLabel: 'Continue with Matrix',
     createAccountLabel: 'Create account',
-    onTogglePasswordForm: () => {},
+    onTogglePasswordForm: () => undefined,
     passwordFormLabel: 'Sign in with password',
     user: '',
-    onUserChange: () => {},
+    onUserChange: () => undefined,
     password: '',
-    onPasswordChange: () => {},
+    onPasswordChange: () => undefined,
     passwordLoading: false,
     passwordError: null,
-    onSignIn: () => {},
+    onSignIn: () => undefined,
   },
 };
 
@@ -55,23 +55,24 @@ export const WithoutMas: Story = {
     usernameLabel: 'Username',
     passwordLabel: 'Password',
     signInLabel: 'Sign in',
-    onHomeserverChange: () => {},
-    onHomeserverBlur: () => {},
+    onHomeserverChange: () => undefined,
+    onHomeserverBlur: () => undefined,
     mas: null,
     resolving: false,
     starting: false,
     error: null,
-    onContinueWithMatrix: () => {},
+    onContinueWithMatrix: () => undefined,
     continueLabel: 'Continue with Matrix',
     createAccountLabel: 'Create account',
-    onTogglePasswordForm: () => {},
+    onTogglePasswordForm: () => undefined,
     passwordFormLabel: 'Sign in with password',
     user: '',
-    onUserChange: () => {},
+    onUserChange: () => undefined,
     password: '',
-    onPasswordChange: () => {},
+    onPasswordChange: () => undefined,
     passwordLoading: false,
     passwordError: null,
-    onSignIn: () => {},
+    onSignIn: () => undefined,
   },
 };
+

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ProxyButton } from '../../proxy/proxy-button.js';
+import { ProxyButton } from '../../proxy/proxy-button';
 
 const meta: Meta<typeof ProxyButton> = {
   title: 'Proxy/Button',
@@ -29,7 +29,7 @@ export const Danger: Story = {
 };
 
 export const Loading: Story = {
-  args: { children: 'Sending…', loading: true },
+  args: { children: 'SendingвЂ¦', loading: true },
 };
 
 export const Small: Story = {
@@ -41,5 +41,6 @@ export const Large: Story = {
 };
 
 export const IconButton: Story = {
-  args: { size: 'icon', children: '✓' },
+  args: { size: 'icon', children: 'вњ“' },
 };
+

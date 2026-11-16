@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { ButtonProps } from '../../ui-kit.js';
+import type { ButtonProps } from '../../ui-kit';
 
 const base =
   'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium transition-[background-color,box-shadow,filter] duration-150 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sn-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sn-bg)]';
@@ -46,3 +46,4 @@ export function ShadcnButton({
     </button>
   );
 }
+

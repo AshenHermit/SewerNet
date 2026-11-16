@@ -1,6 +1,6 @@
 import { cn } from '@sewer-net/utils';
-import { useUiKit } from '../proxy/ui-kit-provider.js';
-import type { ChatViewMessageListProps } from '../../ui-kit.js';
+import { useUiKit } from '../../proxy/ui-kit-provider';
+import type { ChatViewMessageListProps } from '../../ui-kit';
 
 export function ShadcnChatViewMessageList({
   events,
@@ -20,7 +20,7 @@ export function ShadcnChatViewMessageList({
     >
       {loading ? (
         <p className="text-center text-xs text-[var(--sn-text-dim)]">
-          Loading messages…
+          Loading messagesвЂ¦
         </p>
       ) : events.length === 0 ? (
         <p className="text-center text-xs text-[var(--sn-text-dim)]">
@@ -40,3 +40,4 @@ export function ShadcnChatViewMessageList({
     </div>
   );
 }
+

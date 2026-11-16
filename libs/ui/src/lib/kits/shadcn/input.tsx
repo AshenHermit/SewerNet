@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { InputProps } from '../../ui-kit.js';
+import type { InputProps } from '../../ui-kit';
 
 export function ShadcnInput({ className, invalid, ...props }: InputProps) {
   return (
@@ -16,3 +16,4 @@ export function ShadcnInput({ className, invalid, ...props }: InputProps) {
     />
   );
 }
+

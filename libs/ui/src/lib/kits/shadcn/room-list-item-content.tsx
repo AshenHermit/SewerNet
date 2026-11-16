@@ -1,6 +1,6 @@
 import { cn } from '@sewer-net/utils';
 import { ProxyIcon } from '@sewer-net/icons';
-import type { RoomListItemContentProps } from '../../ui-kit.js';
+import type { RoomListItemContentProps } from '../../ui-kit';
 
 export function ShadcnRoomListItemContent({
   icon,
@@ -36,3 +36,4 @@ export function ShadcnRoomListItemContent({
     </div>
   );
 }
+

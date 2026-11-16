@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { MessageBubbleProps } from '../../ui-kit.js';
+import type { MessageBubbleProps } from '../../ui-kit';
 
 export function ShadcnMessageBubble({ own = false, text, className, ...props }: MessageBubbleProps) {
   return (
@@ -17,3 +17,4 @@ export function ShadcnMessageBubble({ own = false, text, className, ...props }: 
     </div>
   );
 }
+

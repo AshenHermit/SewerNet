@@ -1,26 +1,26 @@
-import type { UiKit } from '../../ui-kit.js';
-import { ShadcnButton } from './button.js';
-import { ShadcnInput } from './input.js';
-import { ShadcnPanel } from './panel.js';
-import { ShadcnRoomListPanel } from './room-list-panel.js';
-import { ShadcnRoomListItem } from './room-list-item.js';
-import { ShadcnChatViewPanel } from './chat-view-panel.js';
-import { ShadcnMessageBubble } from './message-bubble.js';
-import { ShadcnChatViewHeader } from './chat-view-header.js';
-import { ShadcnChatViewMessageList } from './chat-view-message-list.js';
-import { ShadcnChatViewMessage } from './chat-view-message.js';
-import { ShadcnChatViewError } from './chat-view-error.js';
-import { ShadcnChatViewInputForm } from './chat-view-input-form.js';
-import { ShadcnRoomListSearch } from './room-list-search.js';
-import { ShadcnRoomListEmpty } from './room-list-empty.js';
-import { ShadcnRoomListItemContent } from './room-list-item-content.js';
-import { ShadcnRail } from './rail.js';
-import { ShadcnRailButton } from './rail-button.js';
-import { ShadcnSettingsPanel } from './settings-panel.js';
-import { ShadcnKitOption } from './kit-option.js';
-import { ShadcnLoginScreen } from './login-screen.js';
-import { ShadcnLoginForm } from './login-form.js';
-import { ShadcnChatScreen } from './chat-screen.js';
+import type { UiKit } from '../../ui-kit';
+import { ShadcnButton } from './button';
+import { ShadcnInput } from './input';
+import { ShadcnPanel } from './panel';
+import { ShadcnRoomListPanel } from './room-list-panel';
+import { ShadcnRoomListItem } from './room-list-item';
+import { ShadcnChatViewPanel } from './chat-view-panel';
+import { ShadcnMessageBubble } from './message-bubble';
+import { ShadcnChatViewHeader } from './chat-view-header';
+import { ShadcnChatViewMessageList } from './chat-view-message-list';
+import { ShadcnChatViewMessage } from './chat-view-message';
+import { ShadcnChatViewError } from './chat-view-error';
+import { ShadcnChatViewInputForm } from './chat-view-input-form';
+import { ShadcnRoomListSearch } from './room-list-search';
+import { ShadcnRoomListEmpty } from './room-list-empty';
+import { ShadcnRoomListItemContent } from './room-list-item-content';
+import { ShadcnRail } from './rail';
+import { ShadcnRailButton } from './rail-button';
+import { ShadcnSettingsPanel } from './settings-panel';
+import { ShadcnKitOption } from './kit-option';
+import { ShadcnLoginScreen } from './login-screen';
+import { ShadcnLoginForm } from './login-form';
+import { ShadcnChatScreen } from './chat-screen';
 
 export const shadcnKit: UiKit = {
   id: 'shadcn',
@@ -48,3 +48,4 @@ export const shadcnKit: UiKit = {
   LoginForm: ShadcnLoginForm,
   ChatScreen: ShadcnChatScreen,
 };
+

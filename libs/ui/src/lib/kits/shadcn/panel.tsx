@@ -1,5 +1,5 @@
 import { cn } from '@sewer-net/utils';
-import type { PanelProps } from '../../ui-kit.js';
+import type { PanelProps } from '../../ui-kit';
 
 const paddings: Record<NonNullable<PanelProps['p']>, string> = {
   none: '',
@@ -29,3 +29,4 @@ export function ShadcnPanel({
     </div>
   );
 }
+

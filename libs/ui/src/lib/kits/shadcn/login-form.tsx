@@ -1,6 +1,6 @@
 import { cn } from '@sewer-net/utils';
-import { ProxyInput, ProxyButton } from '../../proxy/index.js';
-import type { LoginFormProps } from '../../ui-kit.js';
+import { ProxyInput, ProxyButton } from '../../proxy/index';
+import type { LoginFormProps } from '../../ui-kit';
 
 export function ShadcnLoginForm({
   usernameLabel,
@@ -59,3 +59,4 @@ export function ShadcnLoginForm({
     </form>
   );
 }
+
