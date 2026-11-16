@@ -8,6 +8,12 @@ export interface ProxyOptions {
   query?: Record<string, string | undefined>;
   /** Таймаут запроса к homeserver в мс. По умолчанию 15 с. */
   timeoutMs?: number;
+  /**
+   * Количество повторов при сетевой ошибке (connect timeout / fetch failed).
+   * По умолчанию 2 (итого до 3 попыток). Повторы не выполняются, если
+   * homeserver ответил (даже ошибкой) — только когда ответа не было вовсе.
+   */
+  retries?: number;
 }
 
 export interface MatrixCredentials {
@@ -34,6 +40,28 @@ export class MatrixService {
       );
     }
     return url;
+  }
+
+  /** Преобразует сетевую ошибку fetch в HttpException (504 timeout / 502 failed). */
+  private mapProxyError(err: unknown, timeoutMs: number): HttpException {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return new HttpException(
+        {
+          errcode: 'M_REQUEST_TIMEOUT',
+          error: `Homeserver request timed out after ${timeoutMs}ms`,
+        },
+        504,
+      );
+    }
+    const cause = (err as { cause?: unknown })?.cause;
+    return new HttpException(
+      {
+        errcode: 'M_REQUEST_FAILED',
+        error: err instanceof Error ? err.message : String(err),
+        ...(cause ? { cause: String(cause) } : {}),
+      },
+      502,
+    );
   }
 
   async login(homeserver: string, credentials: MatrixCredentials) {
@@ -77,12 +105,11 @@ export class MatrixService {
         all_rooms: {
           ranges: [[0, 19]],
           required_state: [
-            'm.room.name',
-            'm.room.avatar',
-            'm.room.topic',
-            'm.room.member',
-            '$LAZY',
-            '$ME',
+            ['m.room.name', ''],
+            ['m.room.avatar', ''],
+            ['m.room.topic', ''],
+            ['m.room.member', '$ME'],
+            ['m.room.member', '$LAZY'],
           ],
           timeline_limit: 1,
           filters: {},
@@ -175,37 +202,52 @@ export class MatrixService {
     }
 
     const timeoutMs = options.timeoutMs ?? 15_000;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const retries = options.retries ?? 2;
+    const method =
+      options.method ?? (options.body !== undefined ? 'POST' : 'GET');
 
-    let response: Response;
-    try {
-      response = await fetch(`${base}${path}${qs}`, {
-        method: options.method ?? (options.body !== undefined ? 'POST' : 'GET'),
-        headers,
-        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
-      });
-    } catch (err) {
-      clearTimeout(timeout);
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new HttpException(
-          {
-            errcode: 'M_REQUEST_TIMEOUT',
-            error: `Homeserver request timed out after ${timeoutMs}ms`,
-          },
-          504,
+    let response: Response | undefined;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        response = await fetch(`${base}${path}${qs}`, {
+          method,
+          headers,
+          body:
+            options.body !== undefined
+              ? JSON.stringify(options.body)
+              : undefined,
+          signal: controller.signal,
+        });
+        break;
+      } catch (err) {
+        lastError = err;
+        const aborted =
+          err instanceof DOMException && err.name === 'AbortError';
+        if (aborted || attempt === retries) {
+          throw this.mapProxyError(err, timeoutMs);
+        }
+        // Сетевая ошибка (connect timeout, fetch failed): пробуем ещё раз
+        // с нарастающей паузой. homeserver не ответил, поэтому повтор безопасен.
+        const cause = (err as { cause?: unknown })?.cause;
+        this.logger.warn(
+          `Retry ${attempt + 1}/${retries} ${method} ${path}: ${
+            err instanceof Error ? err.message : String(err)
+          }${cause ? ` (${String(cause)})` : ''}`,
         );
+        await new Promise((resolve) =>
+          setTimeout(resolve, 250 * (attempt + 1)),
+        );
+      } finally {
+        clearTimeout(timeout);
       }
-      throw new HttpException(
-        {
-          errcode: 'M_REQUEST_FAILED',
-          error: err instanceof Error ? err.message : String(err),
-        },
-        502,
-      );
-    } finally {
-      clearTimeout(timeout);
+    }
+
+    if (!response) {
+      throw this.mapProxyError(lastError, timeoutMs);
     }
 
     const payload = (await response.json().catch(() => ({}))) as Record<

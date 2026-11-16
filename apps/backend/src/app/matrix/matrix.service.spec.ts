@@ -166,7 +166,9 @@ describe('MatrixService', () => {
         const body = JSON.parse(String(calls[0]?.init.body)) as SlidingSyncRoomListRequest;
         expect(body.conn_id).toBe('room-list');
         expect(body.lists.all_rooms.ranges).toEqual([[0, 19]]);
-        expect(body.lists.all_rooms.required_state).toContain('m.room.name');
+        expect(body.lists.all_rooms.required_state).toEqual(
+          expect.arrayContaining([['m.room.name', '']]),
+        );
         expect(body.lists.all_rooms.timeline_limit).toBe(1);
       } finally {
         global.fetch = original;

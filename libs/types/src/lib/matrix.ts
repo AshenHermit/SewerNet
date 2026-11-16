@@ -96,7 +96,8 @@ export interface SlidingSyncRoomListRequest {
   lists: {
     all_rooms: {
       ranges: [number, number][];
-      required_state: string[];
+      /** Каждое событие как строка (type, пустой state_key) oder Tupel [type, state_key]. */
+      required_state: (string | [string, string])[];
       timeline_limit: number;
       filters: Record<string, unknown>;
     };

@@ -198,38 +198,42 @@ function extractToken(authorization?: string): string | undefined {
 }
 
 /** Превращает ответ sliding-sync в массив SyncedRoomInfo. */
-function mapSyncedRooms(
+export function mapSyncedRooms(
   response: SlidingSyncRoomListResponse,
 ): SyncedRoomInfo[] {
   const rooms: SyncedRoomInfo[] = [];
   const rawRooms = response.rooms ?? {};
   for (const [roomId, raw] of Object.entries(rawRooms)) {
-    const state = (Array.isArray(raw?.state) ? raw.state : []) as {
+    const state = (Array.isArray(raw?.required_state) ? raw.required_state : []) as {
       type: string;
       content?: Record<string, unknown>;
     }[];
+
     const nameEvent = state.find((e) => e.type === 'm.room.name');
     const avatarEvent = state.find((e) => e.type === 'm.room.avatar');
     const topicEvent = state.find((e) => e.type === 'm.room.topic');
-    const timeline = raw?.timeline as { events?: unknown } | undefined;
-    const events = (Array.isArray(timeline?.events)
-      ? timeline.events
-      : []) as {
+
+    // matrix.org liefert timeline direkt als Array (nicht { events: [...] }).
+    const timeline = Array.isArray(raw?.timeline) ? raw.timeline : [];
+    const last = timeline[0] as {
       origin_server_ts?: unknown;
       content?: Record<string, unknown>;
-    }[];
-    const last = events[0];
+    } | undefined;
 
     rooms.push({
       room_id: roomId,
       name:
         typeof nameEvent?.content?.name === 'string'
           ? (nameEvent.content.name as string)
-          : undefined,
+          : typeof raw.name === 'string'
+            ? raw.name
+            : undefined,
       avatar:
         typeof avatarEvent?.content?.url === 'string'
           ? (avatarEvent.content.url as string)
-          : undefined,
+          : typeof raw.avatar === 'string'
+            ? raw.avatar
+            : undefined,
       topic:
         typeof topicEvent?.content?.topic === 'string'
           ? (topicEvent.content.topic as string)
