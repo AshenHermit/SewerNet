@@ -1,9 +1,8 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { useThemeStore } from '@sewer-net/themes';
 import { DEFAULT_UI_KIT, UI_KITS } from '../kits/index';
+import { UiKitContext } from './ui-kit-context';
 import type { UiKit } from '../ui-kit';
-
-const UiKitContext = createContext<UiKit>(DEFAULT_UI_KIT);
 
 export interface UiKitProviderProps {
   /** Overrides the kit selected in theme settings (useful for Storybook/tests). */
@@ -20,6 +19,7 @@ export function UiKitProvider({ kitId, children }: UiKitProviderProps) {
 }
 
 export function useUiKit(): UiKit {
-  return useContext(UiKitContext);
+  const kit = useContext(UiKitContext);
+  return kit ?? DEFAULT_UI_KIT;
 }
 
