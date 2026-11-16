@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
-import { useThemeStore, type ThemeMode } from '@sewer-net/themes';
+import { useThemeStore, resolveMode, type ThemeMode } from '@sewer-net/themes';
 import { useAuthStore } from '../stores/auth-store';
 import { ProxyRail, ProxyRailButton } from '@sewer-net/ui';
 import { SettingsPanel } from './settings-panel';
@@ -16,9 +16,11 @@ export function Rail() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const { t } = useLingui();
 
-  // Simple two-state toggle: matches the label/icon, so one click reaches
-  // the theme the button promises (system mode still selectable in settings).
-  const targetMode: ThemeMode = settings.mode === 'dark' ? 'light' : 'dark';
+  // Derive the target from the *resolved* theme, not the raw mode: with
+  // mode "system" the raw mode never equals "dark", so a naive toggle would
+  // set "system" -> "dark" without any visual change (needs a second click).
+  const resolvedMode = resolveMode(settings.mode);
+  const targetMode: ThemeMode = resolvedMode === 'dark' ? 'light' : 'dark';
 
   return (
     <ProxyRail
