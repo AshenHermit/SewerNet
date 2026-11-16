@@ -102,6 +102,8 @@ export interface RoomListItemContentProps extends HTMLAttributes<HTMLDivElement>
   icon?: ReactNode;
   name: string;
   preview?: string;
+  /** Тема комнаты — показывается вместо превью, пока нет сообщений. */
+  topic?: string;
   unread?: number;
 }
 

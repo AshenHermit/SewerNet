@@ -53,7 +53,8 @@ export function RoomList() {
                 <ProxyRoomListItemContent
                   icon={<ProxyIcon name="room" size={18} />}
                   name={room.name}
-                  preview={room.preview ?? '\u00A0'}
+                  preview={room.preview || undefined}
+                  topic={room.topic}
                 />
               </ProxyRoomListItem>
             </li>

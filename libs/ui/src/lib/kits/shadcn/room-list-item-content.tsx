@@ -6,6 +6,7 @@ export function ShadcnRoomListItemContent({
   icon,
   name,
   preview,
+  topic,
   unread,
   className,
   ...props
@@ -23,7 +24,7 @@ export function ShadcnRoomListItemContent({
           {name}
         </span>
         <span className="block truncate text-xs text-[var(--sn-text-dim)]">
-          {preview ?? '\u00A0'}
+          {preview ?? topic ?? '\u00A0'}
         </span>
       </span>
       {unread ? (
