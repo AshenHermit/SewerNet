@@ -3,6 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';
 import { IconSetProvider } from '@sewer-net/icons';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { App } from './app';
 
@@ -17,7 +18,9 @@ describe('App', () => {
       <I18nProvider i18n={i18n}>
         <UiKitProvider>
           <IconSetProvider>
-            <App />
+            <MemoryRouter initialEntries={['/']}>
+              <App />
+            </MemoryRouter>
           </IconSetProvider>
         </UiKitProvider>
       </I18nProvider>,
