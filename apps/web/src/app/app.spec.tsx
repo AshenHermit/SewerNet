@@ -3,8 +3,17 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';
 import { IconSetProvider } from '@sewer-net/icons';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './app';
+
+// The login screen probes the homeserver for MAS on mount; keep tests offline.
+vi.mock('../lib/matrix-client', () => ({
+  matrixClient: { login: vi.fn(), registerOauthClient: vi.fn() },
+  normalizeHomeserver: vi.fn(async (input: string) => input),
+  discoverMasAuth: vi.fn(async () => null),
+  refreshOauthToken: vi.fn(),
+}));
 
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} });
@@ -17,7 +26,9 @@ describe('App', () => {
       <I18nProvider i18n={i18n}>
         <UiKitProvider>
           <IconSetProvider>
-            <App />
+            <MemoryRouter initialEntries={['/']}>
+              <App />
+            </MemoryRouter>
           </IconSetProvider>
         </UiKitProvider>
       </I18nProvider>,

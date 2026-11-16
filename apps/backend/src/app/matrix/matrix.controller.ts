@@ -42,7 +42,7 @@ export class MatrixController {
     });
   }
 
-  @Post('whoami')
+  @Get('whoami')
   @HttpCode(200)
   whoami(
     @Headers(HS) homeserver: string | undefined,

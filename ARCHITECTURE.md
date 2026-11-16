@@ -19,12 +19,16 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 3. **Proxy-компоненты**: `ProxyButton`/`ProxyInput`/`ProxyIcon` рендерят реализацию из реестра kits/icon sets, выбранного в теме (`kitId`). Добавление нового UI kit = новый набор компонентов в реестре.
 4. **Тема**: `ThemeSettings {kitId, mode, accent, font, radius}` → CSS-переменные `--sn-*` на `documentElement` (`data-theme`). Тема в zustand persist (`sewernet:theme`).
 5. **Монорепо-резолюция**: без `tsconfig` paths — через `package.json exports` (`@sewer-net/*`) + npm workspaces + `customConditions: ["@sewer-net/source"]`; библиотеки non-buildable (source-потребление).
+6. **Авторизация через MAS (OAuth 2.0)**: frontend ведёт браузер на `authorization_endpoint` (authorization code + PKCE S256, MSC2964/2965/2966); backend stateless проксирует динамическую регистрацию клиента (RFC 7591, без кэша — MAS дедуплицирует по хэшу метаданных), обмен кода и refresh grant (`/api/matrix/oauth/discover|register|token`, OIDC-эндпоинты всегда из `{issuer}/.well-known/openid-configuration`). PKCE/state — на фронте (`sessionStorage sewernet:oauth`); `response_mode`: `query` для loopback http, `fragment` для https; callback читает оба. Access token MAS — обычный Matrix Bearer в существующем proxy; при 401 — один refresh + retry, неудача refresh → logout. Парольный вход сохранён как fallback (homeserver'ы без MAS).
 
 ## Поток данных
 ```
 web (React)
+  ├─ login-screen: normalizeHomeserver → discoverMasAuth → OAuth redirect (PKCE) | password fallback
+  ├─ /callback: exchangeOauthCode → whoami → setSession → Navigate /
   ├─ matrix-client.ts  →  /api/matrix/*  →  NestJS proxy  →  Matrix homeserver (/_matrix/client/v3/*)
-  ├─ auth-store (persist)  → AuthSession {homeserverUrl, accessToken, userId, deviceId}
+  │     └─ 401 → refreshOauthToken (refresh grant через backend) → один retry
+  ├─ auth-store (persist)  → AuthSession {homeserverUrl, accessToken, userId, deviceId, issuer?, clientId?, refreshToken?, expiresAt?}
   ├─ chat-store            → rooms, activeRoomId, messages
   └─ theme-store (persist) → ThemeSettings → applyTheme() → CSS vars → kits/icons
 ```

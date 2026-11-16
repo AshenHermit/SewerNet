@@ -11,6 +11,7 @@
 - [x] Тема: kit/mode/accent/font/radius → CSS-переменные --sn-*, zustand persist
 - [x] Next.js лендинг + dev log (apps/landing)
 - [x] Общая проверка: nx run-many -t typecheck,lint,test,build — зелёная
+- [x] Авторизация через MAS: OAuth 2.0 authorization code + PKCE S256 (MSC2964/2965/2966), discovery MAS (`auth_metadata` → `.well-known` → fallback), динамическая регистрация клиента, обмен/refresh токенов через backend, callback `/callback` (query+fragment), прозрачный refresh на 401; парольный вход как fallback
 
 ## MVP — доводка
 - [ ] Tauri desktop-обёртка apps/desktop
