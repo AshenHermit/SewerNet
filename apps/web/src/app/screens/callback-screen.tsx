@@ -12,6 +12,16 @@ import { useAuthStore } from '../stores/auth-store';
 
 type FailureKind = 'denied' | 'state' | 'expired' | 'failed';
 
+class CallbackFailure extends Error {
+  constructor(
+    public kind: FailureKind,
+    public detail?: string,
+  ) {
+    super(detail ?? kind);
+    this.name = 'CallbackFailure';
+  }
+}
+
 /** Finishes the MAS OAuth flow: validates state, exchanges the code, stores the session. */
 export function CallbackScreen() {
   const location = useLocation();
@@ -32,13 +42,16 @@ export function CallbackScreen() {
       const pending = getPendingOAuth();
       try {
         if (params.error) {
-          throw { kind: 'denied' as const, detail: params.errorDescription ?? params.error };
+          throw new CallbackFailure(
+            'denied',
+            params.errorDescription ?? params.error,
+          );
         }
         if (!pending) {
-          throw { kind: 'expired' as const };
+          throw new CallbackFailure('expired');
         }
         if (!params.code || params.state !== pending.state) {
-          throw { kind: 'state' as const };
+          throw new CallbackFailure('state');
         }
 
         const tokens = await matrixClient.exchangeOauthCode({
@@ -75,13 +88,8 @@ export function CallbackScreen() {
         setDone(true);
       } catch (thrown) {
         clearPendingOAuth();
-        if (
-          thrown &&
-          typeof thrown === 'object' &&
-          'kind' in thrown &&
-          typeof (thrown as { kind: FailureKind }).kind === 'string'
-        ) {
-          setFailure(thrown as { kind: FailureKind; detail?: string });
+        if (thrown instanceof CallbackFailure) {
+          setFailure({ kind: thrown.kind, detail: thrown.detail });
         } else {
           setFailure({
             kind: 'failed',

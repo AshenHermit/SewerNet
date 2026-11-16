@@ -20,31 +20,47 @@ msgstr "Accent color"
 msgid "Appearance"
 msgstr "Appearance"
 
-#: apps/web/src/app/components/chat-view.tsx:185
+#: apps/web/src/app/components/chat-view.tsx:195
 msgid "Attach"
 msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:137
+#: apps/web/src/app/components/chat-view.tsx:147
 msgid "Back"
 msgstr "Back"
+
+#: apps/web/src/app/screens/callback-screen.tsx:115
+msgid "Back to sign in"
+msgstr "Back to sign in"
 
 #: apps/web/src/app/components/settings-panel.tsx:58
 msgid "Color scheme"
 msgstr "Color scheme"
 
+#: apps/web/src/app/screens/login-screen.tsx:179
+msgid "Continue with Matrix"
+msgstr "Continue with Matrix"
+
 #: apps/web/src/app/components/settings-panel.tsx:128
 msgid "Corner radius"
 msgstr "Corner radius"
+
+#: apps/web/src/app/screens/login-screen.tsx:186
+msgid "Create account"
+msgstr "Create account"
 
 #: apps/web/src/app/components/settings-panel.tsx:14
 msgid "Dark"
 msgstr "Dark"
 
+#: apps/web/src/app/screens/callback-screen.tsx:123
+msgid "Finishing sign-in…"
+msgstr "Finishing sign-in…"
+
 #: apps/web/src/app/components/settings-panel.tsx:106
 msgid "Font"
 msgstr "Font"
 
-#: apps/web/src/app/screens/login-screen.tsx:56
+#: apps/web/src/app/screens/login-screen.tsx:160
 msgid "Homeserver URL"
 msgstr "Homeserver URL"
 
@@ -60,7 +76,7 @@ msgstr "Light"
 msgid "Loading chats…"
 msgstr "Loading chats…"
 
-#: apps/web/src/app/components/chat-view.tsx:155
+#: apps/web/src/app/components/chat-view.tsx:165
 msgid "Loading messages…"
 msgstr "Loading messages…"
 
@@ -68,8 +84,8 @@ msgstr "Loading messages…"
 msgid "Log out"
 msgstr "Log out"
 
-#: apps/web/src/app/components/chat-view.tsx:191
-#: apps/web/src/app/components/chat-view.tsx:192
+#: apps/web/src/app/components/chat-view.tsx:201
+#: apps/web/src/app/components/chat-view.tsx:202
 msgid "Message"
 msgstr "Message"
 
@@ -77,11 +93,11 @@ msgstr "Message"
 msgid "No chats yet"
 msgstr "No chats yet"
 
-#: apps/web/src/app/components/chat-view.tsx:159
+#: apps/web/src/app/components/chat-view.tsx:169
 msgid "No messages yet"
 msgstr "No messages yet"
 
-#: apps/web/src/app/screens/login-screen.tsx:80
+#: apps/web/src/app/screens/login-screen.tsx:121
 msgid "Password"
 msgstr "Password"
 
@@ -93,11 +109,15 @@ msgstr "Reset to defaults"
 msgid "Search"
 msgstr "Search"
 
-#: apps/web/src/app/components/chat-view.tsx:125
+#: apps/web/src/app/screens/callback-screen.tsx:103
+msgid "Security check failed. Please try signing in again."
+msgstr "Security check failed. Please try signing in again."
+
+#: apps/web/src/app/components/chat-view.tsx:135
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 
-#: apps/web/src/app/components/chat-view.tsx:195
+#: apps/web/src/app/components/chat-view.tsx:205
 msgid "Send"
 msgstr "Send"
 
@@ -105,13 +125,29 @@ msgstr "Send"
 msgid "Settings"
 msgstr "Settings"
 
-#: apps/web/src/app/screens/login-screen.tsx:99
+#: apps/web/src/app/screens/login-screen.tsx:139
 msgid "Sign in"
 msgstr "Sign in"
 
-#: apps/web/src/app/screens/login-screen.tsx:49
+#: apps/web/src/app/screens/login-screen.tsx:153
 msgid "Sign in to your Matrix account"
 msgstr "Sign in to your Matrix account"
+
+#: apps/web/src/app/screens/login-screen.tsx:190
+msgid "Sign in with password"
+msgstr "Sign in with password"
+
+#: apps/web/src/app/screens/callback-screen.tsx:108
+msgid "Sign-in failed"
+msgstr "Sign-in failed"
+
+#: apps/web/src/app/screens/callback-screen.tsx:106
+msgid "Sign-in session expired. Please try again."
+msgstr "Sign-in session expired. Please try again."
+
+#: apps/web/src/app/screens/callback-screen.tsx:101
+msgid "Sign-in was cancelled"
+msgstr "Sign-in was cancelled"
 
 #: apps/web/src/app/components/rail.tsx:48
 msgid "Switch to dark theme"
@@ -125,6 +161,6 @@ msgstr "Switch to light theme"
 msgid "System"
 msgstr "System"
 
-#: apps/web/src/app/screens/login-screen.tsx:68
+#: apps/web/src/app/screens/login-screen.tsx:110
 msgid "Username"
 msgstr "Username"
