@@ -143,4 +143,50 @@ describe('ChatView', () => {
       ).toBe('State Room'),
     );
   });
+
+  it('загружает историю, даже если /threads и /aliases недоступны', async () => {
+    installFetch((url) => {
+      if (url.includes('/state/m.room.name')) {
+        return new Response(JSON.stringify({ name: 'State Room' }), {
+          status: 200,
+        });
+      }
+      if (url.includes('/messages')) {
+        return new Response(
+          JSON.stringify({
+            chunk: [
+              {
+                event_id: '$last:matrix.org',
+                type: 'm.room.message',
+                sender: '@alice:matrix.org',
+                origin_server_ts: 1,
+                content: { msgtype: 'm.text', body: 'hi' },
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.includes('/read_markers')) {
+        return new Response(JSON.stringify({}), { status: 200 });
+      }
+      // /members, /threads, /aliases — 403 на чужих/старых homeserver'ах.
+      return new Response(
+        JSON.stringify({ errcode: 'M_FORBIDDEN', error: 'Forbidden' }),
+        { status: 403 },
+      );
+    });
+    useAuthStore.setState({ session });
+    useChatStore.setState({
+      rooms: [{ id: '!r1:matrix.org', name: 'Old', preview: '', lastTs: 0 }],
+      activeRoomId: '!r1:matrix.org',
+    });
+
+    renderView();
+
+    await waitFor(() =>
+      expect(useChatStore.getState().messages['!r1:matrix.org']).toHaveLength(1),
+    );
+    expect(useChatStore.getState().error).toBeNull();
+  });
 });

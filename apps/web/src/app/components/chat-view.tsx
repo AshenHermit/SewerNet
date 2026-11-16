@@ -55,19 +55,28 @@ export function ChatView({ onAuthError }: ChatViewProps) {
       setLoadingMessages(true);
       setError(null);
       try {
-        // 5 независимых запроса параллельно + read_markers после истории.
-        const [stateRes, messagesRes] = await Promise.all([
+        // Пять независимых запросов в одном круге. /state и /messages
+        // обязательны, /members, /threads и /aliases — опциональны: их
+        // недоступность (403/404 на чужих homeserver'ах) не должна мешать
+        // показать историю комнаты.
+        const [stateResult, messagesResult] = await Promise.allSettled([
           matrixClient.getRoomState(currentSession, roomId, 'm.room.name'),
           matrixClient.getMessages(currentSession, roomId, { limit: 50 }),
           matrixClient.getRoomMembers(currentSession, roomId),
           matrixClient.getRoomThreads(currentSession, roomId),
           matrixClient.getRoomAliases(currentSession, roomId),
         ]);
+        if (messagesResult.status === 'rejected') {
+          throw messagesResult.reason;
+        }
         if (cancelled) return;
 
         // Имя из m.room.name — не дожидаемся истории.
-        const name = stateRes['name'] as string | undefined;
-        if (name) {
+        const name =
+          stateResult.status === 'fulfilled'
+            ? stateResult.value['name']
+            : undefined;
+        if (typeof name === 'string') {
           useChatStore.setState((state) => ({
             rooms: state.rooms.map((r) =>
               r.id === roomId ? { ...r, name } : r,
@@ -75,6 +84,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
           }));
         }
 
+        const messagesRes = messagesResult.value;
         setMessages(roomId, messagesRes.chunk);
         loadedRoomRef.current = roomId;
 
@@ -102,7 +112,6 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeRoomId,
     session,
