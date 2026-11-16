@@ -1,11 +1,7 @@
 import { useCallback, useEffect } from 'react';
-import { matrixClient, MatrixApiError, type AuthSession } from '../../lib/matrix-client';
+import { matrixClient, MatrixApiError } from '../../lib/matrix-client';
 import { useAuthStore } from '../stores/auth-store';
-import {
-  previewFromEvent,
-  useChatStore,
-  type RoomInfo,
-} from '../stores/chat-store';
+import { useChatStore, type RoomInfo } from '../stores/chat-store';
 import { RoomList } from '../components/room-list';
 import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
@@ -25,38 +21,6 @@ export function ChatScreen() {
     [clearSession],
   );
 
-  /** Загружает имя комнаты из события состояния и превью последнего сообщения. */
-  async function enrichRoom(session: AuthSession, roomId: string): Promise<RoomInfo> {
-    const room: RoomInfo = {
-      id: roomId,
-      name: roomId.replace(/![^:]*:/, '!…:'),
-      preview: '',
-      lastTs: 0,
-    };
-
-    try {
-      const state = await matrixClient.getRoomState(session, roomId, 'm.room.name');
-      if (state && typeof state.name === 'string') {
-        room.name = state.name;
-      }
-    } catch {
-      // Оставляем запасное имя на основе ID комнаты.
-    }
-
-    try {
-      const res = await matrixClient.getMessages(session, roomId, { limit: 1 });
-      const last = res.chunk[0];
-      if (last?.type === 'm.room.message') {
-        room.preview = previewFromEvent(last);
-        room.lastTs = last.origin_server_ts ?? 0;
-      }
-    } catch {
-      // Оставляем пустое превью.
-    }
-
-    return room;
-  }
-
   useEffect(() => {
     let cancelled = false;
 
@@ -65,19 +29,27 @@ export function ChatScreen() {
       chat.setLoadingRooms(true);
       chat.setError(null);
       try {
-        const { joined_rooms } = await matrixClient.getJoinedRooms(session);
+        // Один запрос sliding-sync за整ым списком комнат с названиями и превью.
+        const synced = await matrixClient.getSyncedRooms(session);
         if (cancelled) return;
-        // Имена и превью всех комнат загружаются параллельно, чтобы список
-        // отображал достоверные данные сразу, без открытия чата.
-        const rooms = await Promise.all(
-          joined_rooms.map((id) => enrichRoom(session, id)),
-        );
+        const rooms: RoomInfo[] = synced.map((room) => ({
+          id: room.room_id,
+          name:
+            room.name ??
+            room.room_id.replace(/![^:]*:/, '!…:'),
+          preview: room.preview ?? '',
+          lastTs: room.lastTs ?? 0,
+          avatar: room.avatar,
+          topic: room.topic,
+        }));
         if (cancelled) return;
         chat.setRooms(rooms.sort((a, b) => b.lastTs - a.lastTs));
       } catch (err) {
         if (!cancelled) {
           handleAuthError(err);
-          chat.setError(err instanceof Error ? err.message : 'Failed to load rooms');
+          chat.setError(
+            err instanceof Error ? err.message : 'Failed to load rooms',
+          );
         }
       } finally {
         if (!cancelled) chat.setLoadingRooms(false);
