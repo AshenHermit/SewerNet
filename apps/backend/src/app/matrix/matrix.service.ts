@@ -45,6 +45,20 @@ export class MatrixService {
     });
   }
 
+  /** Содержание события состояния комнаты, например { name } для m.room.name. */
+  async getRoomState(
+    homeserver: string,
+    roomId: string,
+    eventType: string,
+    token?: string,
+  ): Promise<unknown> {
+    return this.proxy(
+      homeserver,
+      `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}`,
+      { token },
+    );
+  }
+
   async proxy(
     homeserver: string,
     path: string,

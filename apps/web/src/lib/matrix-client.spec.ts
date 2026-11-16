@@ -153,6 +153,24 @@ describe('matrixClient OAuth endpoints', () => {
   });
 });
 
+describe('matrixClient.getRoomState', () => {
+  it('fetches a room state event through the backend proxy', async () => {
+    const calls = installFetch((url) => {
+      if (url.includes('/state/m.room.name')) {
+        return new Response(JSON.stringify({ name: 'My room' }), { status: 200 });
+      }
+      return new Response('{}', { status: 404 });
+    });
+    const state = await matrixClient.getRoomState(session, '!r:matrix.org', 'm.room.name');
+    expect(state).toEqual({ name: 'My room' });
+    expect(calls[0]?.url).toContain('/rooms/!r%3Amatrix.org/state/m.room.name');
+    expect(calls[0]?.init.headers).toMatchObject({
+      Authorization: 'Bearer expired',
+      'x-matrix-homeserver': 'https://matrix.org',
+    });
+  });
+});
+
 describe('auto-refresh on 401', () => {
   it('refreshes once and retries the request with the new token', async () => {
     const calls = installFetch((url, init) => {

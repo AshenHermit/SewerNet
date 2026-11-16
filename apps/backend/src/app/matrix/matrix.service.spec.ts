@@ -60,6 +60,42 @@ describe('MatrixService', () => {
     });
   });
 
+  describe('getRoomState', () => {
+    it('proxies the room state event to the homeserver', async () => {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      const original = global.fetch;
+      global.fetch = (async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return new Response(JSON.stringify({ name: 'My room' }), {
+          status: 200,
+        });
+      }) as unknown as typeof fetch;
+      try {
+        const result = await service.getRoomState(
+          'https://matrix.org',
+          '!room:matrix.org',
+          'm.room.name',
+          'token',
+        );
+        expect(result).toEqual({ name: 'My room' });
+        expect(calls[0]?.url).toBe(
+          'https://matrix.org/_matrix/client/v3/rooms/!room%3Amatrix.org/state/m.room.name',
+        );
+        expect((calls[0]?.init.headers as Record<string, string>)['Authorization']).toBe(
+          'Bearer token',
+        );
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('rejects an invalid homeserver URL', async () => {
+      await expect(
+        service.getRoomState('not-a-url', '!room:matrix.org', 'm.room.name'),
+      ).rejects.toThrow(HttpException);
+    });
+  });
+
   describe('login', () => {
     it('posts password login payload to the homeserver', async () => {
       const calls: Array<{ url: string; init: RequestInit }> = [];

@@ -65,6 +65,21 @@ export class MatrixController {
     );
   }
 
+  @Get('rooms/:roomId/state/:eventType')
+  roomState(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+    @Param('roomId') roomId: string,
+    @Param('eventType') eventType: string,
+  ) {
+    return this.matrix.getRoomState(
+      requireHomeserver(homeserver),
+      roomId,
+      eventType,
+      extractToken(authorization),
+    );
+  }
+
   @Get('rooms/:roomId/messages')
   messages(
     @Headers(HS) homeserver: string | undefined,

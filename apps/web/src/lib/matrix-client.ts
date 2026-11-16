@@ -258,6 +258,18 @@ export const matrixClient = {
     return request<{ joined_rooms: string[] }>('/rooms', { session });
   },
 
+  /** Содержание события состояния комнаты (например { name } для m.room.name). */
+  getRoomState(
+    session: AuthSession,
+    roomId: string,
+    eventType: string,
+  ) {
+    return request<Record<string, unknown>>(
+      `/rooms/${encodeURIComponent(roomId)}/state/${encodeURIComponent(eventType)}`,
+      { session },
+    );
+  },
+
   getMessages(
     session: AuthSession,
     roomId: string,
