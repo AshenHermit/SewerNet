@@ -16,16 +16,14 @@ export function Rail() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const { t } = useLingui();
 
-  const nextMode: Record<ThemeMode, ThemeMode> = {
-    light: 'dark',
-    dark: 'system',
-    system: 'light',
-  };
+  // Simple two-state toggle: matches the label/icon, so one click reaches
+  // the theme the button promises (system mode still selectable in settings).
+  const targetMode: ThemeMode = settings.mode === 'dark' ? 'light' : 'dark';
 
   return (
     <ProxyRail
       mode={settings.mode}
-      onThemeToggle={() => setMode(nextMode[settings.mode])}
+      onThemeToggle={() => setMode(targetMode)}
       onSettings={() => setSettingsOpen((open) => !open)}
       onLogout={() => clearSession()}
     >
@@ -39,12 +37,12 @@ export function Rail() {
       ))}
       <ProxyRailButton
         title={
-          settings.mode === 'dark'
+          targetMode === 'light'
             ? t`Switch to light theme`
             : t`Switch to dark theme`
         }
-        icon={settings.mode === 'dark' ? 'sun' : 'moon'}
-        onClick={() => setMode(nextMode[settings.mode])}
+        icon={targetMode === 'light' ? 'sun' : 'moon'}
+        onClick={() => setMode(targetMode)}
       />
       <ProxyRailButton
         title={t`Settings`}

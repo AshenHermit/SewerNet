@@ -5,6 +5,7 @@ import {
   buildAuthorizationUrl,
   clearPendingOAuth,
   codeChallengeS256,
+  deviceIdFromScope,
   generateCodeVerifier,
   generateDeviceId,
   generateState,
@@ -90,6 +91,23 @@ describe('oauth-pkce', () => {
 
     it('never mixes unstable scopes into the request', () => {
       expect(oauthScope(generateDeviceId())).not.toContain('urn:matrix:org.matrix.msc2967');
+    });
+  });
+
+  describe('deviceIdFromScope', () => {
+    it('recovers the stable device scope granted by MAS', () => {
+      expect(deviceIdFromScope(oauthScope('device1234567'))).toBe('device1234567');
+    });
+
+    it('also accepts the legacy msc2967 spelling', () => {
+      expect(
+        deviceIdFromScope('openid urn:matrix:org.matrix.msc2967.client:device:legacy123'),
+      ).toBe('legacy123');
+    });
+
+    it('returns null without a device scope', () => {
+      expect(deviceIdFromScope('openid urn:matrix:client:api:*')).toBeNull();
+      expect(deviceIdFromScope(undefined)).toBeNull();
     });
   });
 

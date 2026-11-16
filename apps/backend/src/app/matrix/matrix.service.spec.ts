@@ -58,6 +58,50 @@ describe('MatrixService', () => {
         global.fetch = original;
       }
     });
+
+    it('aborts and throws 504 when homeserver does not respond in time', async () => {
+      const original = global.fetch;
+      global.fetch = (async (_url: string, init: RequestInit) => {
+        return new Promise<Response>((_resolve, reject) => {
+          const abort = () => reject(new DOMException('The operation was aborted.', 'AbortError'));
+          init.signal?.addEventListener('abort', abort, { once: true });
+          if (init.signal?.aborted) abort();
+          // never resolves -> forces timeout
+        });
+      }) as unknown as typeof fetch;
+      try {
+        await expect(
+          service.proxy('https://matrix.org', '/account/whoami', {
+            token: 'bad',
+            timeoutMs: 50,
+          }),
+        ).rejects.toMatchObject({
+          status: 504,
+          response: { errcode: 'M_REQUEST_TIMEOUT' },
+        });
+      } finally {
+        global.fetch = original;
+      }
+    });
+
+    it('throws 502 when fetch rejects with a network error', async () => {
+      const original = global.fetch;
+      global.fetch = (async () => {
+        throw new TypeError('fetch failed');
+      }) as unknown as typeof fetch;
+      try {
+        await expect(
+          service.proxy('https://matrix.org', '/account/whoami', {
+            token: 'bad',
+          }),
+        ).rejects.toMatchObject({
+          status: 502,
+          response: { errcode: 'M_REQUEST_FAILED' },
+        });
+      } finally {
+        global.fetch = original;
+      }
+    });
   });
 
   describe('getRoomState', () => {

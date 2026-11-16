@@ -5,6 +5,8 @@ export interface ProxyOptions {
   token?: string;
   body?: unknown;
   query?: Record<string, string | undefined>;
+  /** Таймаут запроса к homeserver в мс. По умолчанию 15 с. */
+  timeoutMs?: number;
 }
 
 export interface MatrixCredentials {
@@ -77,11 +79,39 @@ export class MatrixService {
       headers['Content-Type'] = 'application/json';
     }
 
-    const response = await fetch(`${base}${path}${qs}`, {
-      method: options.method ?? (options.body !== undefined ? 'POST' : 'GET'),
-      headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
+    const timeoutMs = options.timeoutMs ?? 15_000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(`${base}${path}${qs}`, {
+        method: options.method ?? (options.body !== undefined ? 'POST' : 'GET'),
+        headers,
+        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw new HttpException(
+          {
+            errcode: 'M_REQUEST_TIMEOUT',
+            error: `Homeserver request timed out after ${timeoutMs}ms`,
+          },
+          504,
+        );
+      }
+      throw new HttpException(
+        {
+          errcode: 'M_REQUEST_FAILED',
+          error: err instanceof Error ? err.message : String(err),
+        },
+        502,
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const payload = (await response.json().catch(() => ({}))) as Record<
       string,

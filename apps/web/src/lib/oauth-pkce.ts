@@ -14,6 +14,9 @@ export interface OAuthSessionState {
   redirectUri: string;
   state: string;
   codeVerifier: string;
+  /** Device id requested in the scope, kept so /callback can recover it if
+   *  whoami does not return one. */
+  deviceId?: string;
   prompt?: 'create';
 }
 
@@ -67,6 +70,17 @@ export function generateDeviceId(): string {
 /** MSC2967 stable scopes: full client API + registration of OUR device. */
 export function oauthScope(deviceId: string): string {
   return `${OAUTH_SCOPE} urn:matrix:client:device:${deviceId}`;
+}
+
+/** Recover the device id granted in a token response's scope. MAS may not
+ *  return device_id from whoami, but the stable MSC2967 scope always carries
+ *  it. Matches both the stable and the legacy org.matrix.msc2967 spelling. */
+export function deviceIdFromScope(scope?: string): string | null {
+  if (!scope) return null;
+  const match = scope.match(
+    /urn:matrix:(?:org\.matrix\.msc2967\.)?client:device:([^\s]+)/,
+  );
+  return match?.[1] ?? null;
 }
 
 /** RFC 7636 S256: base64url(SHA-256(verifier)), no padding. */

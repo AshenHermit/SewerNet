@@ -20,7 +20,7 @@ export function ShadcnChatViewMessageList({
     >
       {loading ? (
         <p className="text-center text-xs text-[var(--sn-text-dim)]">
-          Loading messagesвЂ¦
+          Loading messages
         </p>
       ) : events.length === 0 ? (
         <p className="text-center text-xs text-[var(--sn-text-dim)]">
@@ -40,4 +40,3 @@ export function ShadcnChatViewMessageList({
     </div>
   );
 }
-

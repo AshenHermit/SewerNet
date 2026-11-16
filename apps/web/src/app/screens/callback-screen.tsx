@@ -5,6 +5,7 @@ import type { AuthSession } from '../../lib/matrix-client';
 import { matrixClient } from '../../lib/matrix-client';
 import {
   clearPendingOAuth,
+  deviceIdFromScope,
   getPendingOAuth,
   parseCallbackParams,
 } from '../../lib/oauth-pkce';
@@ -75,7 +76,13 @@ export function CallbackScreen() {
           homeserverUrl: pending.homeserverUrl,
           accessToken: tokens.accessToken,
           userId: who.user_id,
-          deviceId: who.device_id ?? '',
+          // whoami often omits device_id for MAS-issued tokens. Recover it
+          // from the granted scope, then from what we stored at redirect time.
+          deviceId:
+            who.device_id ??
+            deviceIdFromScope(tokens.scope) ??
+            pending.deviceId ??
+            '',
           issuer: pending.issuer,
           clientId: pending.clientId,
           ...(tokens.refreshToken !== undefined

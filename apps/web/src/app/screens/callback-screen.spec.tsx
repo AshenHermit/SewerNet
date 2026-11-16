@@ -129,4 +129,53 @@ describe('CallbackScreen', () => {
       'Bearer at',
     );
   });
+
+  it('recovers the device id from the token scope when whoami omits it', async () => {
+    sessionStorage.setItem('sewernet:oauth', JSON.stringify(PENDING));
+    installFetch((url) => {
+      if (url === '/api/matrix/oauth/token') {
+        return new Response(
+          JSON.stringify({
+            accessToken: 'at',
+            scope: 'openid urn:matrix:client:api:* urn:matrix:client:device:SCOPED123',
+          }),
+          { status: 200 },
+        );
+      }
+      if (url === '/api/matrix/whoami') {
+        return new Response(
+          JSON.stringify({ user_id: '@alice:matrix.org' }),
+          { status: 200 },
+        );
+      }
+      return new Response('{}', { status: 404 });
+    });
+    renderScreen('/callback?code=c&state=st_ok');
+
+    await waitFor(() => expect(screen.getByText('chat-root')).toBeTruthy());
+    expect(useAuthStore.getState().session?.deviceId).toBe('SCOPED123');
+  });
+
+  it('falls back to the device id saved before the redirect', async () => {
+    sessionStorage.setItem(
+      'sewernet:oauth',
+      JSON.stringify({ ...PENDING, deviceId: 'SAVED123456' }),
+    );
+    installFetch((url) => {
+      if (url === '/api/matrix/oauth/token') {
+        return new Response(JSON.stringify({ accessToken: 'at' }), { status: 200 });
+      }
+      if (url === '/api/matrix/whoami') {
+        return new Response(
+          JSON.stringify({ user_id: '@alice:matrix.org' }),
+          { status: 200 },
+        );
+      }
+      return new Response('{}', { status: 404 });
+    });
+    renderScreen('/callback?code=c&state=st_ok');
+
+    await waitFor(() => expect(screen.getByText('chat-root')).toBeTruthy());
+    expect(useAuthStore.getState().session?.deviceId).toBe('SAVED123456');
+  });
 });

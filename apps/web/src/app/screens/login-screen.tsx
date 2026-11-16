@@ -59,7 +59,9 @@ export function LoginScreen() {
     setError(null);
     try {
       const session = await matrixClient.login({
-        homeserverUrl,
+        // Use the address discovery resolved, so "matrix.org" works the same
+        // for password login as it does for the OAuth flow.
+        homeserverUrl: resolvedHomeserver ?? homeserverUrl,
         user,
         password,
         deviceName: 'SewerNet Web',
@@ -70,7 +72,7 @@ export function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  }, [homeserverUrl, user, password, setSession, setLoading, setError]);
+  }, [homeserverUrl, resolvedHomeserver, user, password, setSession, setLoading, setError]);
 
   const startOAuth = useCallback(
     async (prompt?: 'create') => {
@@ -91,6 +93,7 @@ export function LoginScreen() {
           redirectUri,
           state,
           codeVerifier,
+          deviceId,
           ...(prompt ? { prompt } : {}),
         });
         window.location.assign(

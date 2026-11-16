@@ -152,8 +152,38 @@ describe('LoginScreen', () => {
         redirectUri: 'http://localhost:4200/callback',
         state: 'st',
         codeVerifier: 'cv',
+        deviceId: 'device1234567',
       }),
     );
     vi.unstubAllGlobals();
+  });
+
+  it('signs in with the homeserver address discovery resolved', async () => {
+    mockedDiscover.mockResolvedValue(null);
+    vi.mocked(matrixClient.login).mockResolvedValue({
+      homeserverUrl: 'https://matrix-client.matrix.org',
+      accessToken: 'at',
+      userId: '@alice:matrix.org',
+      deviceId: 'DEV',
+    });
+
+    renderLogin();
+    fireEvent.change(await screen.findByLabelText('Username'), {
+      target: { value: 'alice' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    await waitFor(() =>
+      expect(matrixClient.login).toHaveBeenCalledWith(
+        expect.objectContaining({
+          homeserverUrl: 'https://matrix-client.matrix.org',
+          user: 'alice',
+          password: 'secret',
+        }),
+      ),
+    );
   });
 });
