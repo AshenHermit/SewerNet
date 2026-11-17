@@ -10,7 +10,7 @@ export function ShadcnRoomListPanel({
     <div
       {...props}
       className={cn(
-        'flex flex-col h-full rounded-[var(--sn-radius)] bg-[var(--sn-surface-2)] border border-[var(--sn-border)] max-w-sm',
+        'flex flex-col h-full rounded-[var(--sn-radius)] bg-[var(--sn-surface-2)] border border-[var(--sn-border)] max-w-sm overflow-hidden',
         className,
       )}
     >

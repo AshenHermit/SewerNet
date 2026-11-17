@@ -38,11 +38,9 @@ export function RoomList() {
           loadingLabel={<Trans>Loading chats…</Trans>}
         />
       ) : filtered.length === 0 ? (
-        <ProxyRoomListEmpty
-          emptyLabel={<Trans>No chats yet</Trans>}
-        />
+        <ProxyRoomListEmpty emptyLabel={<Trans>No chats yet</Trans>} />
       ) : (
-        <ul>
+        <ul className="overflow-y-auto">
           {filtered.map((room) => (
             <li key={room.id}>
               <ProxyRoomListItem
