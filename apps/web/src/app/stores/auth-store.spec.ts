@@ -22,6 +22,13 @@ const alice: MatrixCredentials = {
   },
 };
 
+const bob: MatrixCredentials = {
+  userId: '@bob:example.org',
+  accessToken: 'tok-b',
+  deviceId: 'DEV-B',
+  homeserverUrl: 'https://matrix.example.org',
+};
+
 beforeEach(() => {
   localStorage.clear();
 });
@@ -38,8 +45,8 @@ describe('auth-store on accounts map', () => {
 
   it('setCredentials(null) removes the active account', async () => {
     const { useAuthStore } = await import('./auth-store');
-    useAuthStore.getState().setCredentials(alice);
 
+    useAuthStore.getState().setCredentials(alice);
     useAuthStore.getState().setCredentials(null);
 
     expect(useAuthStore.getState().credentials).toBeNull();
@@ -47,40 +54,36 @@ describe('auth-store on accounts map', () => {
     expect(getAccount(alice.userId)).toBeNull();
   });
 
-  it('exposes the legacy session shape derived from credentials', async () => {
+  it('does not expose the removed legacy session surface', async () => {
     const { useAuthStore } = await import('./auth-store');
 
     useAuthStore.getState().setCredentials(alice);
+    const state = useAuthStore.getState();
 
-    const session = useAuthStore.getState().session;
-    expect(session).not.toBeNull();
-    expect(session?.issuer).toBe('https://issuer.example.org');
-    expect(session?.clientId).toBe('client-123');
+    expect(state).not.toHaveProperty('session');
+    expect(state).not.toHaveProperty('setSession');
+    expect(state).not.toHaveProperty('clearSession');
   });
 
-  it('setSession persists credentials through the legacy compat path', async () => {
+  it('setCredentials(null) keeps the other stored accounts', async () => {
     const { useAuthStore } = await import('./auth-store');
+    upsertAccount(bob);
 
-    useAuthStore.getState().setSession({
-      homeserverUrl: 'https://matrix.example.org',
-      accessToken: 'tok-a',
-      userId: '@alice:example.org',
-      deviceId: 'DEV-A',
-      refreshToken: 'rt-a',
-    });
+    useAuthStore.getState().setCredentials(alice);
+    useAuthStore.getState().setCredentials(null);
 
-    expect(getActiveAccount()?.accessToken).toBe('tok-a');
-    expect(useAuthStore.getState().credentials?.refreshToken).toBe('rt-a');
+    expect(getActiveAccount()).toBeNull();
+    expect(getAccount(alice.userId)).toBeNull();
+    expect(getAccount(bob.userId)).toEqual(bob);
   });
 
   it('hydrates credentials from the accounts map when the store loads', async () => {
     upsertAccount(alice);
     setActiveAccount(alice.userId);
-
     vi.resetModules();
+
     const fresh = await import('./auth-store');
 
     expect(fresh.useAuthStore.getState().credentials).toEqual(alice);
-    expect(fresh.useAuthStore.getState().session?.accessToken).toBe('tok-a');
   });
 });

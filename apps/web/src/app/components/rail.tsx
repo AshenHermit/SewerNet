@@ -14,9 +14,9 @@ export function Rail() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settings = useThemeStore((state) => state.settings);
   const setMode = useThemeStore((state) => state.setMode);
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const setCredentials = useAuthStore((state) => state.setCredentials);
   const onLogout = () => {
-    void Promise.resolve(logoutCurrent()).finally(() => clearSession());
+    void Promise.resolve(logoutCurrent()).finally(() => setCredentials(null));
   };
   const { t } = useLingui();
 

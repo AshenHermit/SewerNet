@@ -128,13 +128,12 @@ beforeEach(() => {
       deviceId: 'DEV',
       homeserverUrl: 'https://matrix.org',
     },
-    session: null,
   });
   useChatStore.setState({ activeRoomId: '!r1:matrix.org', error: null });
 });
 
 afterEach(() => {
-  useAuthStore.setState({ credentials: null, session: null });
+  useAuthStore.setState({ credentials: null });
   useChatStore.setState({ activeRoomId: null, error: null });
 });
 

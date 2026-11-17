@@ -7,12 +7,21 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './app';
 
-// The login screen probes the homeserver for MAS on mount; keep tests offline.
-vi.mock('../lib/matrix-client', () => ({
-  matrixClient: { login: vi.fn(), registerOauthClient: vi.fn() },
-  normalizeHomeserver: vi.fn(async (input: string) => input),
-  discoverMasAuth: vi.fn(async () => null),
-  refreshOauthToken: vi.fn(),
+// The welcome screen probes the homeserver for auth capabilities on mount;
+// keep tests offline by stubbing the discovery layer.
+vi.mock('./features/auth/oidc', () => ({
+  resolveBaseUrl: vi.fn(async (input: string) => input),
+  discoverAuthCapabilities: vi.fn(async (resolvedBaseUrl: string) => ({
+    resolvedBaseUrl,
+    hasPasswordLogin: true,
+    ssoFlow: false,
+    delegatedAuth: false,
+    registerAvailable: false,
+    authMetadata: null,
+  })),
+  getOrRegisterClientId: vi.fn(),
+  getOidcRedirectUri: vi.fn(() => 'http://localhost:4200/oidc/callback'),
+  startOidcLogin: vi.fn(),
 }));
 
 beforeAll(() => {
@@ -20,8 +29,8 @@ beforeAll(() => {
 });
 
 describe('App', () => {
-  it('shows the login screen when not authenticated', () => {
-    localStorage.removeItem('sewernet:auth');
+  it('shows the welcome screen when not authenticated', () => {
+    localStorage.clear();
     render(
       <I18nProvider i18n={i18n}>
         <UiKitProvider>
