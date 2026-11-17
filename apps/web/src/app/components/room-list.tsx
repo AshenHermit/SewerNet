@@ -8,13 +8,13 @@ import {
   ProxyRoomListSearch,
 } from '@sewer-net/ui';
 import { ProxyIcon } from '@sewer-net/icons';
+import { useRooms } from '../hooks/use-rooms';
 import { useChatStore } from '../stores/chat-store';
 
 export function RoomList() {
-  const rooms = useChatStore((state) => state.rooms);
+  const rooms = useRooms();
   const activeRoomId = useChatStore((state) => state.activeRoomId);
   const setActiveRoom = useChatStore((state) => state.setActiveRoom);
-  const loading = useChatStore((state) => state.loadingRooms);
   const { t } = useLingui();
   const [query, setQuery] = useState('');
 
@@ -32,20 +32,15 @@ export function RoomList() {
         onChange={(value) => setQuery(value)}
         placeholder={t`Search`}
       />
-      {loading ? (
-        <ProxyRoomListEmpty
-          loading
-          loadingLabel={<Trans>Loading chats…</Trans>}
-        />
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <ProxyRoomListEmpty emptyLabel={<Trans>No chats yet</Trans>} />
       ) : (
         <ul className="overflow-y-auto">
           {filtered.map((room) => (
-            <li key={room.id}>
+            <li key={room.roomId}>
               <ProxyRoomListItem
-                id={room.id}
-                active={activeRoomId === room.id}
+                id={room.roomId}
+                active={activeRoomId === room.roomId}
                 onSelect={(id) => setActiveRoom(id)}
               >
                 <ProxyRoomListItemContent

@@ -17,7 +17,10 @@ export interface RoomEntry {
 
 /** Последний event живого таймлайна с текстовым body (для превью). */
 function lastPreviewableEvent(room: Room): MatrixEvent | undefined {
-  const events = room.getLiveTimeline()?.getEvents() ?? [];
+  const events =
+    typeof room.getLiveTimeline === 'function'
+      ? (room.getLiveTimeline()?.getEvents() ?? [])
+      : [];
   for (let i = events.length - 1; i >= 0; i -= 1) {
     const event = events[i];
     const body = event.getContent()?.body;
@@ -29,7 +32,7 @@ function lastPreviewableEvent(room: Room): MatrixEvent | undefined {
 }
 
 function roomTopic(room: Room): string | undefined {
-  const event = room.currentState.getStateEvents('m.room.topic', '');
+  const event = room.currentState?.getStateEvents('m.room.topic', '');
   const topic = event?.getContent()?.topic;
   return typeof topic === 'string' && topic.length > 0 ? topic : undefined;
 }
@@ -54,13 +57,21 @@ export function buildRoomEntry(room: Room, client: MatrixClient): RoomEntry {
   return {
     roomId: room.roomId,
     name,
-    avatarMxc: room.getMxcAvatarUrl() ?? undefined,
+    avatarMxc:
+      typeof room.getMxcAvatarUrl === 'function'
+        ? (room.getMxcAvatarUrl() ?? undefined)
+        : undefined,
     topic: roomTopic(room),
     preview: previewEvent ? (previewEvent.getContent()?.body as string) : undefined,
     lastTs: previewEvent ? previewEvent.getTs() : undefined,
-    unread: room.getUnreadNotificationCount(NotificationCountType.Total) || undefined,
+    unread:
+      typeof room.getUnreadNotificationCount === 'function'
+        ? room.getUnreadNotificationCount(NotificationCountType.Total) || undefined
+        : undefined,
     mention:
-      room.getUnreadNotificationCount(NotificationCountType.Highlight) > 0,
+      typeof room.getUnreadNotificationCount === 'function'
+        ? room.getUnreadNotificationCount(NotificationCountType.Highlight) > 0
+        : false,
   };
 }
 

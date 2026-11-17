@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';
@@ -7,6 +7,18 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
 import { ChatView } from './chat-view';
+
+// useRooms reads the SDK singleton for the room display name.
+vi.mock('../../client/init-matrix', () => ({
+  getMatrixClient: vi.fn(() => ({
+    getUserId: () => '@alice:matrix.org',
+    getRooms: () => [
+      { roomId: '!r1:matrix.org', name: 'SDK Room', getMyMembership: () => 'join' },
+    ],
+    on: vi.fn(),
+    off: vi.fn(),
+  })),
+}));
 
 type FetchHandler = (url: string, init: RequestInit) => Response;
 
@@ -48,7 +60,6 @@ afterEach(() => {
   localStorage.removeItem('sewernet:auth');
   useAuthStore.setState({ credentials: null, session: null });
   useChatStore.setState({
-    rooms: [],
     activeRoomId: null,
     messages: {},
     error: null,
@@ -96,7 +107,6 @@ describe('ChatView', () => {
     });
     useAuthStore.setState({ credentials: session, session });
     useChatStore.setState({
-      rooms: [{ id: '!r1:matrix.org', name: 'Old', preview: '', lastTs: 0 }],
       activeRoomId: '!r1:matrix.org',
     });
 
@@ -134,14 +144,8 @@ describe('ChatView', () => {
       });
     }
 
-    // Имя из /state aplicado к комнате в сторе (заголовок).
-    await waitFor(() =>
-      expect(
-        useChatStore
-          .getState()
-          .rooms.find((r) => r.id === '!r1:matrix.org')?.name,
-      ).toBe('State Room'),
-    );
+    // Имя комнаты теперь из SDK-списка (useRooms).
+    await waitFor(() => expect(screen.getByText('SDK Room')).toBeTruthy());
   });
 
   it('загружает историю, даже если /threads и /aliases недоступны', async () => {
@@ -181,7 +185,6 @@ describe('ChatView', () => {
     });
     useAuthStore.setState({ credentials: session, session });
     useChatStore.setState({
-      rooms: [{ id: '!r1:matrix.org', name: 'Old', preview: '', lastTs: 0 }],
       activeRoomId: '!r1:matrix.org',
     });
 

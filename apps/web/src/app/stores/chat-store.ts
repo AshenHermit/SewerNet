@@ -1,47 +1,31 @@
 import { create } from 'zustand';
 import type { MatrixRoomEvent } from '@sewer-net/types';
 
-export interface RoomInfo {
-  id: string;
-  name: string;
-  preview: string;
-  lastTs: number;
-  avatar?: string;
-  topic?: string;
-}
-
 interface ChatState {
-  rooms: RoomInfo[];
   activeRoomId: string | null;
-  /** event id -> message event, keyed per room */
+  /** event id -> message event, keyed per room (legacy path until the timeline migration). */
   messages: Record<string, MatrixRoomEvent[]>;
-  /** Last known /sync position per room, used to resume long-poll after reconnect. */
+  /** Last known /sync position per room (legacy long-poll path). */
   syncedPos: Record<string, string>;
-  loadingRooms: boolean;
   loadingMessages: boolean;
   sending: boolean;
   error: string | null;
-  setRooms: (rooms: RoomInfo[]) => void;
   setActiveRoom: (roomId: string | null) => void;
   setMessages: (roomId: string, events: MatrixRoomEvent[]) => void;
   appendMessage: (roomId: string, event: MatrixRoomEvent) => void;
   setSyncedPos: (roomId: string, pos: string) => void;
-  setLoadingRooms: (loading: boolean) => void;
   setLoadingMessages: (loading: boolean) => void;
   setSending: (sending: boolean) => void;
   setError: (error: string | null) => void;
 }
 
 export const useChatStore = create<ChatState>()((set) => ({
-  rooms: [],
   activeRoomId: null,
   messages: {},
-  loadingRooms: false,
   loadingMessages: false,
   sending: false,
   error: null,
   syncedPos: {},
-  setRooms: (rooms) => set({ rooms }),
   setActiveRoom: (activeRoomId) => set({ activeRoomId }),
   setMessages: (roomId, events) =>
     set((state) => ({ messages: { ...state.messages, [roomId]: events } })),
@@ -54,7 +38,6 @@ export const useChatStore = create<ChatState>()((set) => ({
     })),
   setSyncedPos: (roomId, pos) =>
     set((state) => ({ syncedPos: { ...state.syncedPos, [roomId]: pos } })),
-  setLoadingRooms: (loadingRooms) => set({ loadingRooms }),
   setLoadingMessages: (loadingMessages) => set({ loadingMessages }),
   setSending: (sending) => set({ sending }),
   setError: (error) => set({ error }),

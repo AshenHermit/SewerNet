@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import type { MatrixEmittedEvents } from 'matrix-js-sdk';
 import { getMatrixClient } from '../../client/init-matrix';
 
 /**
@@ -8,7 +7,7 @@ import { getMatrixClient } from '../../client/init-matrix';
  * не переподписывает и не роняет мемоизацию вызывающих компонентов.
  */
 export function useMatrixEvent(
-  event: MatrixEmittedEvents,
+  event: string,
   handler: (...args: unknown[]) => void,
 ): void {
   const handlerRef = useRef(handler);
@@ -18,9 +17,9 @@ export function useMatrixEvent(
     const client = getMatrixClient();
     const wrapper = (...args: unknown[]) => handlerRef.current(...args);
 
-    client.on(event, wrapper as Parameters<typeof client.on>[1]);
+    client.on(event as Parameters<typeof client.on>[0], wrapper as Parameters<typeof client.on>[1]);
     return () => {
-      client.off(event, wrapper as Parameters<typeof client.off>[1]);
+      client.off(event as Parameters<typeof client.off>[0], wrapper as Parameters<typeof client.off>[1]);
     };
   }, [event]);
 }

@@ -12,6 +12,7 @@ import { matrixClient } from '../../lib/matrix-client';
 import { credentialsToAuthSession } from '../../lib/legacy-session';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
+import { useRooms } from '../hooks/use-rooms';
 
 interface ChatViewProps {
   onAuthError: (err: unknown) => void;
@@ -24,7 +25,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     () => (credentials ? credentialsToAuthSession(credentials) : null),
     [credentials],
   );
-  const rooms = useChatStore((state) => state.rooms);
+  const sdkRooms = useRooms();
   const activeRoomId = useChatStore((state) => state.activeRoomId);
   const messages = useChatStore((state) => state.messages);
   const loadingMessages = useChatStore((state) => state.loadingMessages);
@@ -45,7 +46,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   const loadedRoomRef = useRef<string | null>(null);
   const prevAbortRef = useRef<AbortController | null>(null);
 
-  const activeRoom = rooms.find((room) => room.id === activeRoomId) ?? null;
+  const activeRoom = sdkRooms.find((room) => room.roomId === activeRoomId) ?? null;
   const events = activeRoomId ? (messages[activeRoomId] ?? []) : [];
   const roomName = activeRoom ? activeRoom.name : '';
 
@@ -100,7 +101,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         // обязательны, /members, /threads и /aliases — опциональны: их
         // недоступность (403/404 на чужих homeserver'ах) не должна мешать
         // показать историю комнаты.
-        const [stateResult, messagesResult] = await Promise.allSettled([
+        const [, messagesResult] = await Promise.allSettled([
           matrixClient.getRoomState(currentSession, roomId, 'm.room.name'),
           matrixClient.getMessages(currentSession, roomId, { limit: 50 }),
           matrixClient.getRoomMembers(currentSession, roomId),
@@ -113,18 +114,6 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         if (cancelled) return;
 
         // Имя из m.room.name — не дожидаемся истории.
-        const name =
-          stateResult.status === 'fulfilled'
-            ? stateResult.value['name']
-            : undefined;
-        if (typeof name === 'string') {
-          useChatStore.setState((state) => ({
-            rooms: state.rooms.map((r) =>
-              r.id === roomId ? { ...r, name } : r,
-            ),
-          }));
-        }
-
         const messagesRes = messagesResult.value;
         setMessages(roomId, messagesRes.chunk);
         setPrevToken(messagesRes.prev ?? null);
@@ -220,7 +209,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         onBack={() => setActiveRoom(null)}
         backLabel={t`Back`}
         title={roomName}
-        subtitle={activeRoom?.id}
+        subtitle={activeRoom?.roomId}
       />
       <ProxyChatViewMessageList
         events={events}
