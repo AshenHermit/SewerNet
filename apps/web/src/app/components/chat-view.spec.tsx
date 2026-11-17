@@ -1,37 +1,75 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';
 import { IconSetProvider } from '@sewer-net/icons';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
 import { ChatView } from './chat-view';
 
-// useRooms reads the SDK singleton for the room display name.
-vi.mock('../../client/init-matrix', () => ({
-  getMatrixClient: vi.fn(() => ({
-    getUserId: () => '@alice:matrix.org',
-    getRooms: () => [
-      { roomId: '!r1:matrix.org', name: 'SDK Room', getMyMembership: () => 'join' },
-    ],
-    on: vi.fn(),
-    off: vi.fn(),
-  })),
+type Handler = (...args: unknown[]) => void;
+
+function fakeEvent(
+  id: string,
+  body: string,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    getId: () => id,
+    getType: () => 'm.room.message',
+    getSender: () => '@alice:matrix.org',
+    getTs: () => 1,
+    getContent: () => ({ msgtype: 'm.text', body }),
+    isRedacted: () => false,
+    status: null,
+    ...overrides,
+  };
+}
+
+function makeFakeRoom(id: string, name: string, events: ReturnType<typeof fakeEvent>[]) {
+  const live = {
+    getEvents: () => events,
+    getPaginationToken: (direction: string) => (direction === 'b' ? 'tok-old' : null),
+    getNeighbouringTimeline: () => null,
+    setNeighbouringTimeline: vi.fn(),
+    getTimelineSet: () => ({ getRoomId: () => id }),
+    getRoomId: () => id,
+  };
+  return {
+    roomId: id,
+    name,
+    getMyMembership: () => 'join',
+    getLiveTimeline: () => live,
+    getUnreadNotificationCount: () => 0,
+    getMxcAvatarUrl: () => null,
+    getJoinedMembers: () => [],
+  };
+}
+
+const mocks = vi.hoisted(() => ({
+  sendMessage: vi.fn(),
+  sendReadReceipt: vi.fn(),
+  paginateEventTimeline: vi.fn(),
+  getMatrixClient: vi.fn(),
 }));
 
-type FetchHandler = (url: string, init: RequestInit) => Response;
+vi.mock('../../client/init-matrix', () => ({
+  getMatrixClient: mocks.getMatrixClient,
+  hasActiveClient: vi.fn(() => true),
+}));
 
-function installFetch(handler: FetchHandler): { url: string; init: RequestInit }[] {
-  const calls: { url: string; init: RequestInit }[] = [];
-  const original = global.fetch;
-  global.fetch = (async (url: string, init: RequestInit) => {
-    calls.push({ url: String(url), init });
-    return handler(String(url), init);
-  }) as unknown as typeof fetch;
-  void original;
-  return calls;
-}
+// No HTTP calls are expected from the migrated chat view.
+const fetchCalls: string[] = [];
+global.fetch = (async (input: string | URL) => {
+  fetchCalls.push(String(input));
+  throw new Error(`unexpected http call: ${input}`);
+}) as unknown as typeof fetch;
+
+const ROOM = makeFakeRoom('!r1:matrix.org', 'SDK Room', [
+  fakeEvent('$a:matrix.org', 'hello'),
+  fakeEvent('$b:matrix.org', 'room'),
+]);
 
 function renderView() {
   return render(
@@ -45,154 +83,120 @@ function renderView() {
   );
 }
 
-const session = {
-  homeserverUrl: 'https://matrix.org',
-  accessToken: 'at',
-  userId: '@alice:matrix.org',
-  deviceId: 'DEV',
-};
-
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} });
 });
 
-afterEach(() => {
-  localStorage.removeItem('sewernet:auth');
-  useAuthStore.setState({ credentials: null, session: null });
-  useChatStore.setState({
-    activeRoomId: null,
-    messages: {},
-    error: null,
-    loadingMessages: false,
+beforeEach(() => {
+  vi.clearAllMocks();
+  fetchCalls.length = 0;
+  mocks.sendMessage.mockResolvedValue(undefined);
+  mocks.sendReadReceipt.mockResolvedValue(undefined);
+  mocks.paginateEventTimeline.mockResolvedValue(true);
+  const client = {
+    getUserId: () => '@alice:matrix.org',
+    getRooms: () => [ROOM],
+    getRoom: (roomId: string) => (roomId === ROOM.roomId ? ROOM : null),
+    on: vi.fn(),
+    off: vi.fn(),
+    sendMessage: mocks.sendMessage,
+    sendReadReceipt: mocks.sendReadReceipt,
+    paginateEventTimeline: mocks.paginateEventTimeline,
+  };
+  mocks.getMatrixClient.mockReturnValue(client);
+  useAuthStore.setState({
+    credentials: {
+      userId: '@alice:matrix.org',
+      accessToken: 'at',
+      deviceId: 'DEV',
+      homeserverUrl: 'https://matrix.org',
+    },
+    session: null,
   });
+  useChatStore.setState({ activeRoomId: '!r1:matrix.org', error: null });
 });
 
-describe('ChatView', () => {
-  it('делает 6 параллельных запросов при открытии комнаты и берёт имя из /state', async () => {
-    const calls = installFetch((url) => {
-      if (url.includes('/state/m.room.name')) {
-        return new Response(JSON.stringify({ name: 'State Room' }), {
-          status: 200,
-        });
-      }
-      if (url.includes('/messages')) {
-        return new Response(
-          JSON.stringify({
-            chunk: [
-              {
-                event_id: '$last:matrix.org',
-                type: 'm.room.message',
-                sender: '@alice:matrix.org',
-                origin_server_ts: 1,
-                content: { msgtype: 'm.text', body: 'hi' },
-              },
-            ],
-          }),
-          { status: 200 },
-        );
-      }
-      if (url.includes('/members')) {
-        return new Response(JSON.stringify({ chunk: [] }), { status: 200 });
-      }
-      if (url.includes('/threads')) {
-        return new Response(JSON.stringify({}), { status: 200 });
-      }
-      if (url.includes('/aliases')) {
-        return new Response(JSON.stringify({ aliases: [] }), { status: 200 });
-      }
-      if (url.includes('/read_markers')) {
-        return new Response(JSON.stringify({}), { status: 200 });
-      }
-      return new Response('{}', { status: 404 });
-    });
-    useAuthStore.setState({ credentials: session, session });
-    useChatStore.setState({
-      activeRoomId: '!r1:matrix.org',
-    });
+afterEach(() => {
+  useAuthStore.setState({ credentials: null, session: null });
+  useChatStore.setState({ activeRoomId: null, error: null });
+});
 
+describe('ChatView (sdk timeline)', () => {
+  it('renders live timeline items without any http calls', async () => {
     renderView();
 
-    await waitFor(() => expect(calls).toHaveLength(6));
-
-    const urls = calls.map((c) => c.url);
-    expect(
-      urls.some((u) => u.includes('/rooms/!r1%3Amatrix.org/state/m.room.name')),
-    ).toBe(true);
-    expect(
-      urls.some((u) => u.includes('/rooms/!r1%3Amatrix.org/messages')),
-    ).toBe(true);
-    expect(
-      urls.some((u) => u.includes('/rooms/!r1%3Amatrix.org/members')),
-    ).toBe(true);
-    expect(
-      urls.some((u) => u.includes('/rooms/!r1%3Amatrix.org/threads')),
-    ).toBe(true);
-    expect(
-      urls.some((u) => u.includes('/rooms/!r1%3Amatrix.org/aliases')),
-    ).toBe(true);
-    expect(
-      urls.some((u) => u.includes('/rooms/!r1%3Amatrix.org/read_markers')),
-    ).toBe(true);
-
-    // read_markers шлёт JSON-тело с m.fully_read / m.read.
-    const markersCall = calls.find((c) => c.url.includes('/read_markers'));
-    expect(markersCall).toBeDefined();
-    if (markersCall) {
-      expect(JSON.parse(String(markersCall.init.body))).toEqual({
-        'm.fully_read': '$last:matrix.org',
-        'm.read': '$last:matrix.org',
-      });
-    }
-
-    // Имя комнаты теперь из SDK-списка (useRooms).
-    await waitFor(() => expect(screen.getByText('SDK Room')).toBeTruthy());
+    expect(await screen.findByText('hello')).toBeTruthy();
+    expect(screen.getByText('room')).toBeTruthy();
+    expect(screen.getByText('SDK Room')).toBeTruthy();
+    expect(fetchCalls).toHaveLength(0);
   });
 
-  it('загружает историю, даже если /threads и /aliases недоступны', async () => {
-    installFetch((url) => {
-      if (url.includes('/state/m.room.name')) {
-        return new Response(JSON.stringify({ name: 'State Room' }), {
-          status: 200,
-        });
-      }
-      if (url.includes('/messages')) {
-        return new Response(
-          JSON.stringify({
-            chunk: [
-              {
-                event_id: '$last:matrix.org',
-                type: 'm.room.message',
-                sender: '@alice:matrix.org',
-                origin_server_ts: 1,
-                content: { msgtype: 'm.text', body: 'hi' },
-              },
-            ],
-          }),
-          { status: 200 },
-        );
-      }
-      if (url.includes('/read_markers')) {
-        return new Response(
-          JSON.stringify({ errcode: 'M_FORBIDDEN', error: 'Forbidden' }),
-          { status: 403 },
-        );
-      }
-      // /members, /threads, /aliases — 403 на чужих/старых homeserver'ах.
-      return new Response(
-        JSON.stringify({ errcode: 'M_FORBIDDEN', error: 'Forbidden' }),
-        { status: 403 },
-      );
-    });
-    useAuthStore.setState({ credentials: session, session });
-    useChatStore.setState({
-      activeRoomId: '!r1:matrix.org',
-    });
+  it('sends through the sdk and clears the draft', async () => {
+    renderView();
 
+    const input = await screen.findByLabelText('Message');
+    fireEvent.change(input, { target: { value: 'hi there' } });
+    fireEvent.click(screen.getByTitle('Send'));
+
+    await waitFor(() =>
+      expect(mocks.sendMessage).toHaveBeenCalledWith('!r1:matrix.org', {
+        msgtype: 'm.text',
+        body: 'hi there',
+      }),
+    );
+    expect((input as HTMLInputElement).value).toBe('');
+  });
+
+  it('marks the room read when it opens', async () => {
     renderView();
 
     await waitFor(() =>
-      expect(useChatStore.getState().messages['!r1:matrix.org']).toHaveLength(1),
+      expect(mocks.sendReadReceipt).toHaveBeenCalledWith(
+        ROOM.getLiveTimeline().getEvents().at(-1),
+        'm.read',
+        true,
+      ),
     );
-    expect(useChatStore.getState().error).toBeNull();
+  });
+
+  it('paginates backwards from the load-older control', async () => {
+    renderView();
+
+    const loadMore = await screen.findByText('Load older messages');
+    fireEvent.click(loadMore);
+
+    await waitFor(() =>
+      expect(mocks.paginateEventTimeline).toHaveBeenCalledWith(
+        ROOM.getLiveTimeline(),
+        { backwards: true, limit: 80 },
+      ),
+    );
+  });
+
+  it('auto-scrolls for new events only while the user is at the bottom', async () => {
+    const scrollSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollSpy;
+    const { container } = renderView();
+    await screen.findByText('hello');
+
+    // Initial render keeps the newest message visible.
+    const initialCalls = scrollSpy.mock.calls.length;
+    expect(initialCalls).toBeGreaterThan(0);
+
+    // User scrolled away from the bottom.
+    const list = container.querySelector('.overflow-y-auto') as HTMLElement;
+    Object.defineProperty(list, 'scrollTop', { value: 0, configurable: true });
+    Object.defineProperty(list, 'scrollHeight', { value: 400, configurable: true });
+    Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true });
+    fireEvent.scroll(list);
+
+    // A new event arrives from the SDK while the user is scrolled up.
+    const client = mocks.getMatrixClient();
+    const handlers = (client.on as ReturnType<typeof vi.fn>).mock.calls
+      .filter(([event]) => event === 'Room.timeline')
+      .map(([, handler]) => handler as Handler);
+    for (const handler of handlers) handler(ROOM, undefined, false);
+
+    expect(scrollSpy.mock.calls.length).toBe(initialCalls);
   });
 });

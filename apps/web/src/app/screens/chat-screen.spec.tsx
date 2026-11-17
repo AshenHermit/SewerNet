@@ -38,6 +38,19 @@ vi.mock('../hooks/use-rooms', () => ({
   useRooms: vi.fn(),
 }));
 
+// ChatView derives its timeline from the SDK singleton; chat-screen tests
+// only cover the layout, so the timeline hook is stubbed.
+vi.mock('../hooks/use-timeline', () => ({
+  useTimeline: vi.fn(() => ({
+    items: [],
+    hasMore: false,
+    loadOlder: vi.fn(),
+    isLoading: false,
+  })),
+  sendMessageText: vi.fn(),
+  markRoomRead: vi.fn(),
+}));
+
 const mockedUseRooms = vi.mocked(useRooms);
 const mockedGetSyncedRooms = vi.mocked(matrixClient.getSyncedRooms);
 

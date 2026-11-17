@@ -24,7 +24,7 @@ msgstr "Appearance"
 #~ msgid "Attach"
 #~ msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:221
+#: apps/web/src/app/components/chat-view.tsx:132
 msgid "Back"
 msgstr "Back"
 
@@ -81,8 +81,8 @@ msgid "Light"
 msgstr "Light"
 
 #: apps/web/src/app/components/room-list.tsx:38
-msgid "Loading chats…"
-msgstr "Loading chats…"
+#~ msgid "Loading chats…"
+#~ msgstr "Loading chats…"
 
 #: apps/web/src/app/components/chat-view.tsx:165
 #~ msgid "Loading messages…"
@@ -98,7 +98,7 @@ msgstr "Log out"
 #~ msgid "Message"
 #~ msgstr "Message"
 
-#: apps/web/src/app/components/room-list.tsx:41
+#: apps/web/src/app/components/room-list.tsx:36
 msgid "No chats yet"
 msgstr "No chats yet"
 
@@ -126,7 +126,7 @@ msgstr "Search"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:211
+#: apps/web/src/app/components/chat-view.tsx:122
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 

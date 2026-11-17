@@ -8,179 +8,101 @@ import {
   ProxyChatViewPanel,
 } from '@sewer-net/ui';
 import { ProxyIcon } from '@sewer-net/icons';
-import { matrixClient } from '../../lib/matrix-client';
-import { credentialsToAuthSession } from '../../lib/legacy-session';
+import type { MatrixRoomEvent } from '@sewer-net/types';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
 import { useRooms } from '../hooks/use-rooms';
+import {
+  markRoomRead,
+  sendMessageText,
+  useTimeline,
+} from '../hooks/use-timeline';
 
 interface ChatViewProps {
   onAuthError: (err: unknown) => void;
 }
 
+/** Projects a derived timeline item onto the message-list event shape. */
+function toRoomEvent(item: (ReturnType<typeof useTimeline>['items'])[number]): MatrixRoomEvent {
+  const content: Record<string, unknown> = {
+    msgtype: item.content.msgtype ?? 'm.text',
+    body: item.content.body,
+  };
+  if (item.content.formattedBody !== undefined) {
+    content['formatted_body'] = item.content.formattedBody;
+  }
+  return {
+    event_id: item.eventId,
+    type: item.event.getType(),
+    sender: item.sender,
+    origin_server_ts: item.ts,
+    content: content as MatrixRoomEvent['content'],
+  };
+}
+
+/** Distance from the bottom that still counts as "at the bottom". */
+const AT_BOTTOM_THRESHOLD_PX = 40;
+
 export function ChatView({ onAuthError }: ChatViewProps) {
   const credentials = useAuthStore((state) => state.credentials);
-  // Memoized for effect-deps identity stability (see chat-screen).
-  const session = useMemo(
-    () => (credentials ? credentialsToAuthSession(credentials) : null),
-    [credentials],
-  );
-  const sdkRooms = useRooms();
   const activeRoomId = useChatStore((state) => state.activeRoomId);
-  const messages = useChatStore((state) => state.messages);
-  const loadingMessages = useChatStore((state) => state.loadingMessages);
-  const sending = useChatStore((state) => state.sending);
   const setActiveRoom = useChatStore((state) => state.setActiveRoom);
-  const setMessages = useChatStore((state) => state.setMessages);
-  const appendMessage = useChatStore((state) => state.appendMessage);
-  const setLoadingMessages = useChatStore((state) => state.setLoadingMessages);
-  const setSending = useChatStore((state) => state.setSending);
   const setError = useChatStore((state) => state.setError);
   const error = useChatStore((state) => state.error);
-
   const { t } = useLingui();
-  const [draft, setDraft] = useState('');
-  const [hasMore, setHasMore] = useState(false);
-  const [prevToken, setPrevToken] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const loadedRoomRef = useRef<string | null>(null);
-  const prevAbortRef = useRef<AbortController | null>(null);
 
+  const sdkRooms = useRooms();
   const activeRoom = sdkRooms.find((room) => room.roomId === activeRoomId) ?? null;
-  const events = activeRoomId ? (messages[activeRoomId] ?? []) : [];
   const roomName = activeRoom ? activeRoom.name : '';
 
-  // Пагинация: при скролле к верху списка подгружаем более старые сообщения.
+  const { items, hasMore, loadOlder, isLoading } = useTimeline(activeRoomId);
+  const events = useMemo(() => items.map(toRoomEvent), [items]);
+
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const atBottomRef = useRef(true);
+
+  // Track whether the user is reading the latest message: new SDK events
+  // only scroll the view when the user did not scroll away.
   useEffect(() => {
     const el = bottomRef.current?.parentElement;
     if (!el) return;
+    atBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD_PX;
     function onScroll() {
-      if (!el || el.scrollTop > 0 || !hasMore || !prevToken) return;
-      void loadMore();
+      if (!el) return;
+      atBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD_PX;
+      if (el.scrollTop === 0 && hasMore) {
+        void loadOlder();
+      }
     }
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, [hasMore, prevToken]);
+  }, [hasMore, loadOlder, activeRoomId]);
 
-  async function loadMore() {
-    if (!prevToken || !activeRoomId || !session) return;
-    setLoadingMessages(true);
-    try {
-      const res = await matrixClient.getMessages(session, activeRoomId, {
-        limit: 50,
-        from: prevToken,
-      });
-      setMessages(activeRoomId, [...res.chunk, ...events]);
-      setPrevToken(res.prev ?? null);
-      setHasMore(!!res.prev);
-    } catch {
-      // Ошибку пагинации не показываем поверх основного состояния комнаты:
-      // достаточно, что кнопка останется.
-    } finally {
-      setLoadingMessages(false);
-    }
-  }
-
-  // Load the full room payload when a room is opened: /state (имя комнаты),
-  // /messages (история), /members, /threads, /aliases — пять запросов в одном
-  // круге, затем read_markers для последнего события. Имя берётся из
-  // m.room.name, не дожидаемся загрузки истории.
+  // Opened room counts as read. markRoomRead may resolve synchronously
+  // (no receiptable event) — Promise.resolve guards the .catch.
   useEffect(() => {
-    if (!activeRoomId || !session || loadedRoomRef.current === activeRoomId)
-      return;
-    let cancelled = false;
-    const roomId = activeRoomId;
-    const currentSession = session;
-    prevAbortRef.current?.abort();
+    if (!activeRoomId) return;
+    void Promise.resolve(markRoomRead(activeRoomId)).catch(() => undefined);
+  }, [activeRoomId]);
 
-    async function loadRoom() {
-      setLoadingMessages(true);
-      setError(null);
-      try {
-        // Пять независимых запросов в одном круге. /state и /messages
-        // обязательны, /members, /threads и /aliases — опциональны: их
-        // недоступность (403/404 на чужих homeserver'ах) не должна мешать
-        // показать историю комнаты.
-        const [, messagesResult] = await Promise.allSettled([
-          matrixClient.getRoomState(currentSession, roomId, 'm.room.name'),
-          matrixClient.getMessages(currentSession, roomId, { limit: 50 }),
-          matrixClient.getRoomMembers(currentSession, roomId),
-          matrixClient.getRoomThreads(currentSession, roomId),
-          matrixClient.getRoomAliases(currentSession, roomId),
-        ]);
-        if (messagesResult.status === 'rejected') {
-          throw messagesResult.reason;
-        }
-        if (cancelled) return;
-
-        // Имя из m.room.name — не дожидаемся истории.
-        const messagesRes = messagesResult.value;
-        setMessages(roomId, messagesRes.chunk);
-        setPrevToken(messagesRes.prev ?? null);
-        setHasMore(!!messagesRes.prev);
-        loadedRoomRef.current = roomId;
-
-        // Отмечаем последнее событие прочитанным. Это побочный эффект, а не
-        // условие открытия комнаты: homeserver'ы, которые отказывают в
-        // read_markers, не должны рисовать ошибку поверх загруженной истории.
-        const lastEvent = messagesRes.chunk[0];
-        if (lastEvent?.event_id && !cancelled) {
-          void matrixClient
-            .setReadMarkers(currentSession, roomId, {
-              'm.fully_read': lastEvent.event_id,
-              'm.read': lastEvent.event_id,
-            })
-            .catch(() => undefined);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          onAuthError(err);
-          setError(
-            err instanceof Error ? err.message : 'Failed to load room',
-          );
-        }
-      } finally {
-        if (!cancelled) setLoadingMessages(false);
-      }
-    }
-
-    void loadRoom();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    activeRoomId,
-    session,
-    onAuthError,
-    setLoadingMessages,
-    setError,
-    setMessages,
-  ]);
-
-  // Keep the newest message visible.
+  // Keep the newest message visible only when the user is at the bottom.
   useEffect(() => {
+    if (!atBottomRef.current) return;
     bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [events.length]);
 
   async function handleSend() {
     const body = draft.trim();
-    if (!body || !activeRoomId || !session || sending) return;
+    if (!body || !activeRoomId || sending) return;
 
     setSending(true);
     setError(null);
     try {
-      const { event_id } = await matrixClient.sendMessage(
-        session,
-        activeRoomId,
-        body,
-      );
-      appendMessage(activeRoomId, {
-        event_id,
-        type: 'm.room.message',
-        sender: session.userId,
-        origin_server_ts: Date.now(),
-        content: { msgtype: 'm.text', body },
-      });
+      await sendMessageText(activeRoomId, body);
       setDraft('');
     } catch (err) {
       onAuthError(err);
@@ -190,7 +112,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     }
   }
 
-  if (!session) return null;
+  if (!credentials) return null;
 
   if (!activeRoomId) {
     return (
@@ -213,17 +135,17 @@ export function ChatView({ onAuthError }: ChatViewProps) {
       />
       <ProxyChatViewMessageList
         events={events}
-        loading={loadingMessages}
-        currentUserId={session.userId}
+        loading={isLoading}
+        currentUserId={credentials.userId}
         bottomRef={bottomRef as React.RefObject<HTMLDivElement>}
         hasMore={hasMore}
-        onLoadMore={loadMore}
+        onLoadMore={() => void loadOlder()}
       />
       {error ? <ProxyChatViewError error={error} /> : null}
       <ProxyChatViewInputForm
         draft={draft}
         onChange={(value) => setDraft(value)}
-        onSubmit={handleSend}
+        onSubmit={() => void handleSend()}
         sending={sending}
       />
     </ProxyChatViewPanel>

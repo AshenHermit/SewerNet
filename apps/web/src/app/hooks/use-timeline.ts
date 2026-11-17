@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReceiptType } from 'matrix-js-sdk';
+import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import { getMatrixClient } from '../../client/init-matrix';
 import { useMatrixEvent } from './use-matrix-event';
@@ -47,13 +48,14 @@ function findLastReceiptableEvent(events: MatrixEvent[]): MatrixEvent | null {
  * setNeighbouringTimeline — просто обходим prev-ссылки.
  */
 function collectLinkedTimelines(
-  live: { getNeighbouringTimeline: (dir: string) => unknown | null } & object,
+  live: { getNeighbouringTimeline(dir: string): unknown | null },
 ): Array<Parameters<MatrixClient['paginateEventTimeline']>[0]> {
   const chain: unknown[] = [live];
   let oldest: unknown = live;
   while (true) {
-    const prev = (oldest as { getNeighbouringTimeline?: (dir: string) => unknown })
-      .getNeighbouringTimeline?.('b');
+    const prev = (oldest as {
+      getNeighbouringTimeline?(dir: string): unknown | null;
+    }).getNeighbouringTimeline?.('b');
     if (!prev || chain.includes(prev)) break;
     chain.unshift(prev);
     oldest = prev;
@@ -159,7 +161,7 @@ export function useTimeline(roomId: string | null): {
     const chain = collectLinkedTimelines(live);
     const oldest = chain[0];
     if (!oldest) return false;
-    return typeof oldest.getPaginationToken('b') === 'string';
+    return typeof (oldest as { getPaginationToken(dir: string): unknown }).getPaginationToken('b') === 'string';
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, roomId, revision, events]);
 
@@ -218,12 +220,21 @@ export async function sendMessageText(
   formattedBody?: string,
 ): Promise<void> {
   const client = getMatrixClient();
-  const content: Record<string, string> = { msgtype: 'm.text', body };
+  const content: {
+    msgtype: string;
+    body: string;
+    formatted_body?: string;
+    format?: string;
+  } = { msgtype: 'm.text', body };
   if (formattedBody !== undefined) {
     content.formatted_body = formattedBody;
     content.format = 'org.matrix.custom.html';
   }
-  await client.sendMessage(roomId, content);
+  if (formattedBody !== undefined) {
+    content.formatted_body = formattedBody;
+    content.format = 'org.matrix.custom.html';
+  }
+  await client.sendMessage(roomId, content as unknown as RoomMessageEventContent);
 }
 
 export function markRoomRead(roomId: string): void {
