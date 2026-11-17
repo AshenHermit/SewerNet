@@ -7,11 +7,11 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ru\n"
 
-#: apps/web/src/app/components/settings-panel.tsx:46
+#: apps/web/src/app/components/settings-panel.tsx:55
 msgid "Accent color"
 msgstr "Акцентный цвет"
 
-#: apps/web/src/app/components/settings-panel.tsx:43
+#: apps/web/src/app/components/settings-panel.tsx:52
 msgid "Appearance"
 msgstr "Внешний вид"
 
@@ -19,7 +19,7 @@ msgstr "Внешний вид"
 #~ msgid "Attach"
 #~ msgstr "Прикрепить"
 
-#: apps/web/src/app/components/chat-view.tsx:165
+#: apps/web/src/app/components/chat-view.tsx:215
 msgid "Back"
 msgstr "Назад"
 
@@ -27,27 +27,27 @@ msgstr "Назад"
 msgid "Back to sign in"
 msgstr "Вернуться ко входу"
 
-#: apps/web/src/app/components/settings-panel.tsx:42
+#: apps/web/src/app/components/settings-panel.tsx:51
 msgid "Close"
 msgstr "Закрыть"
 
-#: apps/web/src/app/components/settings-panel.tsx:45
+#: apps/web/src/app/components/settings-panel.tsx:54
 msgid "Color scheme"
 msgstr "Цветовая схема"
 
-#: apps/web/src/app/screens/login-screen.tsx:133
+#: apps/web/src/app/screens/welcome-screen.tsx:111
 msgid "Continue with Matrix"
 msgstr "Продолжить с Matrix"
 
-#: apps/web/src/app/components/settings-panel.tsx:48
+#: apps/web/src/app/components/settings-panel.tsx:57
 msgid "Corner radius"
 msgstr "Скругление углов"
 
-#: apps/web/src/app/screens/login-screen.tsx:134
+#: apps/web/src/app/screens/welcome-screen.tsx:112
 msgid "Create account"
 msgstr "Создать аккаунт"
 
-#: apps/web/src/app/components/settings-panel.tsx:35
+#: apps/web/src/app/components/settings-panel.tsx:44
 msgid "Dark"
 msgstr "Тёмная"
 
@@ -55,19 +55,19 @@ msgstr "Тёмная"
 msgid "Finishing sign-in…"
 msgstr "Завершаем вход…"
 
-#: apps/web/src/app/components/settings-panel.tsx:47
+#: apps/web/src/app/components/settings-panel.tsx:56
 msgid "Font"
 msgstr "Шрифт"
 
-#: apps/web/src/app/screens/login-screen.tsx:122
+#: apps/web/src/app/screens/welcome-screen.tsx:100
 msgid "Homeserver URL"
 msgstr "Адрес homeserver"
 
-#: apps/web/src/app/components/settings-panel.tsx:44
+#: apps/web/src/app/components/settings-panel.tsx:53
 msgid "Interface"
 msgstr "Интерфейс"
 
-#: apps/web/src/app/components/settings-panel.tsx:34
+#: apps/web/src/app/components/settings-panel.tsx:43
 msgid "Light"
 msgstr "Светлая"
 
@@ -79,7 +79,7 @@ msgstr "Загрузка чатов…"
 #~ msgid "Loading messages…"
 #~ msgstr "Загрузка сообщений…"
 
-#: apps/web/src/app/components/rail.tsx:53
+#: apps/web/src/app/components/rail.tsx:55
 msgid "Log out"
 msgstr "Выйти"
 
@@ -88,7 +88,7 @@ msgstr "Выйти"
 #~ msgid "Message"
 #~ msgstr "Сообщение"
 
-#: apps/web/src/app/components/room-list.tsx:42
+#: apps/web/src/app/components/room-list.tsx:41
 msgid "No chats yet"
 msgstr "Пока нет чатов"
 
@@ -96,11 +96,11 @@ msgstr "Пока нет чатов"
 #~ msgid "No messages yet"
 #~ msgstr "Пока нет сообщений"
 
-#: apps/web/src/app/screens/login-screen.tsx:124
+#: apps/web/src/app/screens/welcome-screen.tsx:102
 msgid "Password"
 msgstr "Пароль"
 
-#: apps/web/src/app/components/settings-panel.tsx:49
+#: apps/web/src/app/components/settings-panel.tsx:58
 msgid "Reset to defaults"
 msgstr "Сбросить настройки"
 
@@ -112,7 +112,7 @@ msgstr "Поиск"
 msgid "Security check failed. Please try signing in again."
 msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
 
-#: apps/web/src/app/components/chat-view.tsx:155
+#: apps/web/src/app/components/chat-view.tsx:205
 msgid "Select a chat to start messaging"
 msgstr "Выберите чат, чтобы начать переписку"
 
@@ -120,23 +120,23 @@ msgstr "Выберите чат, чтобы начать переписку"
 #~ msgid "Send"
 #~ msgstr "Отправить"
 
-#: apps/web/src/app/components/rail.tsx:48
+#: apps/web/src/app/components/rail.tsx:50
 msgid "Settings"
 msgstr "Настройки"
 
-#: apps/web/src/app/screens/login-screen.tsx:119
+#: apps/web/src/app/screens/welcome-screen.tsx:97
 msgid "SewerNet"
 msgstr "SewerNet"
 
-#: apps/web/src/app/screens/login-screen.tsx:125
+#: apps/web/src/app/screens/welcome-screen.tsx:103
 msgid "Sign in"
 msgstr "Войти"
 
-#: apps/web/src/app/screens/login-screen.tsx:120
+#: apps/web/src/app/screens/welcome-screen.tsx:98
 msgid "Sign in to your Matrix account"
 msgstr "Войдите в свой Matrix-аккаунт"
 
-#: apps/web/src/app/screens/login-screen.tsx:136
+#: apps/web/src/app/screens/welcome-screen.tsx:114
 msgid "Sign in with password"
 msgstr "Войти с паролем"
 
@@ -152,22 +152,22 @@ msgstr "Сессия входа истекла. Попробуйте снова.
 msgid "Sign-in was cancelled"
 msgstr "Вход отменён"
 
-#: apps/web/src/app/components/rail.tsx:42
+#: apps/web/src/app/components/rail.tsx:44
 msgid "Switch to dark theme"
 msgstr "Переключить на тёмную тему"
 
-#: apps/web/src/app/components/rail.tsx:41
+#: apps/web/src/app/components/rail.tsx:43
 msgid "Switch to light theme"
 msgstr "Переключить на светлую тему"
 
-#: apps/web/src/app/components/settings-panel.tsx:36
+#: apps/web/src/app/components/settings-panel.tsx:45
 msgid "System"
 msgstr "Системная"
 
-#: apps/web/src/app/components/settings-panel.tsx:51
+#: apps/web/src/app/components/settings-panel.tsx:60
 msgid "UI kit"
 msgstr "UI-комплект"
 
-#: apps/web/src/app/screens/login-screen.tsx:123
+#: apps/web/src/app/screens/welcome-screen.tsx:101
 msgid "Username"
 msgstr "Имя пользователя"

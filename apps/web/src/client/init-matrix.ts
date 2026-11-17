@@ -1,4 +1,5 @@
 import {
+  ClientEvent,
   createClient,
   IndexedDBStore,
   Method,
@@ -141,7 +142,13 @@ export function createAuthenticatedClient(opts: {
 }): MatrixClient {
   const { baseUrl, userId, accessToken, deviceId, store, refreshToken, oidc } = opts;
   const oidcRefresher = oidc
-    ? new OidcTokenRefresher(oidc.issuer, oidc.clientId, oidc.redirectUri, deviceId, oidc.idTokenClaims)
+    ? new OidcTokenRefresher(
+        oidc.issuer,
+        oidc.clientId,
+        oidc.redirectUri,
+        deviceId,
+        oidc.idTokenClaims as unknown as ConstructorParameters<typeof OidcTokenRefresher>[4],
+      )
     : null;
 
   const persistRefreshed = (tokens: AccessTokens): void => {
@@ -256,11 +263,11 @@ function attachFirstSync(client: MatrixClient, onFirstSync?: () => void): void {
   }
   const handler = (state: string): void => {
     if (state === 'PREPARED' || state === 'CATCHUP') {
-      client.off('sync', handler);
+      client.off(ClientEvent.Sync, handler);
       onFirstSync();
     }
   };
-  client.on('sync', handler);
+  client.on(ClientEvent.Sync, handler);
 }
 
 async function deletePersistedDatabases(userId: string): Promise<void> {

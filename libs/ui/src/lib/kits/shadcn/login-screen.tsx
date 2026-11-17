@@ -17,7 +17,7 @@ export function ShadcnLoginScreen({
   signInLabel,
   onHomeserverChange,
   onHomeserverBlur,
-  mas,
+  oidc,
   resolving,
   starting,
   error,
@@ -85,7 +85,7 @@ export function ShadcnLoginScreen({
             />
           </label>
 
-          {mas ? (
+          {oidc ? (
             <>
               <ProxyButton
                 onClick={() => void onContinueWithMatrix()}

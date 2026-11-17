@@ -1,4 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  clearPendingOidcFlow,
+  completeOidcLogin,
+  discoverAuthCapabilities,
+  getOrRegisterClientId,
+  getOidcRedirectUri,
+  getPendingOidcFlow,
+  resolveBaseUrl,
+  revokeOidcSession,
+  startOidcLogin,
+} from './oidc';
+import type { OidcClientConfig } from 'matrix-js-sdk/lib/oidc';
 
 const { findClientConfigMock, createClientMock, registerClientMock, generateUrlMock, completeGrantMock, fetchMock } =
   vi.hoisted(() => ({
@@ -23,19 +35,6 @@ vi.mock('matrix-js-sdk/lib/oidc', () => ({
   completeAuthorizationCodeGrant: (code: string, state: string, mode: unknown) =>
     completeGrantMock(code, state, mode),
 }));
-
-import {
-  clearPendingOidcFlow,
-  completeOidcLogin,
-  discoverAuthCapabilities,
-  getOrRegisterClientId,
-  getOidcRedirectUri,
-  getPendingOidcFlow,
-  resolveBaseUrl,
-  revokeOidcSession,
-  startOidcLogin,
-} from './oidc';
-import type { OidcClientConfig } from 'matrix-js-sdk/lib/oidc';
 
 const HS = 'https://matrix.example';
 const ISSUER = 'https://issuer.example';

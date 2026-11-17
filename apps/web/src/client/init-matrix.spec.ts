@@ -1,4 +1,5 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MatrixCredentials, OidcSession } from './accounts';
 
 const {
   createClientMock,
@@ -45,6 +46,7 @@ vi.mock('matrix-js-sdk', () => {
   return {
     createClient: (opts: unknown) => createClientMock(opts),
     Method: { Post: 'POST', Get: 'GET' },
+    ClientEvent: { Sync: 'sync' },
     IndexedDBStore: FakeIndexedDbStore,
   };
 });
@@ -58,8 +60,6 @@ vi.mock('matrix-js-sdk/lib/oidc', () => {
   }
   return { OidcTokenRefresher: FakeOidcTokenRefresher };
 });
-
-import type { MatrixCredentials, OidcSession } from './accounts';
 
 // The module under test holds module-level singletons (_client,
 // resumePromise, cryptoInitPromise); re-import it fresh per test.
@@ -203,7 +203,9 @@ describe('createAuthenticatedClient', () => {
   };
 
   it('passes auth flags and token refresh wiring to createClient', () => {
-    matrix.createAuthenticatedClient({ ...base, store: { fake: true }, refreshToken: 'rt1' });
+    matrix.createAuthenticatedClient(
+      { ...base, store: { fake: true }, refreshToken: 'rt1' } as unknown as Parameters<typeof matrix.createAuthenticatedClient>[0],
+    );
     const opts = lastCreateOpts();
     expect(opts).toMatchObject({
       baseUrl: HS,
@@ -311,9 +313,9 @@ describe('resume', () => {
     expect(matrix.getMatrixClient()).toBe(client);
 
     const handler = lastSyncHandler();
-    handler('PREPARED');
+    (handler as (state: string) => void)('PREPARED');
     expect(onFirstSync).toHaveBeenCalledTimes(1);
-    expect(syncHandlers.has(handler)).toBe(false);
+    expect(syncHandlers.has(handler as (...args: unknown[]) => void)).toBe(false);
     expect(offMock).toHaveBeenCalledWith('sync', handler);
   });
 
@@ -354,7 +356,7 @@ describe('logoutCurrent', () => {
     expect(logoutMock).toHaveBeenCalledWith(true);
     expect(matrix.hasActiveClient()).toBe(false);
     expect(readAccounts()[USER]).toBeUndefined();
-    const deleted = deleteDatabase.mock.calls.map((c) => c[0]);
+    const deleted = deleteDatabase.mock.calls.map((c: unknown[]) => c[0]);
     expect(deleted).toContain(`sewernet-store-${USER}`);
     expect(deleted).toContain(`sewernet-js-sdk-${USER}-crypto`);
     vi.unstubAllGlobals();
@@ -364,7 +366,7 @@ describe('logoutCurrent', () => {
     vi.useFakeTimers();
     try {
       await matrix.resume(CREDENTIALS);
-      logoutMock.mockReturnValue(new Promise(() => {}));
+      logoutMock.mockReturnValue(new Promise(() => undefined));
       vi.stubGlobal('indexedDB', {
         databases: vi.fn(async () => []),
         deleteDatabase: () => ({ addEventListener: (_t: string, cb: () => void) => cb() }),

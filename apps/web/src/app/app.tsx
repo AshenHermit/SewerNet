@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { applyTheme, useThemeStore } from '@sewer-net/themes';
 import { Route, Routes } from 'react-router-dom';
 import { useAuthStore } from './stores/auth-store';
-import { LoginScreen } from './screens/login-screen';
+import { WelcomeScreen } from './screens/welcome-screen';
 import { ChatScreen } from './screens/chat-screen';
 import { CallbackScreen } from './screens/callback-screen';
 
@@ -18,7 +18,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/callback" element={<CallbackScreen />} />
-      <Route path="*" element={session ? <ChatScreen /> : <LoginScreen />} />
+      <Route path="/welcome/:homeserver?" element={session ? <ChatScreen /> : <WelcomeScreen />} />
+      <Route path="*" element={session ? <ChatScreen /> : <WelcomeScreen />} />
     </Routes>
   );
 }

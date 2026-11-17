@@ -6,7 +6,7 @@ import type {
   ReactNode,
 } from 'react';
 import type { AppLocale } from '@sewer-net/types';
-import type { MatrixRoomEvent, MasOidcMetadata } from '@sewer-net/types';
+import type { MatrixRoomEvent } from '@sewer-net/types';
 import type { FontId, ThemeMode } from '@sewer-net/themes';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -193,7 +193,8 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
   signInLabel: ReactNode;
   onHomeserverChange: (value: string) => void;
   onHomeserverBlur: () => void;
-  mas: MasOidcMetadata | null;
+  /** Homeserver advertises delegated (MAS/OIDC) auth — OAuth buttons instead of the password form. */
+  oidc?: boolean;
   resolving: boolean;
   starting: boolean;
   error: string | null;

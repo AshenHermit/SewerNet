@@ -1,0 +1,1 @@
+{"version":3,"file":"legacy-session.d.ts","sourceRoot":"","sources":["../../src/lib/legacy-session.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AACH,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,oBAAoB,CAAC;AAC5D,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,iBAAiB,CAAC;AAEnD,8DAA8D;AAC9D,wBAAgB,wBAAwB,CAAC,CAAC,EAAE,iBAAiB,GAAG,WAAW,CAgB1E;AAED,0EAA0E;AAC1E,wBAAgB,wBAAwB,CAAC,CAAC,EAAE,WAAW,GAAG,iBAAiB,CAY1E"}

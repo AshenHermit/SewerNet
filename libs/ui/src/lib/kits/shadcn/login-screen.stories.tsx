@@ -21,13 +21,7 @@ export const WithMas: Story = {
     signInLabel: 'Sign in',
     onHomeserverChange: () => undefined,
     onHomeserverBlur: () => undefined,
-    mas: {
-      issuer: 'https://account.matrix.org/',
-      authorizationEndpoint: 'https://account.matrix.org/_matrix/client/v3/authorize',
-      tokenEndpoint: 'https://account.matrix.org/_matrix/client/v3/oauth2/token',
-      registrationEndpoint: 'https://account.matrix.org/_matrix/client/v3/register',
-      responseModesSupported: ['query', 'fragment'],
-    },
+    oidc: true,
     resolving: false,
     starting: false,
     error: null,
@@ -46,7 +40,7 @@ export const WithMas: Story = {
   },
 };
 
-export const WithoutMas: Story = {
+export const PasswordOnly: Story = {
   args: {
     appName: 'SewerNet',
     subtitle: 'Sign in to your Matrix account',
@@ -57,7 +51,7 @@ export const WithoutMas: Story = {
     signInLabel: 'Sign in',
     onHomeserverChange: () => undefined,
     onHomeserverBlur: () => undefined,
-    mas: null,
+    oidc: false,
     resolving: false,
     starting: false,
     error: null,
