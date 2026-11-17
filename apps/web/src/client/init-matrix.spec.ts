@@ -1,17 +1,43 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createClientMock, httpMock, storeArgs, refresherCtorArgs, refresherDoRefresh } = vi.hoisted(
-  () => ({
-    createClientMock: vi.fn(),
-    httpMock: vi.fn(),
-    storeArgs: [] as unknown[],
-    refresherCtorArgs: [] as unknown[],
-    refresherDoRefresh: vi.fn(),
-  }),
-);
+const {
+  createClientMock,
+  httpMock,
+  storeArgs,
+  refresherCtorArgs,
+  refresherDoRefresh,
+  storeStartupMock,
+  initAsyncMock,
+  onMock,
+  offMock,
+  stopClientMock,
+  logoutMock,
+  initRustCryptoMock,
+  startClientMock,
+} = vi.hoisted(() => ({
+  createClientMock: vi.fn(),
+  httpMock: vi.fn(),
+  storeArgs: [] as unknown[],
+  refresherCtorArgs: [] as unknown[],
+  refresherDoRefresh: vi.fn(),
+  storeStartupMock: vi.fn(),
+  initAsyncMock: vi.fn(),
+  onMock: vi.fn(),
+  offMock: vi.fn(),
+  stopClientMock: vi.fn(),
+  logoutMock: vi.fn(),
+  initRustCryptoMock: vi.fn(),
+  startClientMock: vi.fn(),
+}));
+
+vi.mock('@matrix-org/matrix-sdk-crypto-wasm', () => ({
+  initAsync: initAsyncMock,
+}));
 
 vi.mock('matrix-js-sdk', () => {
   class FakeIndexedDbStore {
+    startup = storeStartupMock;
+    destroy = vi.fn();
     constructor(opts: unknown) {
       storeArgs.push(opts);
     }
@@ -33,14 +59,11 @@ vi.mock('matrix-js-sdk/lib/oidc', () => {
   return { OidcTokenRefresher: FakeOidcTokenRefresher };
 });
 
-import {
-  createAuthenticatedClient,
-  createStore,
-  getMatrixClient,
-  hasActiveClient,
-  loginWithPassword,
-} from './init-matrix';
 import type { MatrixCredentials, OidcSession } from './accounts';
+
+// The module under test holds module-level singletons (_client,
+// resumePromise, cryptoInitPromise); re-import it fresh per test.
+let matrix: typeof import('./init-matrix');
 
 const HS = 'https://h.example';
 const USER = '@u:h.example';
@@ -65,8 +88,10 @@ function lastCreateOpts(): Record<string, unknown> {
   return createClientMock.mock.calls.at(-1)?.[0] as Record<string, unknown>;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
+  vi.resetModules();
+  matrix = await import('./init-matrix');
   createClientMock.mockReset();
   httpMock.mockReset();
   refresherDoRefresh.mockReset();
@@ -77,15 +102,54 @@ beforeEach(() => {
     http: { request: httpMock },
     getUserId: () => USER,
     getSyncState: () => 'SYNCING',
+    on: onMock,
+    off: offMock,
+    stopClient: stopClientMock,
+    logout: logoutMock,
+    initRustCrypto: initRustCryptoMock,
+    startClient: startClientMock,
   });
+  syncHandlers.clear();
+  onMock
+    .mockReset()
+    .mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
+      if (event === 'sync') syncHandlers.add(handler);
+    });
+  offMock
+    .mockReset()
+    .mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
+      syncHandlers.delete(handler);
+    });
+  storeStartupMock.mockReset().mockResolvedValue(undefined);
+  initAsyncMock.mockReset().mockResolvedValue(undefined);
+  stopClientMock.mockReset();
+  logoutMock.mockReset().mockResolvedValue(undefined);
+  initRustCryptoMock.mockReset().mockResolvedValue(undefined);
+  startClientMock.mockReset().mockResolvedValue(undefined);
 });
+
+const CREDENTIALS: MatrixCredentials = {
+  userId: USER,
+  accessToken: 'at1',
+  deviceId: 'dev1',
+  homeserverUrl: HS,
+  refreshToken: 'rt1',
+};
+
+const syncHandlers = new Set<(...args: unknown[]) => void>();
+
+function lastSyncHandler(): (state: string) => void {
+  const handler = [...syncHandlers].at(-1);
+  if (!handler) throw new Error('no sync handler registered');
+  return handler as (state: string) => void;
+}
 
 describe('loginWithPassword', () => {
   it('sends a password login with refresh token and persists resolved credentials', async () => {
     const loginRequest = vi.fn().mockResolvedValue(loginResponse());
     createClientMock.mockReturnValueOnce({ loginRequest });
 
-    const creds = await loginWithPassword('alice', 'secret', HS);
+    const creds = await matrix.loginWithPassword('alice', 'secret', HS);
 
     expect(loginRequest).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -114,7 +178,7 @@ describe('loginWithPassword', () => {
   it('falls back to the input url when the response has no well_known', async () => {
     createClientMock
       .mockReturnValueOnce({ loginRequest: vi.fn().mockResolvedValue(loginResponse({ well_known: undefined })) });
-    const creds = await loginWithPassword('alice', 'secret', HS);
+    const creds = await matrix.loginWithPassword('alice', 'secret', HS);
     expect(creds.homeserverUrl).toBe(HS);
   });
 
@@ -125,7 +189,7 @@ describe('loginWithPassword', () => {
       configurable: true,
     });
     createClientMock.mockReturnValueOnce({ loginRequest: vi.fn().mockResolvedValue(loginResponse()) });
-    await loginWithPassword('alice', 'secret', HS);
+    await matrix.loginWithPassword('alice', 'secret', HS);
     expect(persist).toHaveBeenCalled();
   });
 });
@@ -139,7 +203,7 @@ describe('createAuthenticatedClient', () => {
   };
 
   it('passes auth flags and token refresh wiring to createClient', () => {
-    createAuthenticatedClient({ ...base, store: { fake: true }, refreshToken: 'rt1' });
+    matrix.createAuthenticatedClient({ ...base, store: { fake: true }, refreshToken: 'rt1' });
     const opts = lastCreateOpts();
     expect(opts).toMatchObject({
       baseUrl: HS,
@@ -156,7 +220,7 @@ describe('createAuthenticatedClient', () => {
   });
 
   it('omits tokenRefreshFunction when there is no refresh token', () => {
-    createAuthenticatedClient({ ...base });
+    matrix.createAuthenticatedClient({ ...base });
     expect(lastCreateOpts().tokenRefreshFunction).toBeUndefined();
   });
 
@@ -168,7 +232,7 @@ describe('createAuthenticatedClient', () => {
       responseMode: 'query',
       idTokenClaims: { sub: USER },
     };
-    createAuthenticatedClient({ ...base, refreshToken: 'rt1', oidc });
+    matrix.createAuthenticatedClient({ ...base, refreshToken: 'rt1', oidc });
     const opts = lastCreateOpts();
     expect(refresherCtorArgs[0]).toEqual([
       oidc.issuer,
@@ -191,7 +255,7 @@ describe('createAuthenticatedClient', () => {
   });
 
   it('refreshes natively with v3 prefix and persists the result', async () => {
-    createAuthenticatedClient({ ...base, refreshToken: 'rt1' });
+    matrix.createAuthenticatedClient({ ...base, refreshToken: 'rt1' });
     const opts = lastCreateOpts();
     httpMock.mockResolvedValue({ access_token: 'at3', refresh_token: 'rt3', expires_in_ms: 7_200_000 });
 
@@ -203,7 +267,7 @@ describe('createAuthenticatedClient', () => {
   });
 
   it('retries native refresh with v1 prefix on M_UNRECOGNIZED', async () => {
-    createAuthenticatedClient({ ...base, refreshToken: 'rt1' });
+    matrix.createAuthenticatedClient({ ...base, refreshToken: 'rt1' });
     const opts = lastCreateOpts();
     httpMock
       .mockRejectedValueOnce({ errcode: 'M_UNRECOGNIZED' })
@@ -219,14 +283,106 @@ describe('createAuthenticatedClient', () => {
 
 describe('createStore', () => {
   it('creates an IndexedDBStore named per user', () => {
-    createStore(USER);
+    matrix.createStore(USER);
     expect(storeArgs.at(-1)).toEqual({ dbName: `sewernet-store-${USER}` });
   });
 });
 
 describe('singleton', () => {
   it('throws when no client has been built yet', () => {
-    expect(hasActiveClient()).toBe(false);
-    expect(() => getMatrixClient()).toThrow();
+    expect(matrix.hasActiveClient()).toBe(false);
+    expect(() => matrix.getMatrixClient()).toThrow();
+  });
+});
+
+describe('resume', () => {
+  it('builds the client: store startup + wasm init, rust crypto, startClient, one-shot first sync', async () => {
+    const onFirstSync = vi.fn();
+    const client = await matrix.resume(CREDENTIALS, onFirstSync);
+
+    expect(storeStartupMock).toHaveBeenCalledTimes(1);
+    expect(initAsyncMock).toHaveBeenCalledTimes(1);
+    expect(initRustCryptoMock).toHaveBeenCalledWith({ cryptoDatabasePrefix: `sewernet-js-sdk-${USER}` });
+    expect(startClientMock).toHaveBeenCalledWith({
+      initialSyncLimit: 20,
+      lazyLoadMembers: true,
+      clientWellKnownPollPeriod: 86_400,
+    });
+    expect(matrix.getMatrixClient()).toBe(client);
+
+    const handler = lastSyncHandler();
+    handler('PREPARED');
+    expect(onFirstSync).toHaveBeenCalledTimes(1);
+    expect(syncHandlers.has(handler)).toBe(false);
+    expect(offMock).toHaveBeenCalledWith('sync', handler);
+  });
+
+  it('fires onFirstSync on CATCHUP as well', async () => {
+    const onFirstSync = vi.fn();
+    await matrix.resume(CREDENTIALS, onFirstSync);
+    lastSyncHandler()('CATCHUP');
+    expect(onFirstSync).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns the existing client for the same user with an active sync', async () => {
+    const first = await matrix.resume(CREDENTIALS);
+    createClientMock.mockClear();
+    const second = await matrix.resume({ ...CREDENTIALS, accessToken: 'at2' });
+    expect(second).toBe(first);
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates concurrent resumes into a single build', async () => {
+    const [a, b] = await Promise.all([matrix.resume(CREDENTIALS), matrix.resume(CREDENTIALS)]);
+    expect(createClientMock).toHaveBeenCalledTimes(1);
+    expect(a).toBe(b);
+  });
+});
+
+describe('logoutCurrent', () => {
+  it('stops the client, clears indexed databases and drops the account', async () => {
+    await matrix.resume(CREDENTIALS);
+    const deleteDatabase = vi.fn(() => ({ addEventListener: (_t: string, cb: () => void) => cb() }));
+    vi.stubGlobal('indexedDB', {
+      databases: vi.fn(async () => [{ name: `sewernet-js-sdk-${USER}-crypto` }]),
+      deleteDatabase,
+    });
+
+    await matrix.logoutCurrent();
+
+    expect(stopClientMock).toHaveBeenCalled();
+    expect(logoutMock).toHaveBeenCalledWith(true);
+    expect(matrix.hasActiveClient()).toBe(false);
+    expect(readAccounts()[USER]).toBeUndefined();
+    const deleted = deleteDatabase.mock.calls.map((c) => c[0]);
+    expect(deleted).toContain(`sewernet-store-${USER}`);
+    expect(deleted).toContain(`sewernet-js-sdk-${USER}-crypto`);
+    vi.unstubAllGlobals();
+  });
+
+  it('resolves logout when the homeserver hangs past 10 seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      await matrix.resume(CREDENTIALS);
+      logoutMock.mockReturnValue(new Promise(() => {}));
+      vi.stubGlobal('indexedDB', {
+        databases: vi.fn(async () => []),
+        deleteDatabase: () => ({ addEventListener: (_t: string, cb: () => void) => cb() }),
+      });
+      const pending = matrix.logoutCurrent();
+      await vi.advanceTimersByTimeAsync(10_000);
+      await pending;
+      expect(matrix.hasActiveClient()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('prewarmCrypto', () => {
+  it('initializes the rust crypto wasm module', async () => {
+    await matrix.prewarmCrypto();
+    expect(initAsyncMock).toHaveBeenCalled();
   });
 });

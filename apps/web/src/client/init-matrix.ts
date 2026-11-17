@@ -8,7 +8,7 @@ import {
 import { OidcTokenRefresher } from 'matrix-js-sdk/lib/oidc';
 import type { AccessTokens, TokenRefreshFunction } from 'matrix-js-sdk/lib/http-api';
 import type { MatrixCredentials, OidcSession } from './accounts';
-import { getAccount, setActiveAccount, upsertAccount } from './accounts';
+import { getAccount, removeAccount, setActiveAccount, upsertAccount } from './accounts';
 
 let _client: MatrixClient | null = null;
 
@@ -26,6 +26,22 @@ export function hasActiveClient(): boolean {
 
 export function createStore(userId: string): IndexedDBStore {
   return new IndexedDBStore({ dbName: `sewernet-store-${userId}` });
+}
+
+let cryptoInitPromise: Promise<void> | null = null;
+
+async function ensureCryptoWasm(): Promise<void> {
+  if (!cryptoInitPromise) {
+    cryptoInitPromise = import('@matrix-org/matrix-sdk-crypto-wasm').then((m) =>
+      m.initAsync(),
+    );
+  }
+  return cryptoInitPromise;
+}
+
+/** Warms up the rust crypto wasm module (idempotent). */
+export function prewarmCrypto(): Promise<void> {
+  return ensureCryptoWasm();
 }
 
 async function requestPersistentStorage(): Promise<void> {
@@ -177,4 +193,125 @@ export function createAuthenticatedClient(opts: {
     tokenRefreshFunction,
   });
   return client;
+}
+
+let resumePromise: Promise<MatrixClient> | null = null;
+
+/**
+ * Builds (or re-uses) the authenticated client and starts syncing.
+ * A living client for the same user is returned as-is; concurrent
+ * resumes of the same build share one promise.
+ */
+export async function resume(
+  credentials: MatrixCredentials,
+  onFirstSync?: () => void,
+): Promise<MatrixClient> {
+  if (
+    _client &&
+    _client.getSyncState() !== 'STOPPED' &&
+    _client.getUserId() === credentials.userId
+  ) {
+    attachFirstSync(_client, onFirstSync);
+    return _client;
+  }
+  if (!resumePromise) {
+    resumePromise = buildClient(credentials, onFirstSync).finally(() => {
+      resumePromise = null;
+    });
+  }
+  return resumePromise;
+}
+
+async function buildClient(
+  credentials: MatrixCredentials,
+  onFirstSync?: () => void,
+): Promise<MatrixClient> {
+  const store = createStore(credentials.userId);
+  const client = createAuthenticatedClient({
+    baseUrl: credentials.homeserverUrl,
+    userId: credentials.userId,
+    accessToken: credentials.accessToken,
+    deviceId: credentials.deviceId,
+    store,
+    refreshToken: credentials.refreshToken,
+    oidc: credentials.oidc,
+  });
+  await Promise.all([store.startup(), prewarmCrypto()]);
+  await client.initRustCrypto({
+    cryptoDatabasePrefix: `sewernet-js-sdk-${credentials.userId}`,
+  });
+  attachFirstSync(client, onFirstSync);
+  await client.startClient({
+    initialSyncLimit: 20,
+    lazyLoadMembers: true,
+    clientWellKnownPollPeriod: 86_400,
+  });
+  _client = client;
+  return client;
+}
+
+function attachFirstSync(client: MatrixClient, onFirstSync?: () => void): void {
+  if (!onFirstSync) {
+    return;
+  }
+  const handler = (state: string): void => {
+    if (state === 'PREPARED' || state === 'CATCHUP') {
+      client.off('sync', handler);
+      onFirstSync();
+    }
+  };
+  client.on('sync', handler);
+}
+
+async function deletePersistedDatabases(userId: string): Promise<void> {
+  if (typeof indexedDB === 'undefined') {
+    return;
+  }
+  const names = [`sewernet-store-${userId}`];
+  try {
+    if (typeof indexedDB.databases === 'function') {
+      const dbs = await indexedDB.databases();
+      for (const db of dbs) {
+        if (db.name?.startsWith(`sewernet-js-sdk-${userId}`)) {
+          names.push(db.name);
+        }
+      }
+    }
+  } catch {
+    // enumeration is optional; the timeline db is always deleted
+  }
+  await Promise.all(
+    names.map(
+      (name) =>
+        new Promise<void>((resolve) => {
+          const request = indexedDB.deleteDatabase(name);
+          request.addEventListener('success', () => resolve());
+          request.addEventListener('error', () => resolve());
+          request.addEventListener('blocked', () => resolve());
+        }),
+    ),
+  );
+}
+
+/** Logs out the current client and wipes all persisted state for it. */
+export async function logoutCurrent(): Promise<void> {
+  const client = _client;
+  if (!client) {
+    return;
+  }
+  const userId = client.getUserId?.();
+  client.stopClient();
+  try {
+    await Promise.race([
+      client.logout(true),
+      new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
+    ]);
+  } catch {
+    // network errors must not block local cleanup
+  }
+  _client = null;
+  if (userId) {
+    await deletePersistedDatabases(userId);
+    removeAccount(userId);
+  }
 }
