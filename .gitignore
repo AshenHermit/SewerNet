@@ -56,4 +56,5 @@ test-output
 out
 
 
-storybook-staticdist-types
+dist-types
+storybook-static
