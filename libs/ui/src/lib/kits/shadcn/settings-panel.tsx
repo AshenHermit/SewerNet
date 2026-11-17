@@ -27,6 +27,9 @@ export function ShadcnSettingsPanel({
   fontOptions,
   radius,
   onRadiusChange,
+  locale,
+  onLocaleChange,
+  localeOptions,
   onReset,
   className,
   ...props
@@ -52,13 +55,31 @@ export function ShadcnSettingsPanel({
         <h3 className="mb-2 text-xs font-medium text-[var(--sn-text-muted)]">
           {interfaceLabel}
         </h3>
-        <div className="flex gap-1">
-          <ProxyKitOption
-            kitId="shadcn"
-            label={kitLabel}
-            active={kitId === 'shadcn'}
-            onSelect={onKitChange}
-          />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-1">
+            <ProxyKitOption
+              kitId="shadcn"
+              label={kitLabel}
+              active={kitId === 'shadcn'}
+              onSelect={onKitChange}
+            />
+          </div>
+          <div className="flex gap-1">
+            {localeOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => onLocaleChange(opt.value)}
+                className={cn(
+                  'h-8 flex-1 rounded-[calc(var(--sn-radius)*0.75)] text-xs transition-colors',
+                  locale === opt.value
+                    ? 'bg-[var(--sn-accent)] text-[var(--sn-accent-contrast)]'
+                    : 'bg-[var(--sn-surface-2)] text-[var(--sn-text-muted)] hover:bg-[var(--sn-surface-3)]',
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

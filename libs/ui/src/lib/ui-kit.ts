@@ -5,6 +5,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from 'react';
+import type { AppLocale } from '@sewer-net/types';
 import type { MatrixRoomEvent, MasOidcMetadata } from '@sewer-net/types';
 import type { FontId, ThemeMode } from '@sewer-net/themes';
 
@@ -61,6 +62,10 @@ export interface ChatViewMessageListProps extends HTMLAttributes<HTMLDivElement>
   currentUserId?: string;
   /** Ссылка на sentinel-элемент в конце списка (для скролла вниз). */
   bottomRef?: React.RefObject<HTMLDivElement>;
+  /** Наличие более старых сообщений: если true — показать кнопку загрузки. */
+  hasMore?: boolean;
+  /** Обработчик кнопки «загрузить ещё» при скролле вверх или клике по кнопке. */
+  onLoadMore?: () => void;
 }
 
 /** Одно сообщение в списке чата. */
@@ -148,6 +153,9 @@ export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
   fontOptions: { id: FontId; label: string }[];
   radius: number;
   onRadiusChange: (radius: number) => void;
+  locale: AppLocale;
+  onLocaleChange: (locale: AppLocale) => void;
+  localeOptions: { value: AppLocale; label: string }[];
   onReset: () => void;
 }
 

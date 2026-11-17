@@ -171,6 +171,23 @@ export class MatrixController {
     );
   }
 
+  @Post('sync')
+  @HttpCode(200)
+  async sync(
+    @Headers(HS) homeserver: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
+    @Query('pos') pos?: string,
+    @Query('timeout') timeout?: string,
+  ) {
+    const result = await this.matrix.sync(
+      requireHomeserver(homeserver),
+      extractToken(authorization),
+      pos,
+      timeout ? Number(timeout) : undefined,
+    );
+    return result;
+  }
+
   @Put('rooms/:roomId/send/:txnId')
   sendMessage(
     @Headers(HS) homeserver: string | undefined,

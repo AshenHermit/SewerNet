@@ -7,6 +7,8 @@ import {
   type ThemeMode,
 } from '@sewer-net/themes';
 import { ProxySettingsPanel } from '@sewer-net/ui';
+import { SUPPORTED_LOCALES, type AppLocale } from '@sewer-net/types';
+import { activateLocale } from '../../i18n';
 
 const MODES: { value: ThemeMode; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -15,6 +17,13 @@ const MODES: { value: ThemeMode; label: string }[] = [
 ];
 
 const FONTS: FontId[] = ['inter', 'system', 'serif', 'mono'];
+const LOCALES: { value: AppLocale; label: string }[] = Object.entries(
+  SUPPORTED_LOCALES,
+).map(([value, label]) => ({ value: value as AppLocale, label: String(label) }));
+
+async function switchLocale(locale: AppLocale): Promise<void> {
+  await activateLocale(locale);
+}
 
 /**
  * Appearance settings: UI kit, color mode, accent color, font and radius.
@@ -28,7 +37,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const setFont = useThemeStore((state) => state.setFont);
   const setRadius = useThemeStore((state) => state.setRadius);
   const reset = useThemeStore((state) => state.reset);
-  const { t } = useLingui();
+  const { i18n, t } = useLingui();
 
   const modeLabels: Record<ThemeMode, string> = {
     light: t`Light`,
@@ -61,6 +70,9 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       fontOptions={FONTS.map((f) => ({ id: f, label: FONT_LABELS[f] }))}
       radius={settings.radius}
       onRadiusChange={setRadius}
+      locale={i18n.locale as AppLocale}
+      onLocaleChange={switchLocale}
+      localeOptions={LOCALES}
       onReset={reset}
     />
   );

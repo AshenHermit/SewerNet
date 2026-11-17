@@ -1,11 +1,5 @@
 import { i18n } from '@lingui/core';
-
-export const SUPPORTED_LOCALES = {
-  en: 'English',
-  ru: 'Русский',
-} as const;
-
-export type AppLocale = keyof typeof SUPPORTED_LOCALES;
+import { SUPPORTED_LOCALES, type AppLocale } from '@sewer-net/types';
 
 const LOCALE_STORAGE_KEY = 'sewernet:locale';
 

@@ -15,6 +15,8 @@ interface ChatState {
   activeRoomId: string | null;
   /** event id -> message event, keyed per room */
   messages: Record<string, MatrixRoomEvent[]>;
+  /** Last known /sync position per room, used to resume long-poll after reconnect. */
+  syncedPos: Record<string, string>;
   loadingRooms: boolean;
   loadingMessages: boolean;
   sending: boolean;
@@ -23,6 +25,7 @@ interface ChatState {
   setActiveRoom: (roomId: string | null) => void;
   setMessages: (roomId: string, events: MatrixRoomEvent[]) => void;
   appendMessage: (roomId: string, event: MatrixRoomEvent) => void;
+  setSyncedPos: (roomId: string, pos: string) => void;
   setLoadingRooms: (loading: boolean) => void;
   setLoadingMessages: (loading: boolean) => void;
   setSending: (sending: boolean) => void;
@@ -37,6 +40,7 @@ export const useChatStore = create<ChatState>()((set) => ({
   loadingMessages: false,
   sending: false,
   error: null,
+  syncedPos: {},
   setRooms: (rooms) => set({ rooms }),
   setActiveRoom: (activeRoomId) => set({ activeRoomId }),
   setMessages: (roomId, events) =>
@@ -48,6 +52,8 @@ export const useChatStore = create<ChatState>()((set) => ({
         [roomId]: [...(state.messages[roomId] ?? []), event],
       },
     })),
+  setSyncedPos: (roomId, pos) =>
+    set((state) => ({ syncedPos: { ...state.syncedPos, [roomId]: pos } })),
   setLoadingRooms: (loadingRooms) => set({ loadingRooms }),
   setLoadingMessages: (loadingMessages) => set({ loadingMessages }),
   setSending: (sending) => set({ sending }),

@@ -33,12 +33,46 @@ export function ChatView({ onAuthError }: ChatViewProps) {
 
   const { t } = useLingui();
   const [draft, setDraft] = useState('');
+  const [hasMore, setHasMore] = useState(false);
+  const [prevToken, setPrevToken] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const loadedRoomRef = useRef<string | null>(null);
+  const prevAbortRef = useRef<AbortController | null>(null);
 
   const activeRoom = rooms.find((room) => room.id === activeRoomId) ?? null;
   const events = activeRoomId ? (messages[activeRoomId] ?? []) : [];
   const roomName = activeRoom ? activeRoom.name : '';
+
+  // Пагинация: при скролле к верху списка подгружаем более старые сообщения.
+  useEffect(() => {
+    const el = bottomRef.current?.parentElement;
+    if (!el) return;
+    function onScroll() {
+      if (!el || el.scrollTop > 0 || !hasMore || !prevToken) return;
+      void loadMore();
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [hasMore, prevToken]);
+
+  async function loadMore() {
+    if (!prevToken || !activeRoomId || !session) return;
+    setLoadingMessages(true);
+    try {
+      const res = await matrixClient.getMessages(session, activeRoomId, {
+        limit: 50,
+        from: prevToken,
+      });
+      setMessages(activeRoomId, [...res.chunk, ...events]);
+      setPrevToken(res.prev ?? null);
+      setHasMore(!!res.prev);
+    } catch {
+      // Ошибку пагинации не показываем поверх основного состояния комнаты:
+      // достаточно, что кнопка останется.
+    } finally {
+      setLoadingMessages(false);
+    }
+  }
 
   // Load the full room payload when a room is opened: /state (имя комнаты),
   // /messages (история), /members, /threads, /aliases — пять запросов в одном
@@ -50,6 +84,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     let cancelled = false;
     const roomId = activeRoomId;
     const currentSession = session;
+    prevAbortRef.current?.abort();
 
     async function loadRoom() {
       setLoadingMessages(true);
@@ -86,6 +121,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
 
         const messagesRes = messagesResult.value;
         setMessages(roomId, messagesRes.chunk);
+        setPrevToken(messagesRes.prev ?? null);
+        setHasMore(!!messagesRes.prev);
         loadedRoomRef.current = roomId;
 
         // Отмечаем последнее событие прочитанным. Это побочный эффект, а не
@@ -184,6 +221,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         loading={loadingMessages}
         currentUserId={session.userId}
         bottomRef={bottomRef as React.RefObject<HTMLDivElement>}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
       />
       {error ? <ProxyChatViewError error={error} /> : null}
       <ProxyChatViewInputForm

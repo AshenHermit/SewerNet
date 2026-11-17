@@ -346,6 +346,69 @@ export const matrixClient = {
       },
     );
   },
+
+  /** Long-poll /sync for one or all rooms. Returns a cleanup function. */
+  subscribeToSync(
+    session: AuthSession,
+    onEvents: (events: import('@sewer-net/types').MatrixRoomEvent[]) => void,
+  ): () => void {
+    let cancelled = false;
+    let pos = '';
+    const timeoutMs = 30_000;
+
+    async function loop(): Promise<void> {
+      if (cancelled) return;
+      try {
+        const params = new URLSearchParams({ timeout: String(timeoutMs / 1000) });
+        if (pos) params.set('pos', pos);
+        const response = await fetch(`${BASE}/sync?${params}`, {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+            'x-matrix-homeserver': session.homeserverUrl,
+          },
+        });
+        if (!response.ok) {
+          // При 401 — один прозрачный refresh + retry одного подключения.
+          if (response.status === 401 && session.refreshToken) {
+            await refreshOauthToken(session);
+            pos = '';
+            void loop();
+            return;
+          }
+          // Иначе выходим: дальнейшие попытки не имеют смысла без перезахода.
+          return;
+        }
+        const payload = (await response.json()) as Record<string, unknown>;
+        const rooms = payload['rooms'] as
+          | { join?: Record<string, { events?: unknown }> }
+          | undefined;
+        const nextPos = (payload['pos'] as string | undefined) ?? pos;
+        const timeline = rooms?.join ?? {};
+        const events = Object.values(timeline)
+          .flatMap((chunk) => chunk.events ?? [])
+          .filter((e): e is import('@sewer-net/types').MatrixRoomEvent => {
+            const ev = e as import('@sewer-net/types').MatrixRoomEvent;
+            return (
+              ev && typeof ev.event_id === 'string' && typeof ev.type === 'string'
+            );
+          });
+        pos = nextPos;
+        if (!cancelled && events.length > 0) {
+          void onEvents(events);
+        }
+        void loop();
+      } catch {
+        // Сетевая ошибка / abort: через миллисекунду пробуем снова, чтобы не
+        // завалить слабый homeserver серией ретраев.
+        if (!cancelled) setTimeout(() => void loop(), 2_000);
+      }
+    }
+
+    void loop();
+    return () => {
+      cancelled = true;
+    };
+  },
 };
 
 export { MatrixApiError };

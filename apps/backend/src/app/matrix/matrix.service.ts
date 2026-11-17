@@ -1,5 +1,9 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
-import type { SlidingSyncRoomListRequest, SlidingSyncRoomListResponse } from '@sewer-net/types';
+import type {
+  MatrixSyncResponse,
+  SlidingSyncRoomListRequest,
+  SlidingSyncRoomListResponse,
+} from '@sewer-net/types';
 
 export interface ProxyOptions {
   method?: string;
@@ -167,6 +171,29 @@ export class MatrixService {
       rooms,
       extensions,
     };
+  }
+
+  /** Long-poll /sync для одной комнаты. Возвращает события и новую позицию. */
+  async sync(
+    homeserver: string,
+    token?: string,
+    pos?: string,
+    timeoutMs = 30_000,
+  ): Promise<{ events: MatrixSyncResponse['rooms']['join']; pos: string }> {
+    const body: Record<string, unknown> = {
+      filters: {},
+      // Включает только join-комнаты; invite/leave опущены как нерелевантные
+      // для MVP (каноничный /sync от Element X шлёт похожий фильтр).
+      ...(pos ? { pos } : {}),
+    };
+    const response = (await this.proxy(homeserver, '/_matrix/client/v3/sync', {
+      method: 'POST',
+      token,
+      body,
+      timeoutMs,
+      retries: 0,
+    })) as MatrixSyncResponse;
+    return { events: response.rooms?.join ?? {}, pos: response.pos };
   }
 
   async getRoomMembers(

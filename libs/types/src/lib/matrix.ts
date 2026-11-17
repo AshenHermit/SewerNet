@@ -1,5 +1,11 @@
 /** Minimal Matrix types shared between the client and the REST proxy. */
 
+export const SUPPORTED_LOCALES = {
+  en: 'English',
+  ru: 'Русский',
+} as const;
+export type AppLocale = keyof typeof SUPPORTED_LOCALES;
+
 export interface MatrixLoginRequest {
   homeserverUrl: string;
   user: string;
@@ -38,7 +44,32 @@ export interface MatrixRoomEvent {
 export interface MatrixMessagesResponse {
   chunk: MatrixRoomEvent[];
   start: string;
-  end?: string;
+  /** Токен для загрузки более старых сообщений (prev). */
+  prev?: string;
+  /** Токен для загрузки более новых сообщений (next); на практике не используется. */
+  next?: string;
+}
+
+/** Пачка событий из одного long-poll /sync для одной комнаты. */
+export interface MatrixSyncRoomTimeline {
+  events: MatrixRoomEvent[];
+  limited?: boolean;
+  prev_batch?: string;
+}
+
+export interface MatrixSyncResponse {
+  rooms: {
+    join: Record<string, MatrixSyncRoomTimeline>;
+    invite?: Record<string, unknown>;
+    leave?: Record<string, unknown>;
+  };
+  account_data: { events: MatrixRoomEvent[] };
+  presence?: { events: MatrixRoomEvent[] };
+  to_device?: { events: MatrixRoomEvent[] };
+  org_matrix_msc3773_call_events?: { events: MatrixRoomEvent[] };
+  pos: string;
+  filters?: unknown;
+  unused?: unknown;
 }
 
 export interface MatrixSendResponse {
