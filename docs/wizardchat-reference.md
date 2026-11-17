@@ -1,8 +1,9 @@
 # WizardChat Web — reference clone для feat/replicate
 
 **Задача ветки `feat/replicate`:** повторять механизмы WizardChat, не изобретая
-core-логику заново, но с учётом особенностей SewerNet (stateless backend-proxy,
-zustand, proxy-компоненты ui-kit).
+core-логику заново, но с учётом особенностей SewerNet (zustand для UI-состояния,
+proxy-компоненты ui-kit, отдельный stateless backend, который web не использует
+для Matrix).
 
 ## Где лежит клон
 
@@ -62,12 +63,36 @@ matrix-sdk-crypto-wasm, медиа через mxcUrl.
 
 | WizardChat | SewerNet |
 |---|---|
-| matrix-js-sdk (direct) | свой REST-клиент → NestJS proxy → homeserver |
-| jotai atoms | zustand stores (auth/chat/theme) |
+| matrix-js-sdk (direct) | `apps/web/src/client/init-matrix.ts` — синглтон matrix-js-sdk v41 напрямую |
+| jotai atoms | zustand (только UI-состояние) + событийные хуки по SDK-сторам |
 | vanilla-extract css | Tailwind v4 + `--sn-*` + proxy-kits |
-| features/ | screens/ + components/ + stores |
-| OidcCallback/SsoCallback | `/callback` (MAS OAuth + PKCE) |
-| markAsRead.ts | `setReadMarkers` |
+| features/ | screens/ + components/ + hooks/ + client/ |
+| OidcCallback/SsoCallback | `/oidc/callback` (OIDC через SDK oidc-модуль; SSO — позже) |
+| markAsRead.ts | `markRoomRead` в `apps/web/src/app/hooks/use-timeline.ts` |
+| `src/util/matrix/mxcUrl.ts` | `apps/web/src/lib/mxc-url.ts` + `media-url.ts` |
+| `public/sw.js` | `apps/web/public/sw.js` (без `requestSession` round-trip) |
+
+## Статус реплики (ветка `feat/replicate`)
+
+Реализовано по образцу wizardchat:
+
+- Клиент-синглтон: `resume`/`logoutCurrent`/`getMatrixClient`, IndexedDB-сторы
+  по юзеру, `initRustCrypto` на каждом resume, `tokenRefreshFunction`
+  (OidcTokenRefresher | native `/refresh`).
+- Авторизация: capability discovery → OIDC через SDK oidc-модуль | парольный
+  fallback; `RequireAuth`, `/welcome`, `/oidc/callback`.
+- Список комнат (`useRooms`) и таймлайн (`useTimeline`): событийные подписки,
+  throttle 200 мс, пагинация, отправка текста/файлов, read receipts.
+- E2EE: расшифровка истории при пагинации, бейдж шифрования,
+  `prepareToEncrypt` с троттлингом 60 с.
+- Медиа: `mxcUrlToHttp`, service worker с Bearer-инъекцией, аватары комнат.
+- Legacy REST-путь (`matrix-client.ts`, `legacy-session.ts`, `oauth-pkce.ts`)
+  удалён: web больше не вызывает `/api/matrix/*`.
+
+Не реплицировано (вне этой ветки): SSO-redirect, QR-логин, регистрация и
+сброс пароля, верификация устройств/key backup UI, звонки (livekit), виджеты,
+threads-UI, spaces-иерархия, поиск/каталог комнат (react-query зарезервирован
+под них).
 
 ## Процесс работы по ветке
 
