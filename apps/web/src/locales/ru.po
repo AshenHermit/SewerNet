@@ -19,7 +19,7 @@ msgstr "Внешний вид"
 #~ msgid "Attach"
 #~ msgstr "Прикрепить"
 
-#: apps/web/src/app/components/chat-view.tsx:132
+#: apps/web/src/app/components/chat-view.tsx:137
 msgid "Back"
 msgstr "Назад"
 
@@ -54,6 +54,10 @@ msgstr "Создать аккаунт"
 #: apps/web/src/app/components/settings-panel.tsx:44
 msgid "Dark"
 msgstr "Тёмная"
+
+#: apps/web/src/app/components/chat-view.tsx:141
+msgid "Encrypted"
+msgstr "Зашифровано"
 
 #: apps/web/src/app/screens/oidc-callback-screen.tsx:101
 msgid "Finishing sign-in…"
@@ -121,7 +125,7 @@ msgstr "Поиск"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
 
-#: apps/web/src/app/components/chat-view.tsx:122
+#: apps/web/src/app/components/chat-view.tsx:127
 msgid "Select a chat to start messaging"
 msgstr "Выберите чат, чтобы начать переписку"
 

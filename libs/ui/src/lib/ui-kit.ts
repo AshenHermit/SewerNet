@@ -52,6 +52,10 @@ export interface ChatViewHeaderProps extends HTMLAttributes<HTMLDivElement> {
   avatar?: ReactNode;
   title: string;
   subtitle?: string;
+  /** E2EE включён в комнате — показать бейдж «Encrypted». */
+  encrypted?: boolean;
+  /** Подпись бейджа шифрования (готовая строка). */
+  encryptedLabel?: string;
 }
 
 /** Список сообщений: состояние загрузки / пусто / список событий. */

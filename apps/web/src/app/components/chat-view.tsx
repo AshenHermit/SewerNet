@@ -14,7 +14,9 @@ import { useChatStore } from '../stores/chat-store';
 import { useRooms } from '../hooks/use-rooms';
 import {
   markRoomRead,
+  prepareToEncryptThrottled,
   sendMessageText,
+  useRoomEncrypted,
   useTimeline,
 } from '../hooks/use-timeline';
 
@@ -56,6 +58,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   const roomName = activeRoom ? activeRoom.name : '';
 
   const { items, hasMore, loadOlder, isLoading } = useTimeline(activeRoomId);
+  const encrypted = useRoomEncrypted(activeRoomId);
   const events = useMemo(() => items.map(toRoomEvent), [items]);
 
   const [draft, setDraft] = useState('');
@@ -102,6 +105,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     setSending(true);
     setError(null);
     try {
+      // Rust-crypto prefetches megolm session keys — at most once per minute.
+      prepareToEncryptThrottled(activeRoomId);
       await sendMessageText(activeRoomId, body);
       setDraft('');
     } catch (err) {
@@ -132,6 +137,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         backLabel={t`Back`}
         title={roomName}
         subtitle={activeRoom?.roomId}
+        encrypted={encrypted}
+        encryptedLabel={t`Encrypted`}
       />
       <ProxyChatViewMessageList
         events={events}

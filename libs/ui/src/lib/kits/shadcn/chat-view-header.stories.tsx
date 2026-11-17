@@ -18,3 +18,13 @@ export const Default: Story = {
   },
 };
 
+export const EncryptedRoom: Story = {
+  args: {
+    title: 'Secret plans',
+    subtitle: '!secret:matrix.org',
+    onBack: () => undefined,
+    encrypted: true,
+    encryptedLabel: 'Encrypted',
+  },
+};
+

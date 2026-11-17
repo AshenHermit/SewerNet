@@ -8,6 +8,8 @@ export function ShadcnChatViewHeader({
   avatar,
   title,
   subtitle,
+  encrypted,
+  encryptedLabel,
   className,
   ...props
 }: ChatViewHeaderProps) {
@@ -41,6 +43,14 @@ export function ShadcnChatViewHeader({
           </p>
         ) : null}
       </div>
+      {encrypted ? (
+        <span
+          className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-[var(--sn-border)] bg-[var(--sn-surface-2)] px-2 py-0.5 text-[10px] font-medium text-[var(--sn-text-muted)]"
+        >
+          <ProxyIcon name="lock" size={12} />
+          {encryptedLabel}
+        </span>
+      ) : null}
     </header>
   );
 }

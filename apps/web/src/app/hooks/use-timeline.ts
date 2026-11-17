@@ -128,6 +128,79 @@ function mergePreservingIdentity(
   });
 }
 
+/**
+ * Повторная расшифровка undecrypted-событий после подгрузки истории:
+ * paginateEventTimeline не трогает шифрование — rust-crypto хранит ключи
+ * сессий, но расшифровку старых событий надо запросить вручную.
+ */
+function retryDecryption(
+  client: MatrixClient,
+  live: { getNeighbouringTimeline(dir: string): unknown | null },
+): void {
+  const crypto = client.getCrypto?.();
+  if (!crypto) return;
+  for (const timeline of collectLinkedTimelines(live)) {
+    const events = timeline.getEvents() as Array<{
+      shouldAttemptDecryption?: () => boolean;
+      attemptDecryption?: (crypto: unknown, opts?: { isRetry?: boolean }) => Promise<void>;
+    }>;
+    for (const event of events) {
+      if (!event.shouldAttemptDecryption?.()) continue;
+      void event.attemptDecryption?.(crypto, { isRetry: true }).catch(() => undefined);
+    }
+  }
+}
+
+const PREPARE_ENCRYPT_INTERVAL_MS = 60_000;
+const lastPrepareAt = new Map<string, number>();
+
+/**
+ * prepareToEncrypt перед отправкой — не чаще раза в минуту на комнату
+ * (rust-crypto сам догружает ключи, дроссель только экономит CPU).
+ */
+export function prepareToEncryptThrottled(roomId: string): void {
+  try {
+    const client = getMatrixClient();
+    const crypto = client.getCrypto();
+    if (!crypto) return;
+    const now = Date.now();
+    const last = lastPrepareAt.get(roomId) ?? 0;
+    if (now - last < PREPARE_ENCRYPT_INTERVAL_MS) return;
+    const room = client.getRoom(roomId);
+    if (!room) return;
+    lastPrepareAt.set(roomId, now);
+    crypto.prepareToEncrypt(room);
+  } catch {
+    // no active client — nothing to prepare
+  }
+}
+
+/** Бейдж «Зашифровано»: комната анонсирует m.room.encryption и крипто включено. */
+export function useRoomEncrypted(roomId: string | null): boolean {
+  const [encrypted, setEncrypted] = useState(false);
+  useEffect(() => {
+    if (!roomId) {
+      setEncrypted(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const crypto = getMatrixClient().getCrypto();
+        if (!crypto) return;
+        const enabled = await crypto.isEncryptionEnabledInRoom(roomId);
+        if (!cancelled) setEncrypted(enabled);
+      } catch {
+        // no client / crypto — treat as unencrypted
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId]);
+  return encrypted;
+}
+
 export function useTimeline(roomId: string | null): {
   items: TimelineItem[];
   hasMore: boolean;
@@ -196,6 +269,7 @@ export function useTimeline(roomId: string | null): {
         backwards: true,
         limit: PAGINATION_LIMIT,
       });
+      retryDecryption(client, live);
     } finally {
       loadingRef.current = false;
       setIsLoading(false);

@@ -47,6 +47,8 @@ vi.mock('../hooks/use-timeline', () => ({
     loadOlder: vi.fn(),
     isLoading: false,
   })),
+  useRoomEncrypted: vi.fn(() => false),
+  prepareToEncryptThrottled: vi.fn(),
   sendMessageText: vi.fn(),
   markRoomRead: vi.fn(),
 }));

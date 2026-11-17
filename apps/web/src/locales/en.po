@@ -24,7 +24,7 @@ msgstr "Appearance"
 #~ msgid "Attach"
 #~ msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:132
+#: apps/web/src/app/components/chat-view.tsx:137
 msgid "Back"
 msgstr "Back"
 
@@ -59,6 +59,10 @@ msgstr "Create account"
 #: apps/web/src/app/components/settings-panel.tsx:44
 msgid "Dark"
 msgstr "Dark"
+
+#: apps/web/src/app/components/chat-view.tsx:141
+msgid "Encrypted"
+msgstr "Encrypted"
 
 #: apps/web/src/app/screens/oidc-callback-screen.tsx:101
 msgid "Finishing sign-in…"
@@ -126,7 +130,7 @@ msgstr "Search"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:122
+#: apps/web/src/app/components/chat-view.tsx:127
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 

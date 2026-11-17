@@ -27,12 +27,26 @@ function fakeEvent(
   };
 }
 
-function makeFakeRoom(id: string, name: string, events: ReturnType<typeof fakeEvent>[]) {
+/** Structural event shape loose enough for encrypted-event fakes too. */
+interface FakeTimelineEvent {
+  getId: () => string;
+  getType: () => string;
+  getSender: () => string;
+  getTs: () => number;
+  getContent: () => Record<string, unknown>;
+  isRedacted: () => boolean;
+  status: string | null;
+}
+
+function makeFakeRoom(id: string, name: string, events: FakeTimelineEvent[]) {
+  let prev: unknown = null;
   const live = {
     getEvents: () => events,
     getPaginationToken: (direction: string) => (direction === 'b' ? 'tok-old' : null),
-    getNeighbouringTimeline: () => null,
-    setNeighbouringTimeline: vi.fn(),
+    getNeighbouringTimeline: () => prev,
+    setNeighbouringTimeline: vi.fn((_direction: string, neighbour: unknown) => {
+      prev = neighbour;
+    }),
     getTimelineSet: () => ({ getRoomId: () => id }),
     getRoomId: () => id,
   };
@@ -198,5 +212,149 @@ describe('ChatView (sdk timeline)', () => {
     for (const handler of handlers) handler(ROOM, undefined, false);
 
     expect(scrollSpy.mock.calls.length).toBe(initialCalls);
+  });
+});
+
+describe('ChatView (e2ee)', () => {
+  function encryptedEvent(id: string, opts?: { shouldAttempt?: boolean }) {
+    const event = {
+      getId: () => id,
+      getType: () => 'm.room.encrypted',
+      getSender: () => '@bob:matrix.org',
+      getTs: () => 2,
+      getContent: () => ({ msgtype: 'm.text', body: `dec ${id}` }),
+      isRedacted: () => false,
+      status: null,
+      shouldAttemptDecryption: () => opts?.shouldAttempt ?? true,
+      attemptDecryption: vi.fn(async () => undefined),
+    };
+    return event;
+  }
+
+  type FakeEvent = FakeTimelineEvent;
+
+  function makeEncryptedRoom(id: string, liveEvents: FakeEvent[], olderEvents: FakeEvent[] = []) {
+    const room = makeFakeRoom(id, 'Crypto Room', liveEvents);
+    const live = room.getLiveTimeline();
+    const older = {
+      getEvents: () => olderEvents,
+      getPaginationToken: () => null,
+      getNeighbouringTimeline: () => null,
+      setNeighbouringTimeline: vi.fn(),
+      getTimelineSet: () => ({ getRoomId: () => id }),
+      getRoomId: () => id,
+    };
+    const setNeighbouringTimeline = live.setNeighbouringTimeline as (dir: string, n: unknown) => void;
+    mocks.paginateEventTimeline.mockImplementation(() => {
+      setNeighbouringTimeline('b', older);
+      return Promise.resolve(true);
+    });
+    return room;
+  }
+
+  function renderEncrypted(
+    room: ReturnType<typeof makeEncryptedRoom>,
+    crypto: unknown = { isEncryptionEnabledInRoom: vi.fn(async () => false), prepareToEncrypt: vi.fn() },
+  ) {
+    const client = {
+      getUserId: () => '@alice:matrix.org',
+      getRooms: () => [room],
+      getRoom: (roomId: string) => (roomId === room.roomId ? room : null),
+      on: vi.fn(),
+      off: vi.fn(),
+      sendMessage: mocks.sendMessage,
+      sendReadReceipt: mocks.sendReadReceipt,
+      paginateEventTimeline: mocks.paginateEventTimeline,
+      getCrypto: () => crypto,
+    };
+    mocks.getMatrixClient.mockReturnValue(client);
+    useChatStore.setState({ activeRoomId: room.roomId, error: null });
+    return renderView();
+  }
+
+  it('retries decryption for undecrypted events while paginating', async () => {
+    const events = [
+      encryptedEvent('$e0:matrix.org', { shouldAttempt: false }),
+      encryptedEvent('$e1:matrix.org'),
+    ];
+    const room = makeEncryptedRoom('!enc:matrix.org', [events[0]], [events[1]]);
+    renderEncrypted(room, { isEncryptionEnabledInRoom: vi.fn(async () => true), prepareToEncrypt: vi.fn() });
+
+    fireEvent.click(await screen.findByText('Load older messages'));
+
+    await waitFor(() => expect(events[1].attemptDecryption).toHaveBeenCalled());
+    expect(events[1].attemptDecryption).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ isRetry: true }),
+    );
+    // Already decrypted events are not retried.
+    expect(events[0].attemptDecryption).not.toHaveBeenCalled();
+  });
+
+  it('renders the decrypted body once Event.decrypted fires', async () => {
+    // Undecrypted encrypted events carry no visible payload; the SDK mutates
+    // the same event object on successful decryption.
+    const event = {
+      getId: () => '$e0:matrix.org',
+      getType: () => 'm.room.encrypted',
+      getSender: () => '@bob:matrix.org',
+      getTs: () => 2,
+      getContent: () => ({}),
+      isRedacted: () => false,
+      status: null,
+    };
+    const room = makeEncryptedRoom('!enc:matrix.org', [event]);
+    renderEncrypted(room);
+
+    const client = mocks.getMatrixClient();
+    const handlers = (client.on as ReturnType<typeof vi.fn>).mock.calls
+      .filter(([name]) => name === 'Event.decrypted')
+      .map(([, handler]) => handler as Handler);
+    (event as Record<string, unknown>).getType = () => 'm.room.message';
+    (event as Record<string, unknown>).getContent = () => ({
+      msgtype: 'm.text',
+      body: 'dec $e0:matrix.org',
+    });
+    for (const handler of handlers) handler(event);
+
+    expect(await screen.findByText('dec $e0:matrix.org')).toBeTruthy();
+  });
+
+  it('shows the encrypted badge when crypto is enabled in the room', async () => {
+    const room = makeEncryptedRoom('!enc:matrix.org', [encryptedEvent('$e0:matrix.org')]);
+    const crypto = {
+      isEncryptionEnabledInRoom: vi.fn(async () => true),
+      prepareToEncrypt: vi.fn(),
+    };
+    renderEncrypted(room, crypto);
+
+    expect(await screen.findByText('Encrypted')).toBeTruthy();
+    expect(crypto.isEncryptionEnabledInRoom).toHaveBeenCalledWith('!enc:matrix.org');
+  });
+
+  it('calls prepareToEncrypt before sending, at most once per minute', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 25 });
+    try {
+      const room = makeEncryptedRoom('!enc:matrix.org', [encryptedEvent('$e0:matrix.org')]);
+      const crypto = {
+        isEncryptionEnabledInRoom: vi.fn(async () => false),
+        prepareToEncrypt: vi.fn(),
+      };
+      renderEncrypted(room, crypto);
+
+      const input = await screen.findByLabelText('Message');
+      fireEvent.change(input, { target: { value: 'one' } });
+      fireEvent.click(screen.getByTitle('Send'));
+      fireEvent.change(input, { target: { value: 'two' } });
+      fireEvent.click(screen.getByTitle('Send'));
+      await waitFor(() => expect(crypto.prepareToEncrypt).toHaveBeenCalledTimes(1));
+
+      await vi.advanceTimersByTimeAsync(61_000);
+      fireEvent.change(input, { target: { value: 'three' } });
+      fireEvent.click(screen.getByTitle('Send'));
+      await waitFor(() => expect(crypto.prepareToEncrypt).toHaveBeenCalledTimes(2));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
