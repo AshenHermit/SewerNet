@@ -49,7 +49,7 @@ beforeAll(() => {
 
 afterEach(() => {
   localStorage.removeItem('sewernet:auth');
-  useAuthStore.setState({ session: null });
+  useAuthStore.setState({ credentials: null, session: null });
   useChatStore.setState({ rooms: [], error: null, loadingRooms: false });
 });
 
@@ -71,7 +71,7 @@ describe('ChatScreen', () => {
         ? new Response(JSON.stringify(rooms), { status: 200 })
         : new Response('{}', { status: 404 }),
     );
-    useAuthStore.setState({ session });
+    useAuthStore.setState({ credentials: session, session });
 
     renderScreen();
 
@@ -139,7 +139,7 @@ describe('ChatScreen', () => {
       }
       return new Response('{}', { status: 404 });
     });
-    useAuthStore.setState({ session });
+    useAuthStore.setState({ credentials: session, session });
 
     renderScreen();
 
@@ -172,7 +172,7 @@ describe('ChatScreen', () => {
       }
       return new Response('{}', { status: 404 });
     });
-    useAuthStore.setState({ session });
+    useAuthStore.setState({ credentials: session, session });
 
     renderScreen();
 
@@ -190,7 +190,7 @@ describe('ChatScreen', () => {
         { status: 500 },
       ),
     );
-    useAuthStore.setState({ session });
+    useAuthStore.setState({ credentials: session, session });
 
     renderScreen();
 

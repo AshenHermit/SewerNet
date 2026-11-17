@@ -7,6 +7,7 @@ import { i18n } from '@lingui/core';
 import { IconSetProvider } from '@sewer-net/icons';
 import { UiKitProvider } from '@sewer-net/ui';
 import App from './app/app';
+import { cleanupLegacyStorage } from './client/accounts';
 import { activateLocale, detectLocale } from './i18n';
 import './styles.css';
 
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 });
 
 async function bootstrap() {
+  cleanupLegacyStorage();
   await activateLocale(detectLocale());
 
   const root = ReactDOM.createRoot(

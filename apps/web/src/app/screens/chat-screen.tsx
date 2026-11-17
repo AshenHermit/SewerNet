@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   matrixClient,
   MatrixApiError,
   type AuthSession,
 } from '../../lib/matrix-client';
+import { credentialsToAuthSession } from '../../lib/legacy-session';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore, type RoomInfo } from '../stores/chat-store';
 import { RoomList } from '../components/room-list';
@@ -73,17 +74,23 @@ async function loadRoomList(session: AuthSession): Promise<RoomInfo[]> {
 }
 
 export function ChatScreen() {
-  const session = useAuthStore((state) => state.session);
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const credentials = useAuthStore((state) => state.credentials);
+  const setCredentials = useAuthStore((state) => state.setCredentials);
+  // Memoized: credentialsToAuthSession returns a fresh object, and identity
+  // stability is what keeps the loading effect from re-running forever.
+  const session = useMemo(
+    () => (credentials ? credentialsToAuthSession(credentials) : null),
+    [credentials],
+  );
   const chat = useChatStore();
 
   const handleAuthError = useCallback(
     (err: unknown) => {
       if (err instanceof MatrixApiError && err.status === 401) {
-        clearSession();
+        setCredentials(null);
       }
     },
-    [clearSession],
+    [setCredentials],
   );
 
   useEffect(() => {

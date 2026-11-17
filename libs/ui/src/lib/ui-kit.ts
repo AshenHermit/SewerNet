@@ -216,6 +216,17 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
 export type ChatScreenProps = HTMLAttributes<HTMLDivElement>;
 
 /**
+ * Центрированная статус-карточка (callback-экраны, экраны ошибок):
+ * заголовок, опциональный detail и опциональная кнопка действия.
+ */
+export interface StatusPanelProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title: ReactNode;
+  detail?: ReactNode;
+  actionLabel?: ReactNode;
+  onAction?: () => void;
+}
+
+/**
  * A UI kit is a set of concrete component implementations.
  * Proxy components render the kit that is currently selected in the theme settings,
  * so the whole interface can switch between shadcn, custom registries, etc.
@@ -245,4 +256,5 @@ export interface UiKit {
   LoginScreen: ComponentType<LoginScreenProps>;
   LoginForm: ComponentType<LoginFormProps>;
   ChatScreen: ComponentType<ChatScreenProps>;
+  StatusPanel: ComponentType<StatusPanelProps>;
 }

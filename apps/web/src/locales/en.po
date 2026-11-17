@@ -24,11 +24,11 @@ msgstr "Appearance"
 #~ msgid "Attach"
 #~ msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:215
+#: apps/web/src/app/components/chat-view.tsx:221
 msgid "Back"
 msgstr "Back"
 
-#: apps/web/src/app/screens/callback-screen.tsx:130
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:95
 msgid "Back to sign in"
 msgstr "Back to sign in"
 
@@ -48,6 +48,10 @@ msgstr "Continue with Matrix"
 msgid "Corner radius"
 msgstr "Corner radius"
 
+#: apps/web/src/app/features/auth/require-auth.tsx:56
+msgid "Could not restore the session"
+msgstr "Could not restore the session"
+
 #: apps/web/src/app/screens/welcome-screen.tsx:112
 msgid "Create account"
 msgstr "Create account"
@@ -56,7 +60,7 @@ msgstr "Create account"
 msgid "Dark"
 msgstr "Dark"
 
-#: apps/web/src/app/screens/callback-screen.tsx:138
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:101
 msgid "Finishing sign-in…"
 msgstr "Finishing sign-in…"
 
@@ -84,7 +88,8 @@ msgstr "Loading chats…"
 #~ msgid "Loading messages…"
 #~ msgstr "Loading messages…"
 
-#: apps/web/src/app/components/rail.tsx:55
+#: apps/web/src/app/components/rail.tsx:59
+#: apps/web/src/app/features/auth/require-auth.tsx:62
 msgid "Log out"
 msgstr "Log out"
 
@@ -109,15 +114,19 @@ msgstr "Password"
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
+#: apps/web/src/app/features/auth/require-auth.tsx:69
+msgid "Restoring session…"
+msgstr "Restoring session…"
+
 #: apps/web/src/app/components/room-list.tsx:33
 msgid "Search"
 msgstr "Search"
 
 #: apps/web/src/app/screens/callback-screen.tsx:118
-msgid "Security check failed. Please try signing in again."
-msgstr "Security check failed. Please try signing in again."
+#~ msgid "Security check failed. Please try signing in again."
+#~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:205
+#: apps/web/src/app/components/chat-view.tsx:211
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 
@@ -125,7 +134,7 @@ msgstr "Select a chat to start messaging"
 #~ msgid "Send"
 #~ msgstr "Send"
 
-#: apps/web/src/app/components/rail.tsx:50
+#: apps/web/src/app/components/rail.tsx:54
 msgid "Settings"
 msgstr "Settings"
 
@@ -145,29 +154,37 @@ msgstr "Sign in to your Matrix account"
 msgid "Sign in with password"
 msgstr "Sign in with password"
 
-#: apps/web/src/app/screens/callback-screen.tsx:123
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:91
 msgid "Sign-in failed"
 msgstr "Sign-in failed"
 
-#: apps/web/src/app/screens/callback-screen.tsx:121
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:89
 msgid "Sign-in session expired. Please try again."
 msgstr "Sign-in session expired. Please try again."
 
-#: apps/web/src/app/screens/callback-screen.tsx:116
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:87
 msgid "Sign-in was cancelled"
 msgstr "Sign-in was cancelled"
 
-#: apps/web/src/app/components/rail.tsx:44
+#: apps/web/src/app/components/rail.tsx:48
 msgid "Switch to dark theme"
 msgstr "Switch to dark theme"
 
-#: apps/web/src/app/components/rail.tsx:43
+#: apps/web/src/app/components/rail.tsx:47
 msgid "Switch to light theme"
 msgstr "Switch to light theme"
 
 #: apps/web/src/app/components/settings-panel.tsx:45
 msgid "System"
 msgstr "System"
+
+#: apps/web/src/app/features/auth/require-auth.tsx:57
+msgid "The homeserver is unreachable or the session expired."
+msgstr "The homeserver is unreachable or the session expired."
+
+#: apps/web/src/app/features/auth/require-auth.tsx:58
+msgid "Try again"
+msgstr "Try again"
 
 #: apps/web/src/app/components/settings-panel.tsx:60
 msgid "UI kit"

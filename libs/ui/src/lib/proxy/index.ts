@@ -21,3 +21,4 @@ export * from './proxy-login-screen';
 export * from './proxy-login-form';
 export * from './proxy-chat-screen';
 
+export * from './proxy-status-panel';

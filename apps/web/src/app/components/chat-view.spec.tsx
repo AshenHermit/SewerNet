@@ -46,7 +46,7 @@ beforeAll(() => {
 
 afterEach(() => {
   localStorage.removeItem('sewernet:auth');
-  useAuthStore.setState({ session: null });
+  useAuthStore.setState({ credentials: null, session: null });
   useChatStore.setState({
     rooms: [],
     activeRoomId: null,
@@ -94,7 +94,7 @@ describe('ChatView', () => {
       }
       return new Response('{}', { status: 404 });
     });
-    useAuthStore.setState({ session });
+    useAuthStore.setState({ credentials: session, session });
     useChatStore.setState({
       rooms: [{ id: '!r1:matrix.org', name: 'Old', preview: '', lastTs: 0 }],
       activeRoomId: '!r1:matrix.org',
@@ -179,7 +179,7 @@ describe('ChatView', () => {
         { status: 403 },
       );
     });
-    useAuthStore.setState({ session });
+    useAuthStore.setState({ credentials: session, session });
     useChatStore.setState({
       rooms: [{ id: '!r1:matrix.org', name: 'Old', preview: '', lastTs: 0 }],
       activeRoomId: '!r1:matrix.org',

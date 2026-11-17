@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
   ProxyChatViewError,
@@ -9,6 +9,7 @@ import {
 } from '@sewer-net/ui';
 import { ProxyIcon } from '@sewer-net/icons';
 import { matrixClient } from '../../lib/matrix-client';
+import { credentialsToAuthSession } from '../../lib/legacy-session';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
 
@@ -17,7 +18,12 @@ interface ChatViewProps {
 }
 
 export function ChatView({ onAuthError }: ChatViewProps) {
-  const session = useAuthStore((state) => state.session);
+  const credentials = useAuthStore((state) => state.credentials);
+  // Memoized for effect-deps identity stability (see chat-screen).
+  const session = useMemo(
+    () => (credentials ? credentialsToAuthSession(credentials) : null),
+    [credentials],
+  );
   const rooms = useChatStore((state) => state.rooms);
   const activeRoomId = useChatStore((state) => state.activeRoomId);
   const messages = useChatStore((state) => state.messages);

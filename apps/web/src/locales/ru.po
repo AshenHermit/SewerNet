@@ -19,11 +19,11 @@ msgstr "Внешний вид"
 #~ msgid "Attach"
 #~ msgstr "Прикрепить"
 
-#: apps/web/src/app/components/chat-view.tsx:215
+#: apps/web/src/app/components/chat-view.tsx:221
 msgid "Back"
 msgstr "Назад"
 
-#: apps/web/src/app/screens/callback-screen.tsx:130
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:95
 msgid "Back to sign in"
 msgstr "Вернуться ко входу"
 
@@ -43,6 +43,10 @@ msgstr "Продолжить с Matrix"
 msgid "Corner radius"
 msgstr "Скругление углов"
 
+#: apps/web/src/app/features/auth/require-auth.tsx:56
+msgid "Could not restore the session"
+msgstr "Не удалось восстановить сессию"
+
 #: apps/web/src/app/screens/welcome-screen.tsx:112
 msgid "Create account"
 msgstr "Создать аккаунт"
@@ -51,7 +55,7 @@ msgstr "Создать аккаунт"
 msgid "Dark"
 msgstr "Тёмная"
 
-#: apps/web/src/app/screens/callback-screen.tsx:138
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:101
 msgid "Finishing sign-in…"
 msgstr "Завершаем вход…"
 
@@ -79,7 +83,8 @@ msgstr "Загрузка чатов…"
 #~ msgid "Loading messages…"
 #~ msgstr "Загрузка сообщений…"
 
-#: apps/web/src/app/components/rail.tsx:55
+#: apps/web/src/app/components/rail.tsx:59
+#: apps/web/src/app/features/auth/require-auth.tsx:62
 msgid "Log out"
 msgstr "Выйти"
 
@@ -104,15 +109,19 @@ msgstr "Пароль"
 msgid "Reset to defaults"
 msgstr "Сбросить настройки"
 
+#: apps/web/src/app/features/auth/require-auth.tsx:69
+msgid "Restoring session…"
+msgstr "Восстановление сессии…"
+
 #: apps/web/src/app/components/room-list.tsx:33
 msgid "Search"
 msgstr "Поиск"
 
 #: apps/web/src/app/screens/callback-screen.tsx:118
-msgid "Security check failed. Please try signing in again."
-msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
+#~ msgid "Security check failed. Please try signing in again."
+#~ msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
 
-#: apps/web/src/app/components/chat-view.tsx:205
+#: apps/web/src/app/components/chat-view.tsx:211
 msgid "Select a chat to start messaging"
 msgstr "Выберите чат, чтобы начать переписку"
 
@@ -120,7 +129,7 @@ msgstr "Выберите чат, чтобы начать переписку"
 #~ msgid "Send"
 #~ msgstr "Отправить"
 
-#: apps/web/src/app/components/rail.tsx:50
+#: apps/web/src/app/components/rail.tsx:54
 msgid "Settings"
 msgstr "Настройки"
 
@@ -140,29 +149,37 @@ msgstr "Войдите в свой Matrix-аккаунт"
 msgid "Sign in with password"
 msgstr "Войти с паролем"
 
-#: apps/web/src/app/screens/callback-screen.tsx:123
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:91
 msgid "Sign-in failed"
 msgstr "Не удалось войти"
 
-#: apps/web/src/app/screens/callback-screen.tsx:121
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:89
 msgid "Sign-in session expired. Please try again."
 msgstr "Сессия входа истекла. Попробуйте снова."
 
-#: apps/web/src/app/screens/callback-screen.tsx:116
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:87
 msgid "Sign-in was cancelled"
 msgstr "Вход отменён"
 
-#: apps/web/src/app/components/rail.tsx:44
+#: apps/web/src/app/components/rail.tsx:48
 msgid "Switch to dark theme"
 msgstr "Переключить на тёмную тему"
 
-#: apps/web/src/app/components/rail.tsx:43
+#: apps/web/src/app/components/rail.tsx:47
 msgid "Switch to light theme"
 msgstr "Переключить на светлую тему"
 
 #: apps/web/src/app/components/settings-panel.tsx:45
 msgid "System"
 msgstr "Системная"
+
+#: apps/web/src/app/features/auth/require-auth.tsx:57
+msgid "The homeserver is unreachable or the session expired."
+msgstr "Homeserver недоступен или сессия истекла."
+
+#: apps/web/src/app/features/auth/require-auth.tsx:58
+msgid "Try again"
+msgstr "Попробовать снова"
 
 #: apps/web/src/app/components/settings-panel.tsx:60
 msgid "UI kit"

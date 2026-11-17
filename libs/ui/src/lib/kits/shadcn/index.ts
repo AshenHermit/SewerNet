@@ -1,4 +1,4 @@
-import type { UiKit } from '../../ui-kit';
+﻿import type { UiKit } from '../../ui-kit';
 import { ShadcnButton } from './button';
 import { ShadcnInput } from './input';
 import { ShadcnPanel } from './panel';
@@ -21,6 +21,7 @@ import { ShadcnKitOption } from './kit-option';
 import { ShadcnLoginScreen } from './login-screen';
 import { ShadcnLoginForm } from './login-form';
 import { ShadcnChatScreen } from './chat-screen';
+import { ShadcnStatusPanel } from './status-panel';
 
 export const shadcnKit: UiKit = {
   id: 'shadcn',
@@ -47,5 +48,6 @@ export const shadcnKit: UiKit = {
   LoginScreen: ShadcnLoginScreen,
   LoginForm: ShadcnLoginForm,
   ChatScreen: ShadcnChatScreen,
-};
 
+  StatusPanel: ShadcnStatusPanel,
+};

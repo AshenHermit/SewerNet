@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { useThemeStore, resolveMode, type ThemeMode } from '@sewer-net/themes';
 import { useAuthStore } from '../stores/auth-store';
+import { logoutCurrent } from '../../client/init-matrix';
 import { ProxyRail, ProxyRailButton } from '@sewer-net/ui';
 import { SettingsPanel } from './settings-panel';
 
@@ -14,6 +15,9 @@ export function Rail() {
   const settings = useThemeStore((state) => state.settings);
   const setMode = useThemeStore((state) => state.setMode);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const onLogout = () => {
+    void Promise.resolve(logoutCurrent()).finally(() => clearSession());
+  };
   const { t } = useLingui();
 
   // Derive the target from the *resolved* theme, not the raw mode: with
@@ -27,7 +31,7 @@ export function Rail() {
       mode={settings.mode}
       onThemeToggle={() => setMode(targetMode)}
       onSettings={() => setSettingsOpen((open) => !open)}
-      onLogout={() => clearSession()}
+      onLogout={onLogout}
     >
       {NAV_ITEMS.map((item) => (
         <ProxyRailButton
@@ -54,7 +58,7 @@ export function Rail() {
       <ProxyRailButton
         title={t`Log out`}
         icon="logout"
-        onClick={() => clearSession()}
+        onClick={onLogout}
       />
       {settingsOpen ? (
         <SettingsPanel onClose={() => setSettingsOpen(false)} />
