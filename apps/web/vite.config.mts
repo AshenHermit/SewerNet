@@ -23,6 +23,9 @@ export default defineConfig(() => ({
     host: 'localhost',
   },
   plugins: [react(), lingui({ macroTransform: true }), tailwindcss(), nxReadySignal()],
+  optimizeDeps: {
+    exclude: ['@matrix-org/matrix-sdk-crypto-wasm'],
+  },
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [],
