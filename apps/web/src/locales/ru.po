@@ -15,11 +15,11 @@ msgstr "Акцентный цвет"
 msgid "Appearance"
 msgstr "Внешний вид"
 
-#: apps/web/src/app/components/chat-view.tsx:195
-#~ msgid "Attach"
-#~ msgstr "Прикрепить"
+#: apps/web/src/app/components/chat-view.tsx:177
+msgid "Attach"
+msgstr "Прикрепить"
 
-#: apps/web/src/app/components/chat-view.tsx:137
+#: apps/web/src/app/components/chat-view.tsx:155
 msgid "Back"
 msgstr "Назад"
 
@@ -55,7 +55,7 @@ msgstr "Создать аккаунт"
 msgid "Dark"
 msgstr "Тёмная"
 
-#: apps/web/src/app/components/chat-view.tsx:141
+#: apps/web/src/app/components/chat-view.tsx:160
 msgid "Encrypted"
 msgstr "Зашифровано"
 
@@ -97,7 +97,7 @@ msgstr "Выйти"
 #~ msgid "Message"
 #~ msgstr "Сообщение"
 
-#: apps/web/src/app/components/room-list.tsx:36
+#: apps/web/src/app/components/room-list.tsx:37
 msgid "No chats yet"
 msgstr "Пока нет чатов"
 
@@ -117,7 +117,7 @@ msgstr "Сбросить настройки"
 msgid "Restoring session…"
 msgstr "Восстановление сессии…"
 
-#: apps/web/src/app/components/room-list.tsx:33
+#: apps/web/src/app/components/room-list.tsx:34
 msgid "Search"
 msgstr "Поиск"
 
@@ -125,7 +125,7 @@ msgstr "Поиск"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
 
-#: apps/web/src/app/components/chat-view.tsx:127
+#: apps/web/src/app/components/chat-view.tsx:145
 msgid "Select a chat to start messaging"
 msgstr "Выберите чат, чтобы начать переписку"
 

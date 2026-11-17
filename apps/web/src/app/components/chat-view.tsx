@@ -16,6 +16,7 @@ import { roomAvatarUrl } from '../../lib/media-url';
 import {
   markRoomRead,
   prepareToEncryptThrottled,
+  sendMessageFile,
   sendMessageText,
   useRoomEncrypted,
   useTimeline,
@@ -118,6 +119,22 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     }
   }
 
+  async function handleAttach(file: File) {
+    if (!activeRoomId || sending) return;
+
+    setSending(true);
+    setError(null);
+    try {
+      prepareToEncryptThrottled(activeRoomId);
+      await sendMessageFile(activeRoomId, file);
+    } catch (err) {
+      onAuthError(err);
+      setError(err instanceof Error ? err.message : 'Failed to send file');
+    } finally {
+      setSending(false);
+    }
+  }
+
   if (!credentials) return null;
 
   if (!activeRoomId) {
@@ -156,6 +173,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         onChange={(value) => setDraft(value)}
         onSubmit={() => void handleSend()}
         sending={sending}
+        onAttach={(file) => void handleAttach(file)}
+        attachLabel={t`Attach`}
       />
     </ProxyChatViewPanel>
   );

@@ -64,6 +64,7 @@ function makeFakeRoom(id: string, name: string, events: FakeTimelineEvent[]) {
 const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   sendReadReceipt: vi.fn(),
+  uploadContent: vi.fn(),
   paginateEventTimeline: vi.fn(),
   getMatrixClient: vi.fn(),
 }));
@@ -106,6 +107,7 @@ beforeEach(() => {
   fetchCalls.length = 0;
   mocks.sendMessage.mockResolvedValue(undefined);
   mocks.sendReadReceipt.mockResolvedValue(undefined);
+  mocks.uploadContent.mockResolvedValue({ content_uri: 'mxc://hs/uploaded' });
   mocks.paginateEventTimeline.mockResolvedValue(true);
   const client = {
     getUserId: () => '@alice:matrix.org',
@@ -115,6 +117,7 @@ beforeEach(() => {
     off: vi.fn(),
     sendMessage: mocks.sendMessage,
     sendReadReceipt: mocks.sendReadReceipt,
+    uploadContent: mocks.uploadContent,
     paginateEventTimeline: mocks.paginateEventTimeline,
   };
   mocks.getMatrixClient.mockReturnValue(client);
@@ -159,6 +162,28 @@ describe('ChatView (sdk timeline)', () => {
       }),
     );
     expect((input as HTMLInputElement).value).toBe('');
+  });
+
+  it('attaches a file through the sdk upload', async () => {
+    renderView();
+    await screen.findByText('hello');
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['%PDF'], 'notes.pdf', { type: 'application/pdf' });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(mocks.uploadContent).toHaveBeenCalledWith(file, expect.anything()),
+    );
+    await waitFor(() =>
+      expect(mocks.sendMessage).toHaveBeenCalledWith('!r1:matrix.org', {
+        msgtype: 'm.file',
+        body: 'notes.pdf',
+        filename: 'notes.pdf',
+        url: 'mxc://hs/uploaded',
+        info: { size: file.size, mimetype: 'application/pdf' },
+      }),
+    );
   });
 
   it('marks the room read when it opens', async () => {

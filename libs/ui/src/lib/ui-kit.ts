@@ -91,7 +91,10 @@ export interface ChatViewInputFormProps extends Omit<HTMLAttributes<HTMLFormElem
   onChange: (value: string) => void;
   onSubmit: () => void;
   sending?: boolean;
-  onAttach?: () => void;
+  /** Выбор файла для вложения; при отсутствии кнопка вложения не рендерится. */
+  onAttach?: (file: File) => void;
+  /** Готовая подпись кнопки вложения (перевод — в apps/web). */
+  attachLabel?: string;
 }
 
 /** Поле поиска в списке комнат. */

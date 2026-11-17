@@ -20,11 +20,11 @@ msgstr "Accent color"
 msgid "Appearance"
 msgstr "Appearance"
 
-#: apps/web/src/app/components/chat-view.tsx:195
-#~ msgid "Attach"
-#~ msgstr "Attach"
+#: apps/web/src/app/components/chat-view.tsx:177
+msgid "Attach"
+msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:137
+#: apps/web/src/app/components/chat-view.tsx:155
 msgid "Back"
 msgstr "Back"
 
@@ -60,7 +60,7 @@ msgstr "Create account"
 msgid "Dark"
 msgstr "Dark"
 
-#: apps/web/src/app/components/chat-view.tsx:141
+#: apps/web/src/app/components/chat-view.tsx:160
 msgid "Encrypted"
 msgstr "Encrypted"
 
@@ -102,7 +102,7 @@ msgstr "Log out"
 #~ msgid "Message"
 #~ msgstr "Message"
 
-#: apps/web/src/app/components/room-list.tsx:36
+#: apps/web/src/app/components/room-list.tsx:37
 msgid "No chats yet"
 msgstr "No chats yet"
 
@@ -122,7 +122,7 @@ msgstr "Reset to defaults"
 msgid "Restoring session…"
 msgstr "Restoring session…"
 
-#: apps/web/src/app/components/room-list.tsx:33
+#: apps/web/src/app/components/room-list.tsx:34
 msgid "Search"
 msgstr "Search"
 
@@ -130,7 +130,7 @@ msgstr "Search"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:127
+#: apps/web/src/app/components/chat-view.tsx:145
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 

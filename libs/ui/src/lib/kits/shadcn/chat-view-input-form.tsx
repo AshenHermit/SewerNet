@@ -1,4 +1,4 @@
-import { FormEvent, useCallback } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useRef } from 'react';
 import { cn } from '@sewer-net/utils';
 import { ProxyButton, ProxyInput } from '../../proxy/index';
 import { ProxyIcon } from '@sewer-net/icons';
@@ -10,15 +10,34 @@ export function ShadcnChatViewInputForm({
   onSubmit,
   sending = false,
   onAttach,
+  attachLabel = 'Attach',
   className,
   ...props
 }: ChatViewInputFormProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSubmit = useCallback(
     (event: FormEvent) => {
       event.preventDefault();
       onSubmit();
     },
     [onSubmit],
+  );
+
+  const handleAttachClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      // Allow picking the same file again later.
+      event.target.value = '';
+      if (file) {
+        onAttach?.(file);
+      }
+    },
+    [onAttach],
   );
 
   return (
@@ -31,15 +50,26 @@ export function ShadcnChatViewInputForm({
       )}
     >
       {onAttach ? (
-        <ProxyButton
-          variant="ghost"
-          size="icon"
-          type="button"
-          onClick={onAttach}
-          title="Attach"
-        >
-          <ProxyIcon name="paperclip" />
-        </ProxyButton>
+        <>
+          <ProxyButton
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={handleAttachClick}
+            title={attachLabel}
+            aria-label={attachLabel}
+          >
+            <ProxyIcon name="paperclip" />
+          </ProxyButton>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+        </>
       ) : null}
       <ProxyInput
         value={draft}
@@ -59,4 +89,3 @@ export function ShadcnChatViewInputForm({
     </form>
   );
 }
-

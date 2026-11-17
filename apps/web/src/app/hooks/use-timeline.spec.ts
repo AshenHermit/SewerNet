@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import { getMatrixClient } from '../../client/init-matrix';
-import { markRoomRead, sendMessageText, useTimeline } from './use-timeline';
+import { markRoomRead, sendMessageFile, sendMessageText, useTimeline } from './use-timeline';
 
 vi.mock('../../client/init-matrix', () => ({
   getMatrixClient: vi.fn(),
@@ -73,6 +73,7 @@ let client: {
   getRoom: (id: string) => unknown;
   sendMessage: ReturnType<typeof vi.fn>;
   sendReadReceipt: ReturnType<typeof vi.fn>;
+  uploadContent: ReturnType<typeof vi.fn>;
   paginateEventTimeline: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
@@ -91,6 +92,7 @@ function setupRoom(events: MatrixEvent[]) {
     getRoom: (id: string) => (id === ROOM_ID ? room : null),
     sendMessage: vi.fn().mockResolvedValue(undefined),
     sendReadReceipt: vi.fn().mockResolvedValue(undefined),
+    uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://hs.example/uploaded' }),
     paginateEventTimeline: vi.fn(async (timeline: FakeEventTimeline, opts: { backwards: boolean; limit: number }) => {
       if (!opts.backwards) return;
       const older = new FakeEventTimeline(
@@ -222,6 +224,55 @@ describe('sendMessageText', () => {
       msgtype: 'm.text',
       body: 'no format',
     });
+  });
+});
+
+describe('sendMessageFile', () => {
+  it('uploads the file and sends it as an m.image for images', async () => {
+    setupRoom([]);
+    const file = new File(['png-bytes'], 'photo.png', { type: 'image/png' });
+
+    await sendMessageFile(ROOM_ID, file);
+
+    expect(client.uploadContent).toHaveBeenCalledWith(file, expect.anything());
+    expect(client.sendMessage).toHaveBeenCalledWith(ROOM_ID, {
+      msgtype: 'm.image',
+      body: 'photo.png',
+      filename: 'photo.png',
+      url: 'mxc://hs.example/uploaded',
+      info: { size: file.size, mimetype: 'image/png' },
+    });
+  });
+
+  it('sends non-image files as m.file', async () => {
+    setupRoom([]);
+    const file = new File(['%PDF'], 'notes.pdf', { type: 'application/pdf' });
+
+    await sendMessageFile(ROOM_ID, file);
+
+    expect(client.sendMessage).toHaveBeenCalledWith(ROOM_ID, {
+      msgtype: 'm.file',
+      body: 'notes.pdf',
+      filename: 'notes.pdf',
+      url: 'mxc://hs.example/uploaded',
+      info: { size: file.size, mimetype: 'application/pdf' },
+    });
+  });
+
+  it('reports upload progress as a zero-to-one fraction', async () => {
+    setupRoom([]);
+    client.uploadContent.mockImplementation(
+      async (_file: File, opts: { progressHandler?: (p: { loaded: number; total: number }) => void }) => {
+        opts.progressHandler?.({ loaded: 5, total: 10 });
+        return { content_uri: 'mxc://hs.example/uploaded' };
+      },
+    );
+    const onProgress = vi.fn();
+    const file = new File(['data'], 'clip.mp4', { type: 'video/mp4' });
+
+    await sendMessageFile(ROOM_ID, file, onProgress);
+
+    expect(onProgress).toHaveBeenCalledWith(0.5);
   });
 });
 

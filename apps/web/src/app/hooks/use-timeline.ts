@@ -304,10 +304,42 @@ export async function sendMessageText(
     content.formatted_body = formattedBody;
     content.format = 'org.matrix.custom.html';
   }
-  if (formattedBody !== undefined) {
-    content.formatted_body = formattedBody;
-    content.format = 'org.matrix.custom.html';
-  }
+  await client.sendMessage(roomId, content as unknown as RoomMessageEventContent);
+}
+
+/**
+ * Uploads a file and sends it as `m.image` (images) or `m.file`.
+ * `onProgress` receives a 0..1 fraction while the upload runs.
+ */
+export async function sendMessageFile(
+  roomId: string,
+  file: File,
+  onProgress?: (progress: number) => void,
+): Promise<void> {
+  const client = getMatrixClient();
+  const mimetype = file.type || 'application/octet-stream';
+  const uploaded = await client.uploadContent(file, {
+    type: mimetype,
+    progressHandler: (progress: { loaded: number; total: number }) => {
+      if (onProgress) {
+        onProgress(progress.total > 0 ? progress.loaded / progress.total : 0);
+      }
+    },
+  });
+  const isImage = mimetype.startsWith('image/');
+  const content: {
+    msgtype: string;
+    body: string;
+    filename: string;
+    url: string;
+    info: { size: number; mimetype: string };
+  } = {
+    msgtype: isImage ? 'm.image' : 'm.file',
+    body: file.name,
+    filename: file.name,
+    url: uploaded.content_uri,
+    info: { size: file.size, mimetype },
+  };
   await client.sendMessage(roomId, content as unknown as RoomMessageEventContent);
 }
 
