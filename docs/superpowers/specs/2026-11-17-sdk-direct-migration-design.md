@@ -24,8 +24,10 @@ SDK-модуль OIDC, rust-crypto, authenticated media.
 2. Точная реплика механизма авторизации wizardchat:
    capability discovery → OIDC через SDK oidc-модуль | парольный fallback.
    (SSO-legacy, QR-логин, регистрация, сброс пароля — позже.)
-3. react-query v5 — только для сетевых запросов (профиль, каталог комнат,
-   поиск); список комнат/таймлайн — событийно из SDK-сторов.
+3. react-query v5 — только инфраструктура: провайдер + дефолты в фазе 1,
+   ни одного query в этой ветке. Профиль/каталог комнат/поиск — отдельные
+   задачи после перехода; список комнат/таймлайн — событийно из
+   SDK-сторов.
 4. E2EE через `@matrix-org/matrix-sdk-crypto-wasm`: `initRustCrypto`
    безусловно при каждом resume (как wizardchat), свой IndexedDB.
 5. Медиа: `mxcUrlToHttp` через SDK + service-worker, подмешивающий Bearer
@@ -215,13 +217,33 @@ SDK-модуль OIDC, rust-crypto, authenticated media.
   без шифрования вложений; MSC3090-шифрование вложений — позже).
 - Медиа-кэш (IndexedDB blob-кэш) — опционально, позже.
 
-### 8. react-query
+### 8. react-query (только инфраструктура)
 
-- `QueryClient` по умолчанию: `staleTime: 30_000, retry: 2,
-  refetchOnWindowFocus: false`.
-- Применение: профиль (`['profile', userId]`), публичный каталог комнат,
-  поисковые запросы. Инвалидация после мутаций.
-- Список комнат/таймлайн — **не** query (событийная модель SDK).
+- Фаза 1: `QueryClientProvider` + `QueryClient` по умолчанию
+  (`staleTime: 30_000, retry: 2, refetchOnWindowFocus: false`).
+- **Ни одного query в этой ветке** — у текущего UI нет поверхностей
+  профиль/каталог/поиск; они появятся отдельными задачами после перехода
+  по этому паттерну: сетевые запросы — query/mutation, инвалидация после
+  мутаций; список комнат/таймлайн — **не** query (событийная модель SDK).
+
+## Вызовы builder-check (принятые решения)
+
+- **Временная совместимость (фазы 1–2):** старый чат-путь
+  (`matrix-client.ts`) читает сессию из новой accounts map; oidc-подобъект
+  распаковывается (flatten), чтобы бэкендный refresh-путь продолжал
+  работать для MAS-сессий; 401 у парольных сессий → logout (как сегодня).
+  Небольшой адаптер, удаляется в фазе 6.
+- **Роль chat-store:** данные (rooms/timeline/превью) уходят в SDK-хуки;
+  в сторе остаётся slim-часть: `activeRoomId` + временные UI-флаги.
+  Оставшийся код стора сносится в фазе 6 вместе с последним потребителем.
+- **Именование storage подтверждено:** wizardchat тоже ключирует
+  IndexedDB по юзеру (`matrix-store-${userId}`, crypto-префикс по userId),
+  так что `sewernet-store-<userId>` / `sewernet-js-sdk-<userId>`
+  согласованы. `setDeviceIsolationMode` и клиентский `device_id`
+  (`crypto.randomUUID()` при логине) — реплицируются.
+- **Фаза 5 (upload):** attach-UI в композере пока нет, поэтому «загрузка»
+  включает минимальную кнопку attach + отправку `m.file`/`m.image`.
+  Dev/prod режим SW и обработка wasm в Vite — настраиваемые детали.
 
 ## Что остаётся билдеру
 
