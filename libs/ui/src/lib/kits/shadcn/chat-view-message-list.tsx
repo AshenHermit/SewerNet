@@ -17,7 +17,6 @@ export function ShadcnChatViewMessageList({
   return (
     <div
       {...props}
-      ref={bottomRef}
       className={cn('flex-1 overflow-y-auto px-4 py-4', className)}
     >
       {hasMore ? (
@@ -50,6 +49,7 @@ export function ShadcnChatViewMessageList({
           ))}
         </ul>
       )}
+      <div ref={bottomRef} className="h-1" aria-hidden="true" />
     </div>
   );
 }

@@ -58,21 +58,25 @@ export function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
+      // Normalize inline: ensures we always send a valid scheme-prefixed URL
+      // even if discovery is still pending or was skipped.
+      const normalized = await normalizeHomeserver(homeserverUrl);
       const session = await matrixClient.login({
-        // Use the address discovery resolved, so "matrix.org" works the same
-        // for password login as it does for the OAuth flow.
-        homeserverUrl: resolvedHomeserver ?? homeserverUrl,
+        homeserverUrl: normalized,
         user,
         password,
         deviceName: 'SewerNet Web',
       });
+      // Stash the resolved URL so subsequent OAuth actions reuse it without
+      // an extra well-known round-trip.
+      setResolvedHomeserver(normalized);
       setSession(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
-  }, [homeserverUrl, resolvedHomeserver, user, password, setSession, setLoading, setError]);
+  }, [homeserverUrl, user, password, setSession, setLoading, setError]);
 
   const startOAuth = useCallback(
     async (prompt?: 'create') => {
