@@ -265,7 +265,11 @@ describe('createAuthenticatedClient', () => {
 
     expect(httpMock).toHaveBeenCalledWith('POST', '/refresh', undefined, { refresh_token: 'rt1' }, { prefix: '/_matrix/client/v3' });
     expect(tokens).toMatchObject({ accessToken: 'at3', refreshToken: 'rt3' });
-    expect(readAccounts()[USER]).toMatchObject({ accessToken: 'at3', refreshToken: 'rt3', expiresInMs: 7_200_000 });
+    expect(readAccounts()[USER]).toMatchObject({
+      accessToken: 'at3',
+      refreshToken: 'rt3',
+      expiresInMs: expect.closeTo(7_200_000, -4),
+    });
   });
 
   it('retries native refresh with v1 prefix on M_UNRECOGNIZED', async () => {

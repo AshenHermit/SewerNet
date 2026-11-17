@@ -10,6 +10,7 @@ import { OidcTokenRefresher } from 'matrix-js-sdk/lib/oidc';
 import type { AccessTokens, TokenRefreshFunction } from 'matrix-js-sdk/lib/http-api';
 import type { MatrixCredentials, OidcSession } from './accounts';
 import { getAccount, removeAccount, setActiveAccount, upsertAccount } from './accounts';
+import { clearSessionFromSw, postSessionToSw } from '../lib/sw-session';
 
 let _client: MatrixClient | null = null;
 
@@ -153,15 +154,18 @@ export function createAuthenticatedClient(opts: {
 
   const persistRefreshed = (tokens: AccessTokens): void => {
     const prev = getAccount(userId);
+    const homeserverUrl = prev?.homeserverUrl ?? baseUrl;
     upsertAccount({
       userId,
       deviceId: prev?.deviceId ?? deviceId,
-      homeserverUrl: prev?.homeserverUrl ?? baseUrl,
+      homeserverUrl,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken ?? prev?.refreshToken ?? refreshToken,
       expiresInMs: tokens.expiry ? tokens.expiry.getTime() - Date.now() : prev?.expiresInMs,
       oidc: prev?.oidc ?? oidc,
     });
+    // Keep the media proxy in sync with the rotated token.
+    void postSessionToSw(tokens.accessToken, homeserverUrl);
   };
 
   let tokenRefreshFunction: TokenRefreshFunction | undefined;
@@ -254,6 +258,8 @@ async function buildClient(
     clientWellKnownPollPeriod: 86_400,
   });
   _client = client;
+  // Authenticated media (avatars) needs the bearer token inside the worker.
+  void postSessionToSw(credentials.accessToken, credentials.homeserverUrl);
   return client;
 }
 
@@ -317,6 +323,7 @@ export async function logoutCurrent(): Promise<void> {
     // network errors must not block local cleanup
   }
   _client = null;
+  await clearSessionFromSw();
   if (userId) {
     await deletePersistedDatabases(userId);
     removeAccount(userId);

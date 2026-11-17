@@ -50,6 +50,8 @@ export interface ChatViewHeaderProps extends HTMLAttributes<HTMLDivElement> {
   onBack?: () => void;
   backLabel?: ReactNode;
   avatar?: ReactNode;
+  /** Готовая HTTP-ссылка на аватар комнаты (рендерится, если нет `avatar`). */
+  avatarUrl?: string;
   title: string;
   subtitle?: string;
   /** E2EE включён в комнате — показать бейдж «Encrypted». */
@@ -109,6 +111,8 @@ export interface RoomListEmptyProps extends HTMLAttributes<HTMLDivElement> {
 /** Содержимое элемента списка комнат: иконка, имя, превью. */
 export interface RoomListItemContentProps extends HTMLAttributes<HTMLDivElement> {
   icon?: ReactNode;
+  /** Готовая HTTP-ссылка на аватар комнаты (приоритетнее `icon`). */
+  avatarUrl?: string;
   name: string;
   preview?: string;
   /** Тема комнаты — показывается вместо превью, пока нет сообщений. */

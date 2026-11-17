@@ -9,6 +9,7 @@ import {
 } from '@sewer-net/ui';
 import { ProxyIcon } from '@sewer-net/icons';
 import { useRooms } from '../hooks/use-rooms';
+import { roomAvatarUrl } from '../../lib/media-url';
 import { useChatStore } from '../stores/chat-store';
 
 export function RoomList() {
@@ -45,6 +46,7 @@ export function RoomList() {
               >
                 <ProxyRoomListItemContent
                   icon={<ProxyIcon name="room" size={18} />}
+                  avatarUrl={roomAvatarUrl(room.avatarMxc, 48)}
                   name={room.name}
                   preview={room.preview || undefined}
                   topic={room.topic}

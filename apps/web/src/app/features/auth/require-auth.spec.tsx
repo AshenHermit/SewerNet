@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';

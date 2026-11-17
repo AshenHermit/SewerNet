@@ -12,6 +12,7 @@ import type { MatrixRoomEvent } from '@sewer-net/types';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
 import { useRooms } from '../hooks/use-rooms';
+import { roomAvatarUrl } from '../../lib/media-url';
 import {
   markRoomRead,
   prepareToEncryptThrottled,
@@ -137,6 +138,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         backLabel={t`Back`}
         title={roomName}
         subtitle={activeRoom?.roomId}
+        avatarUrl={roomAvatarUrl(activeRoom?.avatarMxc, 64)}
         encrypted={encrypted}
         encryptedLabel={t`Encrypted`}
       />

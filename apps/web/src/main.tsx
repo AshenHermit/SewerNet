@@ -8,6 +8,7 @@ import { IconSetProvider } from '@sewer-net/icons';
 import { UiKitProvider } from '@sewer-net/ui';
 import App from './app/app';
 import { cleanupLegacyStorage } from './client/accounts';
+import { registerServiceWorker } from './lib/sw-session';
 import { activateLocale, detectLocale } from './i18n';
 import './styles.css';
 
@@ -23,6 +24,7 @@ const queryClient = new QueryClient({
 
 async function bootstrap() {
   cleanupLegacyStorage();
+  void registerServiceWorker();
   await activateLocale(detectLocale());
 
   const root = ReactDOM.createRoot(

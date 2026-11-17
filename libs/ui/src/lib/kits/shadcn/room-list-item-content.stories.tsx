@@ -18,3 +18,12 @@ export const Default: Story = {
   },
 };
 
+export const WithAvatar: Story = {
+  args: {
+    name: 'Design',
+    preview: 'Let’s review the new kit',
+    avatarUrl:
+      'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%230ea5e9"/></svg>',
+  },
+};
+

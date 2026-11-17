@@ -69,5 +69,5 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     return <ProxyStatusPanel title={<Trans>Restoring session…</Trans>} />;
   }
 
-  return <>{children}</>;
+  return children;
 }

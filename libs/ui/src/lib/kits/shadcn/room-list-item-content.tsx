@@ -4,6 +4,7 @@ import type { RoomListItemContentProps } from '../../ui-kit';
 
 export function ShadcnRoomListItemContent({
   icon,
+  avatarUrl,
   name,
   preview,
   topic,
@@ -16,9 +17,17 @@ export function ShadcnRoomListItemContent({
       {...props}
       className={cn('min-w-0', className)}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--sn-surface-3)] text-[var(--sn-text-muted)]">
-        {icon ?? <ProxyIcon name="room" size={18} />}
-      </span>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-10 w-10 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--sn-surface-3)] text-[var(--sn-text-muted)]">
+          {icon ?? <ProxyIcon name="room" size={18} />}
+        </span>
+      )}
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium text-[var(--sn-text)]">
           {name}

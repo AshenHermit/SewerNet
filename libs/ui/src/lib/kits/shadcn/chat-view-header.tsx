@@ -6,6 +6,7 @@ export function ShadcnChatViewHeader({
   onBack,
   backLabel,
   avatar,
+  avatarUrl,
   title,
   subtitle,
   encrypted,
@@ -30,9 +31,13 @@ export function ShadcnChatViewHeader({
           <ProxyIcon name="back" />
         </button>
       ) : null}
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--sn-surface-3)] text-[var(--sn-text-muted)]">
-        {avatar ?? <ProxyIcon name="room" size={18} />}
-      </span>
+      {avatarUrl && !avatar ? (
+        <img src={avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+      ) : (
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--sn-surface-3)] text-[var(--sn-text-muted)]">
+          {avatar ?? <ProxyIcon name="room" size={18} />}
+        </span>
+      )}
       <div className="min-w-0">
         <h1 className="truncate text-sm font-semibold text-[var(--sn-text)]">
           {title}
