@@ -27,7 +27,7 @@ function Demo({ compactLabel, wideLabel, emptyWide }: DemoArgs) {
       </p>
       <ProxyInput
         value={value}
-        onChange={(event) => setValue((event.target as HTMLInputElement).value)}
+        onChange={(event) => setValue(event.target.value)}
         aria-label="Controlled value"
       />
       <ProxyAdaptiveSlot

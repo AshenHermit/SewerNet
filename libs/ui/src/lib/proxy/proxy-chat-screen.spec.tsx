@@ -119,6 +119,25 @@ describe('ProxyChatScreen', () => {
     expect(screen.getByText('kit:settings')).toBeTruthy();
   });
 
+  /**
+   * Regression: the compact navigation slot used to share the row with the
+   * panels, so it rendered as a third column beside the list instead of below
+   * it. Panels and the bar must not be siblings on the cross axis.
+   */
+  it('places the compact navigation below the panels, not beside them', () => {
+    const { container } = renderScreen();
+    const bottomNav = container.querySelector('[data-sn-nav="bottom"]');
+    const panel = container.querySelector('[data-sn-panel="rooms"]');
+    expect(bottomNav).toBeTruthy();
+    expect(panel).toBeTruthy();
+    // The panel row must not contain the bar: same flex container would make
+    // the bar a column beside the list.
+    const row = panel?.parentElement ?? null;
+    expect(row).not.toBeNull();
+    expect(row?.contains(bottomNav ?? null)).toBe(false);
+    expect(row?.parentElement?.contains(bottomNav ?? null)).toBe(true);
+  });
+
   it('shows only the requested panel on compact', () => {
     const media = { matches: false, listeners: new Set<() => void>() };
     window.matchMedia = ((query: string) => ({

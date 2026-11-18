@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { MatrixRoomEvent } from '@sewer-net/types';
 import type { ChatSection } from '../../ui-kit';
@@ -20,6 +20,8 @@ import { ProxyChatViewError } from '../../proxy/proxy-chat-view-error';
 import { ProxyChatViewEmpty } from '../../proxy/proxy-chat-view-empty';
 import { ProxyBottomNavigation } from '../../proxy/proxy-bottom-navigation';
 import { ProxySettingsPanel } from '../../proxy/proxy-settings-panel';
+import { useLayoutMode } from '../../responsive/layout-mode';
+import { usePanelFocus } from '../../responsive/panel-focus';
 
 /**
  * Fullscreen acceptance harness for the adaptive chat shell.
@@ -166,6 +168,12 @@ function Harness({ variant, locale, initialSection }: HarnessArgs) {
   const [query, setQuery] = useState('');
   const [sent, setSent] = useState(0);
 
+  // Mirror the app's focus contract, so Back/tab/rail navigation is checked in
+  // the browser against the real hook rather than a hand-rolled stand-in.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const mode = useLayoutMode();
+  usePanelFocus(shellRef, section, mode, activeRoomId);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return rooms;
@@ -247,7 +255,7 @@ function Harness({ variant, locale, initialSection }: HarnessArgs) {
   const settings = (
     <ProxySettingsPanel
       open={section === 'settings'}
-      onClose={() => setSection(activeRoomId ? 'chat' : 'rooms')}
+      onClose={closeSettings}
       onLogout={() => undefined}
       settingsLabel={t.settings}
       logoutLabel={t.logout}
@@ -300,9 +308,15 @@ function Harness({ variant, locale, initialSection }: HarnessArgs) {
     setSection('settings');
   }
 
+  // Mirrors the app store: closing settings returns to the initial section.
+  function closeSettings() {
+    setSection('rooms');
+  }
+
   return (
     <div data-sn-harness="" data-sn-sent={sent} className="h-full min-h-0">
       <ProxyChatScreen
+        ref={shellRef}
         section={section}
         activeRoomId={activeRoomId}
         rail={
@@ -376,7 +390,9 @@ export const Rooms: Story = { args: { variant: 'rooms' } };
 export const OpenChat: Story = { args: { variant: 'openChat' } };
 
 /** Settings slot: compact screen below 48rem, modal dialog at and above it. */
-export const Settings: Story = { args: { variant: 'settings' } };
+export const Settings: Story = {
+  args: { variant: 'settings', initialSection: 'settings' },
+};
 
 /** Wide layout with no room selected: the empty conversation pane. */
 export const NoSelection: Story = { args: { variant: 'noSelection' } };

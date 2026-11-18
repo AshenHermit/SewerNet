@@ -96,17 +96,6 @@ function trackedFocus(element: HTMLElement) {
   element.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
 }
 
-/**
- * jsdom has no native `<dialog>`: a focused element outside the shell is the
- * closest proxy for a modal that took focus over. Focus is recorded through
- * `focusin` exactly like a browser would, with no extra render between the
- * dialog taking focus and the section change it triggers.
- */
-function focusOutside(element: HTMLElement) {
-  element.focus();
-  trackedFocus(element);
-}
-
 type Section = 'rooms' | 'chat' | 'settings';
 type Mode = 'compact' | 'wide';
 
