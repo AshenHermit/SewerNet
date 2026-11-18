@@ -171,7 +171,7 @@ describe('WelcomeScreen', () => {
 
   it('starts the OIDC login flow with the resolved homeserver and callback url', async () => {
     mockedDiscover.mockResolvedValue(DELEGATED);
-    mockedRegister.mockResolvedValue('cid');
+    mockedRegister.mockResolvedValue({ clientId: 'cid', redirectUri: 'http://localhost:4200/oidc/callback' });
     renderWelcome();
     await flushDiscovery();
 
@@ -190,7 +190,7 @@ describe('WelcomeScreen', () => {
 
   it('starts the register flow from the Create account button', async () => {
     mockedDiscover.mockResolvedValue(DELEGATED);
-    mockedRegister.mockResolvedValue('cid');
+    mockedRegister.mockResolvedValue({ clientId: 'cid', redirectUri: 'http://localhost:4200/oidc/callback' });
     renderWelcome();
     await flushDiscovery();
 

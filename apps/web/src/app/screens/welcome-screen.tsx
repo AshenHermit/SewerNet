@@ -62,11 +62,11 @@ export function WelcomeScreen() {
       setError(null);
       try {
         const redirectUri = getOidcRedirectUri();
-        const clientId = await getOrRegisterClientId(caps.authMetadata, redirectUri);
+        const { clientId, redirectUri: effectiveRedirectUri } = await getOrRegisterClientId(caps.authMetadata, redirectUri);
         await startOidcLogin(
           caps.authMetadata,
           clientId,
-          redirectUri,
+          effectiveRedirectUri,
           caps.resolvedBaseUrl,
           prompt === 'create' ? 'register' : 'login',
         );

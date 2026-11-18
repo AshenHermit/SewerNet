@@ -16,7 +16,10 @@ export function Rail() {
   const setMode = useThemeStore((state) => state.setMode);
   const setCredentials = useAuthStore((state) => state.setCredentials);
   const onLogout = () => {
-    void Promise.resolve(logoutCurrent()).finally(() => setCredentials(null));
+    // Clear credentials first: the chat UI unmounts immediately, so the
+    // components below never call getMatrixClient() on a torn-down client.
+    setCredentials(null);
+    void Promise.resolve(logoutCurrent());
   };
   const { t } = useLingui();
 

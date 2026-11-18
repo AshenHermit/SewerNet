@@ -5,13 +5,14 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 
 ## Технологический стек
 - **Монорепо**: Nx (генераторы, кэш, run-many), npm workspaces.
-- **Клиент**: React 19 + Vite, Tailwind CSS v4, zustand (persist-стор темы/активного аккаунта), react-router, react-markdown (+remark-gfm).
+- **Клиент**: React 19 + Vite 8, Tailwind CSS v4, zustand persist (тема — `sewernet:theme`; auth-store поверх localStorage-аккаунтов `sewernet_accounts`), react-router-dom 6, react-markdown (+remark-gfm).
 - **Matrix**: `matrix-js-sdk` v41 напрямую из браузера (CORS), `@matrix-org/matrix-sdk-crypto-wasm` (rust-crypto), `@tanstack/react-query` (пока только инфраструктура провайдера).
 - **Кастомизация UI**: собственная система **proxy-компонентов** (см. ниже).
-- **Локализация**: Lingui v6 (macro `@lingui/react/macro`, каталоги `.po`, RU/EN).
-- **Backend**: NestJS — stateless REST proxy к Matrix Client-Server API v3. Web-клиент его матриксные роуты больше не вызывает (`/api/matrix/*` остаются для внешних интеграций/будущих нужд).
-- **Лендинг/dev log**: Next.js (App Router), статический пререндер.
-- **UI-дока**: Storybook 10 (react-vite) в `libs/ui`.
+- **Локализация**: Lingui v6 (macro `@lingui/react/macro`, каталоги `.po`, RU/EN; компиляция каталогов на лету через `@lingui/vite-plugin`, извлечение строк — `nx run web:extract-i18n`, выбор языка — persist-ключ `sewernet:locale`).
+- **Backend**: NestJS 11 — stateless REST proxy к Matrix Client-Server API (глобальный префикс `/api`, порт 3000): `login`, `whoami`, `rooms` (joined_rooms), sliding-sync room list (`sync/room-list`), long-poll `sync`, `messages`, `send`, `read_markers`, `members`/`threads`/`aliases`/`state`, плюс MAS-прокси `/api/matrix/oauth/{discover,register,token}`. Web-клиент эти роуты больше не вызывает — `/api/matrix/*` остаются для внешних интеграций/будущих нужд.
+- **Лендинг/dev log**: Next.js 16 (App Router), статический пререндер.
+- **UI-дока**: Storybook 10 (react-vite) в `libs/ui` (конфиг `libs/ui/.storybook`).
+- **Тесты**: vitest + jsdom (`web`, `landing`, `ui`, `icons`, `utils`); jest (`backend`).
 - **План**: Tauri (desktop/mobile), docker-compose (prod), GitHub Actions (CI/CD).
 
 ## Ключевые решения
@@ -46,7 +47,8 @@ web (React)
        │     ├─ Room.timeline / Room.receipt / Room.UnreadNotifications (throttle 200 мс)
        │     └─ sync, accountData, Event.decrypted
        └─ ChatView        → useTimeline(activeRoomId)
-             ├─ items: live timeline + paginated timelines, окно ~80 событий
+             ├─ items: плоский список по всей цепочке linked timelines
+             │         (старые → live); пагинация пачками до 80 событий
              ├─ loadOlder(): client.paginateEventTimeline(backwards, limit 80)
              ├─ пересборка: Room.redaction, Room.localEchoUpdated,
              │              Event.decrypted, Room.timelineReset, sync
@@ -56,7 +58,8 @@ web (React)
 ```
 
 - Имя комнаты: `room.name` → canonical alias → имя собеседника (DM) → room id;
-  превью — последнее live-событие, непрочитанные — `getRoomUnreadCount`.
+  превью — последнее «показываемое» live-событие; непрочитанные —
+  `getUnreadNotificationCount` (Total; highlight — `NotificationCountType.Highlight`).
 - Пагинация: `RoomState`/`Event.decrypted` подписки доводят расшифровку
   (шифрованная комната — `attemptDecryption(crypto, {isRetry:true})` пачкой
   после `paginate`), потому что rust-crypto может отдать ключи позже.
@@ -85,7 +88,7 @@ web (React)
 
 ## Фокус прототипа
 - web + desktop (Tauri) позже; архитектурный запас под mobile.
-- Минимальный parity с Element: login, список комнат, история, отправка сообщений, Markdown.
+- Минимальный parity с Element: login, список комнат, история, отправка сообщений и файлов, Markdown.
 - E2EE: rust-crypto инициализируется на каждом resume, история и отправка
   в шифрованных комнатах работают; верификация устройств, key backup и
   UI управления сессиями — отдельный этап.

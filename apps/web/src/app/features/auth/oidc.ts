@@ -116,14 +116,31 @@ function loopbackWithoutPort(uri: string): string | null {
   }
 }
 
-export async function getOrRegisterClientId(metadata: OidcClientConfig, redirectUri: string): Promise<string> {
-  const cached = localStorage.getItem(clientIdStorageKey(metadata.issuer, redirectUri));
-  if (cached) return cached;
+/** Mirror wizardchat: web app requires HTTPS; HTTP localhost must register as native. */
+function isSecureContext(): boolean {
+  return typeof window !== 'undefined' && window.location.protocol === 'https:';
+}
 
+export interface OidcClientRegistration {
+  clientId: string;
+  redirectUri: string;
+}
+
+export async function getOrRegisterClientId(
+  metadata: OidcClientConfig,
+  redirectUri: string,
+): Promise<OidcClientRegistration> {
+  const cacheKey = clientIdStorageKey(metadata.issuer, redirectUri);
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    return { clientId: cached, redirectUri };
+  }
+
+  const applicationType = isSecureContext() ? 'web' : 'native';
   const clientMetadata: OidcRegistrationClientMetadata = {
     clientName: 'SewerNet',
-    clientUri: window.location.origin,
-    applicationType: 'web',
+    clientUri: resolveClientUri(),
+    applicationType,
     redirectUris: [redirectUri],
     contacts: [],
     tosUri: undefined,
@@ -131,15 +148,21 @@ export async function getOrRegisterClientId(metadata: OidcClientConfig, redirect
   };
 
   let clientId: string;
+  let finalRedirectUri = redirectUri;
   try {
     clientId = await registerOidcClient(metadata, clientMetadata);
   } catch (err) {
     const portless = loopbackWithoutPort(redirectUri);
     if (!portless) throw err;
     clientId = await registerOidcClient(metadata, { ...clientMetadata, redirectUris: [portless] });
+    finalRedirectUri = portless;
   }
-  localStorage.setItem(clientIdStorageKey(metadata.issuer, redirectUri), clientId);
-  return clientId;
+  localStorage.setItem(clientIdStorageKey(metadata.issuer, finalRedirectUri), clientId);
+  return { clientId, redirectUri: finalRedirectUri };
+}
+
+function resolveClientUri(): string {
+  return isSecureContext() ? window.location.origin : new URL('/', window.location.origin).toString();
 }
 
 function resolvePrompt(metadata: OidcClientConfig, action: OidcAction): string | undefined {

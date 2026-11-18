@@ -3,7 +3,7 @@
 ## MVP — база (выполнено)
 
 - [x] Nx workspace в корне: apps/{web,backend,landing}, libs/{ui,icons,themes,types,utils}
-- [x] NestJS REST proxy к Matrix API: login, whoami, joined_rooms, messages, send
+- [x] NestJS REST proxy к Matrix API: login, whoami, joined_rooms, messages, send; позже расширен (sliding-sync room list, long-poll `/sync`, read markers, members/threads/aliases/state) и дополнен MAS OAuth-прокси `/api/matrix/oauth/{discover,register,token}`
 - [x] Веб-клиент: логин, список комнат, история, отправка, Markdown (react-markdown + remark-gfm)
 - [x] Lingui EN/RU + автоопределение, каталоги в apps/web/src/locales
 - [x] Storybook в libs/ui (proxy Button/Input, темы-переменные)

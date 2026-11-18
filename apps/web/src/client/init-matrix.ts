@@ -11,6 +11,7 @@ import type { AccessTokens, TokenRefreshFunction } from 'matrix-js-sdk/lib/http-
 import type { MatrixCredentials, OidcSession } from './accounts';
 import { getAccount, removeAccount, setActiveAccount, upsertAccount } from './accounts';
 import { clearSessionFromSw, postSessionToSw } from '../lib/sw-session';
+import { useAuthStore } from '../app/stores/auth-store';
 
 let _client: MatrixClient | null = null;
 
@@ -27,7 +28,10 @@ export function hasActiveClient(): boolean {
 }
 
 export function createStore(userId: string): IndexedDBStore {
-  return new IndexedDBStore({ dbName: `sewernet-store-${userId}` });
+  return new IndexedDBStore({
+    dbName: `sewernet-store-${userId}`,
+    indexedDB: typeof window !== 'undefined' ? window.indexedDB : undefined,
+  });
 }
 
 let cryptoInitPromise: Promise<void> | null = null;
@@ -96,6 +100,7 @@ export async function loginWithPassword(
   };
   upsertAccount(credentials);
   setActiveAccount(credentials.userId);
+  useAuthStore.getState().setCredentials(credentials);
   await requestPersistentStorage();
   return credentials;
 }
@@ -207,26 +212,44 @@ export function createAuthenticatedClient(opts: {
 }
 
 let resumePromise: Promise<MatrixClient> | null = null;
+let firstSyncDone = false;
+let firstSyncWaiters: Array<() => void> = [];
+
+function notifyFirstSync(): void {
+  firstSyncDone = true;
+  const waiters = firstSyncWaiters;
+  firstSyncWaiters = [];
+  for (const waiter of waiters) {
+    waiter();
+  }
+}
 
 /**
  * Builds (or re-uses) the authenticated client and starts syncing.
  * A living client for the same user is returned as-is; concurrent
- * resumes of the same build share one promise.
+ * resumes of the same build share one promise. Every onFirstSync
+ * callback is registered, never dropped.
  */
 export async function resume(
   credentials: MatrixCredentials,
   onFirstSync?: () => void,
 ): Promise<MatrixClient> {
+  if (onFirstSync) {
+    if (firstSyncDone) {
+      onFirstSync();
+    } else {
+      firstSyncWaiters.push(onFirstSync);
+    }
+  }
   if (
     _client &&
     _client.getSyncState() !== 'STOPPED' &&
     _client.getUserId() === credentials.userId
   ) {
-    attachFirstSync(_client, onFirstSync);
     return _client;
   }
   if (!resumePromise) {
-    resumePromise = buildClient(credentials, onFirstSync).finally(() => {
+    resumePromise = buildClient(credentials).finally(() => {
       resumePromise = null;
     });
   }
@@ -235,7 +258,6 @@ export async function resume(
 
 async function buildClient(
   credentials: MatrixCredentials,
-  onFirstSync?: () => void,
 ): Promise<MatrixClient> {
   const store = createStore(credentials.userId);
   const client = createAuthenticatedClient({
@@ -251,7 +273,13 @@ async function buildClient(
   await client.initRustCrypto({
     cryptoDatabasePrefix: `sewernet-js-sdk-${credentials.userId}`,
   });
-  attachFirstSync(client, onFirstSync);
+  const onSyncState = (state: string): void => {
+    if (state === 'PREPARED' || state === 'CATCHUP') {
+      client.off(ClientEvent.Sync, onSyncState);
+      notifyFirstSync();
+    }
+  };
+  client.on(ClientEvent.Sync, onSyncState);
   await client.startClient({
     initialSyncLimit: 20,
     lazyLoadMembers: true,
@@ -261,19 +289,6 @@ async function buildClient(
   // Authenticated media (avatars) needs the bearer token inside the worker.
   void postSessionToSw(credentials.accessToken, credentials.homeserverUrl);
   return client;
-}
-
-function attachFirstSync(client: MatrixClient, onFirstSync?: () => void): void {
-  if (!onFirstSync) {
-    return;
-  }
-  const handler = (state: string): void => {
-    if (state === 'PREPARED' || state === 'CATCHUP') {
-      client.off(ClientEvent.Sync, handler);
-      onFirstSync();
-    }
-  };
-  client.on(ClientEvent.Sync, handler);
 }
 
 async function deletePersistedDatabases(userId: string): Promise<void> {
@@ -323,6 +338,7 @@ export async function logoutCurrent(): Promise<void> {
     // network errors must not block local cleanup
   }
   _client = null;
+  firstSyncDone = false;
   await clearSessionFromSw();
   if (userId) {
     await deletePersistedDatabases(userId);

@@ -136,14 +136,15 @@ describe('discoverAuthCapabilities', () => {
 });
 
 describe('getOrRegisterClientId', () => {
-  it('registers and caches the client id', async () => {
+  it('registers with native app type on non-secure (http) localhost', async () => {
     registerClientMock.mockResolvedValue('cid123');
-    const id = await getOrRegisterClientId(metadata, 'http://localhost:4200/oidc/callback');
-    expect(id).toBe('cid123');
+    const { clientId, redirectUri } = await getOrRegisterClientId(metadata, 'http://localhost:4200/oidc/callback');
+    expect(clientId).toBe('cid123');
+    expect(redirectUri).toBe('http://localhost:4200/oidc/callback');
     expect(registerClientMock).toHaveBeenCalledWith(metadata, {
       clientName: 'SewerNet',
-      clientUri: 'http://localhost:4200',
-      applicationType: 'web',
+      clientUri: 'http://localhost:4200/',
+      applicationType: 'native',
       redirectUris: ['http://localhost:4200/oidc/callback'],
       contacts: [],
       tosUri: undefined,
@@ -152,11 +153,47 @@ describe('getOrRegisterClientId', () => {
     expect(localStorage.getItem(`sewernet_oidc_client_id_${ISSUER}|http://localhost:4200/oidc/callback`)).toBe('cid123');
   });
 
+  it('registers with web app type when running over https', async () => {
+    registerClientMock.mockResolvedValue('cid-web');
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://app.example.com/welcome', origin: 'https://app.example.com', protocol: 'https:' },
+      writable: true,
+    });
+    const { clientId, redirectUri } = await getOrRegisterClientId(metadata, 'https://app.example.com/oidc/callback');
+    expect(clientId).toBe('cid-web');
+    expect(redirectUri).toBe('https://app.example.com/oidc/callback');
+    expect(registerClientMock).toHaveBeenLastCalledWith(metadata, {
+      clientName: 'SewerNet',
+      clientUri: 'https://app.example.com',
+      applicationType: 'web',
+      redirectUris: ['https://app.example.com/oidc/callback'],
+      contacts: [],
+      tosUri: undefined,
+      policyUri: undefined,
+    });
+  });
+
   it('reuses the cached client id without re-registering', async () => {
     localStorage.setItem(`sewernet_oidc_client_id_${ISSUER}|http://localhost:4200/oidc/callback`, 'cached');
-    const id = await getOrRegisterClientId(metadata, 'http://localhost:4200/oidc/callback');
-    expect(id).toBe('cached');
+    const { clientId, redirectUri } = await getOrRegisterClientId(metadata, 'http://localhost:4200/oidc/callback');
+    expect(clientId).toBe('cached');
+    expect(redirectUri).toBe('http://localhost:4200/oidc/callback');
     expect(registerClientMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to portless loopback on invalid_redirect_uri and caches under final uri', async () => {
+    const portful = 'http://localhost:4200/oidc/callback';
+    const portless = 'http://localhost/oidc/callback';
+    registerClientMock
+      .mockRejectedValueOnce(new Error('invalid_redirect_uri'))
+      .mockResolvedValueOnce('cid-portless');
+    const { clientId, redirectUri } = await getOrRegisterClientId(metadata, portful);
+    expect(clientId).toBe('cid-portless');
+    expect(redirectUri).toBe(portless);
+    // cached under final (portless) key so next run uses it directly
+    expect(localStorage.getItem(`sewernet_oidc_client_id_${ISSUER}|${portless}`)).toBe('cid-portless');
+    expect(registerClientMock).toHaveBeenCalledTimes(2);
+    expect(registerClientMock).toHaveBeenLastCalledWith(metadata, expect.objectContaining({ redirectUris: [portless] }));
   });
 });
 

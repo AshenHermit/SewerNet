@@ -5,10 +5,10 @@ import { ProxyButton, ProxyStatusPanel } from '@sewer-net/ui';
 import { logoutCurrent, prewarmCrypto, resume } from '../../../client/init-matrix';
 import { useAuthStore } from '../../stores/auth-store';
 
-type AuthGateState = 'pending' | 'syncing' | 'ready' | 'unauthenticated' | 'error';
+type AuthGateState = 'pending' | 'ready' | 'unauthenticated' | 'error';
 
 /**
- * Машина состояний входа: pending → syncing → ready | unauthenticated | error.
+ * Машина состояний входа: pending → ready | unauthenticated | error.
  * Ждёт первый sync (PREPARED/CATCHUP) перед показом клиента.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -17,30 +17,36 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthGateState>('pending');
   const [attempt, setAttempt] = useState(0);
 
+  // Credential identity changed: reset the gate. Losing credentials
+  // (logout, token revoke) must always navigate away from the client UI,
+  // even when the gate was already 'ready'.
   useEffect(() => {
-    if (state === 'ready' || state === 'unauthenticated') {
-      return;
-    }
+    setState(credentials ? 'pending' : 'unauthenticated');
+  }, [credentials]);
+
+  // Await the first sync. Depends only on credentials/attempt — not on
+  // state — so error transitions cannot restart the sync by themselves
+  // (retry is explicit via the attempt counter).
+  useEffect(() => {
     if (!credentials) {
-      setState('unauthenticated');
       return;
     }
     let cancelled = false;
-    setState('syncing');
     void (async () => {
       try {
         await prewarmCrypto();
         await resume(credentials, () => {
           if (!cancelled) setState('ready');
         });
-      } catch {
+      } catch (err) {
+        console.error('[sewernet] resume error:', err);
         if (!cancelled) setState('error');
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [credentials, attempt, state]);
+  }, [credentials, attempt]);
 
   if (state === 'unauthenticated') {
     return <Navigate to="/welcome" replace />;
@@ -49,7 +55,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (state === 'error') {
     const onRetry = () => setAttempt((n) => n + 1);
     const onLogout = () => {
-      void Promise.resolve(logoutCurrent()).finally(() => setCredentials(null));
+      setCredentials(null);
+      void Promise.resolve(logoutCurrent());
     };
     return (
       <ProxyStatusPanel

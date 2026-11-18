@@ -175,6 +175,24 @@ describe('loginWithPassword', () => {
     expect(localStorage.getItem('sewernet_active_account')).toBe(USER);
   });
 
+  it('updates useAuthStore credentials on successful login', async () => {
+    const loginRequest = vi.fn().mockResolvedValue(loginResponse());
+    createClientMock.mockReturnValueOnce({ loginRequest });
+    const setCredentials = vi.fn();
+    vi.doMock('../app/stores/auth-store', () => ({
+      useAuthStore: { getState: vi.fn(() => ({ setCredentials })) },
+    }));
+    vi.resetModules();
+    const fresh = await import('./init-matrix');
+
+    await fresh.loginWithPassword('bob', 'pwd', HS);
+    expect(setCredentials).toHaveBeenCalledTimes(1);
+    expect(setCredentials.mock.calls[0][0]).toMatchObject({
+      userId: USER,
+      accessToken: 'at1',
+    });
+  });
+
   it('falls back to the input url when the response has no well_known', async () => {
     createClientMock
       .mockReturnValueOnce({ loginRequest: vi.fn().mockResolvedValue(loginResponse({ well_known: undefined })) });
@@ -288,9 +306,11 @@ describe('createAuthenticatedClient', () => {
 });
 
 describe('createStore', () => {
-  it('creates an IndexedDBStore named per user', () => {
+  it('creates an IndexedDBStore named per user with indexedDB option', () => {
     matrix.createStore(USER);
-    expect(storeArgs.at(-1)).toEqual({ dbName: `sewernet-store-${USER}` });
+    const opts = storeArgs.at(-1) as Record<string, unknown>;
+    expect(opts).toHaveProperty('dbName', `sewernet-store-${USER}`);
+    expect(opts).toHaveProperty('indexedDB', undefined);
   });
 });
 
