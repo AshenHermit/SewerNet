@@ -21,6 +21,7 @@ import { ShadcnKitOption } from './kit-option';
 import { ShadcnLoginScreen } from './login-screen';
 import { ShadcnLoginForm } from './login-form';
 import { ShadcnChatScreen } from './chat-screen';
+import { ShadcnAdaptiveSlot } from './adaptive-slot';
 import { ShadcnStatusPanel } from './status-panel';
 
 export const shadcnKit: UiKit = {
@@ -48,6 +49,7 @@ export const shadcnKit: UiKit = {
   LoginScreen: ShadcnLoginScreen,
   LoginForm: ShadcnLoginForm,
   ChatScreen: ShadcnChatScreen,
+  AdaptiveSlot: ShadcnAdaptiveSlot,
 
   StatusPanel: ShadcnStatusPanel,
 };

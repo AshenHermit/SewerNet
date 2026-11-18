@@ -227,6 +227,16 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
 export type ChatScreenProps = HTMLAttributes<HTMLDivElement>;
 
 /**
+ * Адаптивный слот: монтирует ровно одно представление для текущего режима.
+ * `undefined` — использовать `fallback`, `null` — намеренно пустое представление.
+ */
+export interface AdaptiveSlotProps {
+  fallback: ReactNode;
+  compact?: ReactNode;
+  wide?: ReactNode;
+}
+
+/**
  * Центрированная статус-карточка (callback-экраны, экраны ошибок):
  * заголовок, опциональный detail и опциональная кнопка действия.
  */
@@ -267,5 +277,6 @@ export interface UiKit {
   LoginScreen: ComponentType<LoginScreenProps>;
   LoginForm: ComponentType<LoginFormProps>;
   ChatScreen: ComponentType<ChatScreenProps>;
+  AdaptiveSlot: ComponentType<AdaptiveSlotProps>;
   StatusPanel: ComponentType<StatusPanelProps>;
 }
