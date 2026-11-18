@@ -227,6 +227,12 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
 export type ChatScreenProps = HTMLAttributes<HTMLDivElement>;
 
 /**
+ * Семантический раздел клиента, общий для приложения и каркаса:
+ * список комнат, переписка или настройки. Ширина экрана на него не влияет.
+ */
+export type ChatSection = 'rooms' | 'chat' | 'settings';
+
+/**
  * Адаптивный слот: монтирует ровно одно представление для текущего режима.
  * `undefined` — использовать `fallback`, `null` — намеренно пустое представление.
  */
