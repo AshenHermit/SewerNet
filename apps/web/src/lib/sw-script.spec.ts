@@ -186,4 +186,53 @@ describe('media proxy service worker', () => {
     expect(respondWith).toHaveBeenCalledTimes(1);
     expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store' });
   });
+
+  // Blocker #3: the session is stored under the *message sender's* client id
+  // (`event.source.id`) but looked up under the *fetch requester's* frame id
+  // (`event.clientId`). These differ after a reload or for a sub-frame, so the
+  // token was silently dropped and authenticated media 401'd.
+  it('serves media for a client whose frame id differs from the message source id', async () => {
+    const env = loadServiceWorker();
+    dispatchMessage(
+      env,
+      { type: 'setSession', accessToken: 'token-1', baseUrl: 'https://hs.example' },
+      'page-client',
+    );
+
+    const { response } = await dispatchFetch(env, request(THUMBNAIL_URI), 'frame-client');
+
+    expect(env.fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: { Authorization: 'Bearer token-1' } }),
+    );
+    expect(response?.status).toBe(200);
+  });
+
+  it('serves media when the page is not yet controlled (no source id on setSession)', async () => {
+    const env = loadServiceWorker();
+    dispatchMessage(env, { type: 'setSession', accessToken: 'token-1', baseUrl: 'https://hs.example' }, '');
+
+    const { response } = await dispatchFetch(env, request(THUMBNAIL_URI), 'frame-client');
+
+    expect(env.fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: { Authorization: 'Bearer token-1' } }),
+    );
+    expect(response?.status).toBe(200);
+  });
+
+  it('clears every stored session so logout cannot leak a stale token', async () => {
+    const env = loadServiceWorker();
+    dispatchMessage(
+      env,
+      { type: 'setSession', accessToken: 'token-1', baseUrl: 'https://hs.example' },
+      'page-client',
+    );
+    dispatchMessage(env, { type: 'clearSession' }, 'page-client');
+
+    const { response } = await dispatchFetch(env, request(THUMBNAIL_URI), 'frame-client');
+
+    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store' });
+    expect(response?.status).toBe(200);
+  });
 });

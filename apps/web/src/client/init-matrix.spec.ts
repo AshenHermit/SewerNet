@@ -98,9 +98,11 @@ beforeEach(async () => {
   refresherDoRefresh.mockResolvedValue({ accessToken: 'at2', refreshToken: 'rt2' });
   refresherCtorArgs.length = 0;
   storeArgs.length = 0;
-  createClientMock.mockReturnValue({
+  // Each createClient call gets a fake whose getUserId reflects its own opts,
+  // so cross-account tests can distinguish clients.
+  createClientMock.mockImplementation((opts: Record<string, unknown>) => ({
     http: { request: httpMock },
-    getUserId: () => USER,
+    getUserId: () => opts?.userId,
     getSyncState: () => 'SYNCING',
     on: onMock,
     off: offMock,
@@ -108,7 +110,7 @@ beforeEach(async () => {
     logout: logoutMock,
     initRustCrypto: initRustCryptoMock,
     startClient: startClientMock,
-  });
+  }));
   syncHandlers.clear();
   onMock
     .mockReset()
@@ -363,6 +365,20 @@ describe('resume', () => {
     expect(createClientMock).toHaveBeenCalledTimes(1);
     expect(a).toBe(b);
   });
+
+  it('does not leak clients between concurrent resumes for different users', async () => {
+    const userA = '@alice:h.example';
+    const userB = '@bob:h.example';
+
+    const promiseA = matrix.resume({ ...CREDENTIALS, userId: userA });
+    const promiseB = matrix.resume({ ...CREDENTIALS, userId: userB });
+
+    const [clientA, clientB] = await Promise.all([promiseA, promiseB]);
+
+    expect(clientA.getUserId()).toBe(userA);
+    expect(clientB.getUserId()).toBe(userB);
+    expect(clientA).not.toBe(clientB);
+  });
 });
 
 describe('logoutCurrent', () => {
@@ -403,6 +419,31 @@ describe('logoutCurrent', () => {
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }
+  });
+
+  it('stops the client and clears it if logout occurs during startClient', async () => {
+    let startClientResolve: () => void;
+    startClientMock.mockReturnValue(
+      new Promise<void>((resolve) => {
+        startClientResolve = resolve;
+      }),
+    );
+
+    const resumePromise = matrix.resume(CREDENTIALS);
+
+    // Wait for buildClient to reach startClient
+    await vi.waitFor(() => expect(startClientMock).toHaveBeenCalled());
+
+    // Call logout while startClient is pending
+    const logoutPromise = matrix.logoutCurrent();
+
+    // startClient eventually finishes
+    startClientResolve!();
+
+    await Promise.all([resumePromise, logoutPromise]);
+
+    expect(stopClientMock).toHaveBeenCalled();
+    expect(matrix.hasActiveClient()).toBe(false);
   });
 });
 

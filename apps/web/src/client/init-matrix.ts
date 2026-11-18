@@ -14,6 +14,27 @@ import { clearSessionFromSw, postSessionToSw } from '../lib/sw-session';
 import { useAuthStore } from '../app/stores/auth-store';
 
 let _client: MatrixClient | null = null;
+/**
+ * Every live client, keyed by userId. `_client` is only the *active* account's
+ * client; the map keeps per-account clients apart so one account's build or
+ * logout can never reach into another account's client (blocker #1).
+ */
+const clients = new Map<string, MatrixClient>();
+/** userId whose client is allowed to occupy the `_client` slot. */
+let activeUserId: string | null = null;
+
+const resumePromises = new Map<string, Promise<MatrixClient>>();
+const firstSyncDone = new Set<string>();
+const firstSyncWaiters = new Map<string, Array<() => void>>();
+
+function notifyFirstSync(userId: string): void {
+  firstSyncDone.add(userId);
+  const waiters = firstSyncWaiters.get(userId) || [];
+  firstSyncWaiters.delete(userId);
+  for (const waiter of waiters) {
+    waiter();
+  }
+}
 
 /** Throws while no authenticated client has been built (see resume()). */
 export function getMatrixClient(): MatrixClient {
@@ -211,19 +232,6 @@ export function createAuthenticatedClient(opts: {
   return client;
 }
 
-let resumePromise: Promise<MatrixClient> | null = null;
-let firstSyncDone = false;
-let firstSyncWaiters: Array<() => void> = [];
-
-function notifyFirstSync(): void {
-  firstSyncDone = true;
-  const waiters = firstSyncWaiters;
-  firstSyncWaiters = [];
-  for (const waiter of waiters) {
-    waiter();
-  }
-}
-
 /**
  * Builds (or re-uses) the authenticated client and starts syncing.
  * A living client for the same user is returned as-is; concurrent
@@ -234,35 +242,50 @@ export async function resume(
   credentials: MatrixCredentials,
   onFirstSync?: () => void,
 ): Promise<MatrixClient> {
+  const { userId } = credentials;
+  activeUserId = userId;
   if (onFirstSync) {
-    if (firstSyncDone) {
+    if (firstSyncDone.has(userId)) {
       onFirstSync();
     } else {
-      firstSyncWaiters.push(onFirstSync);
+      let waiters = firstSyncWaiters.get(userId);
+      if (!waiters) {
+        waiters = [];
+        firstSyncWaiters.set(userId, waiters);
+      }
+      waiters.push(onFirstSync);
     }
   }
   if (
     _client &&
     _client.getSyncState() !== 'STOPPED' &&
-    _client.getUserId() === credentials.userId
+    _client.getUserId() === userId
   ) {
     return _client;
   }
-  if (!resumePromise) {
-    resumePromise = buildClient(credentials).finally(() => {
-      resumePromise = null;
-    });
+  const existing = clients.get(userId);
+  if (existing && existing.getSyncState() !== 'STOPPED') {
+    _client = existing;
+    return existing;
   }
-  return resumePromise;
+  let promise = resumePromises.get(userId);
+  if (!promise) {
+    promise = buildClient(credentials).finally(() => {
+      resumePromises.delete(userId);
+    });
+    resumePromises.set(userId, promise);
+  }
+  return promise;
 }
 
 async function buildClient(
   credentials: MatrixCredentials,
 ): Promise<MatrixClient> {
-  const store = createStore(credentials.userId);
+  const { userId } = credentials;
+  const store = createStore(userId);
   const client = createAuthenticatedClient({
     baseUrl: credentials.homeserverUrl,
-    userId: credentials.userId,
+    userId,
     accessToken: credentials.accessToken,
     deviceId: credentials.deviceId,
     store,
@@ -271,21 +294,41 @@ async function buildClient(
   });
   await Promise.all([store.startup(), prewarmCrypto()]);
   await client.initRustCrypto({
-    cryptoDatabasePrefix: `sewernet-js-sdk-${credentials.userId}`,
+    cryptoDatabasePrefix: `sewernet-js-sdk-${userId}`,
   });
   const onSyncState = (state: string): void => {
     if (state === 'PREPARED' || state === 'CATCHUP') {
       client.off(ClientEvent.Sync, onSyncState);
-      notifyFirstSync();
+      notifyFirstSync(userId);
     }
   };
   client.on(ClientEvent.Sync, onSyncState);
-  await client.startClient({
-    initialSyncLimit: 20,
-    lazyLoadMembers: true,
-    clientWellKnownPollPeriod: 86_400,
-  });
-  _client = client;
+
+  // Fix #2: register before startClient so logoutCurrent can stop the client
+  // even when it is still in its start sequence.
+  clients.set(userId, client);
+  // Fix #1: only the most recent account may occupy the active slot, so a
+  // slow build of an old account cannot hijack the singleton afterwards.
+  if (activeUserId === userId) {
+    _client = client;
+  }
+
+  try {
+    await client.startClient({
+      initialSyncLimit: 20,
+      lazyLoadMembers: true,
+      clientWellKnownPollPeriod: 86_400,
+    });
+  } catch (err) {
+    if (clients.get(userId) === client) {
+      clients.delete(userId);
+    }
+    if (_client === client) {
+      _client = null;
+    }
+    throw err;
+  }
+
   // Authenticated media (avatars) needs the bearer token inside the worker.
   void postSessionToSw(credentials.accessToken, credentials.homeserverUrl);
   return client;
@@ -328,6 +371,20 @@ export async function logoutCurrent(): Promise<void> {
     return;
   }
   const userId = client.getUserId?.();
+
+  _client = null;
+  if (userId) {
+    if (clients.get(userId) === client) {
+      clients.delete(userId);
+    }
+    firstSyncDone.delete(userId);
+    firstSyncWaiters.delete(userId);
+  } else {
+    for (const [id, c] of clients) {
+      if (c === client) clients.delete(id);
+    }
+  }
+
   client.stopClient();
   try {
     await Promise.race([
@@ -337,8 +394,6 @@ export async function logoutCurrent(): Promise<void> {
   } catch {
     // network errors must not block local cleanup
   }
-  _client = null;
-  firstSyncDone = false;
   await clearSessionFromSw();
   if (userId) {
     await deletePersistedDatabases(userId);
