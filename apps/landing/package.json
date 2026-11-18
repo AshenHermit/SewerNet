@@ -4,7 +4,25 @@
   "private": true,
   "nx": {
     "name": "landing",
-    "sourceRoot": "apps/landing/src"
+    "sourceRoot": "apps/landing/src",
+    "targets": {
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/landing",
+          "command": "tsc --noEmit -p tsconfig.json"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "!{projectRoot}/.next/**/*",
+          "!{projectRoot}/dist/**/*",
+          "!{projectRoot}/test-output/**/*",
+          "{workspaceRoot}/tsconfig.base.json",
+          { "externalDependencies": ["typescript"] }
+        ]
+      }
+    }
   },
   "dependencies": {
     "next": "~16.4.1",
