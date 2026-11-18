@@ -129,12 +129,12 @@ beforeEach(() => {
       homeserverUrl: 'https://matrix.org',
     },
   });
-  useChatStore.setState({ activeRoomId: '!r1:matrix.org', error: null });
+  useChatStore.setState({ activeRoomId: '!r1:matrix.org', section: 'chat', error: null });
 });
 
 afterEach(() => {
   useAuthStore.setState({ credentials: null });
-  useChatStore.setState({ activeRoomId: null, error: null });
+  useChatStore.setState({ activeRoomId: null, section: 'rooms', error: null });
 });
 
 describe('ChatView (sdk timeline)', () => {
@@ -292,7 +292,7 @@ describe('ChatView (e2ee)', () => {
       getCrypto: () => crypto,
     };
     mocks.getMatrixClient.mockReturnValue(client);
-    useChatStore.setState({ activeRoomId: room.roomId, error: null });
+    useChatStore.setState({ activeRoomId: room.roomId, section: 'chat', error: null });
     return renderView();
   }
 

@@ -11,6 +11,8 @@ export function ShadcnChatViewInputForm({
   sending = false,
   onAttach,
   attachLabel = 'Attach',
+  messageLabel = 'Message',
+  sendLabel = 'Send',
   className,
   ...props
 }: ChatViewInputFormProps) {
@@ -45,7 +47,7 @@ export function ShadcnChatViewInputForm({
       {...props}
       onSubmit={handleSubmit}
       className={cn(
-        'flex items-center gap-2 border-t border-[var(--sn-border)] p-3',
+        'flex shrink-0 items-center gap-2 border-t border-[var(--sn-border)] p-3 pb-[calc(0.75rem+var(--sn-safe-bottom))]',
         className,
       )}
     >
@@ -58,6 +60,7 @@ export function ShadcnChatViewInputForm({
             onClick={handleAttachClick}
             title={attachLabel}
             aria-label={attachLabel}
+            className="shrink-0"
           >
             <ProxyIcon name="paperclip" />
           </ProxyButton>
@@ -74,15 +77,17 @@ export function ShadcnChatViewInputForm({
       <ProxyInput
         value={draft}
         onChange={(e) => onChange((e.target as HTMLInputElement).value)}
-        placeholder="Message"
-        aria-label="Message"
-        className="flex-1"
+        placeholder={messageLabel}
+        aria-label={messageLabel}
+        className="min-w-0 flex-1 text-base"
       />
       <ProxyButton
         size="icon"
         type="submit"
         loading={sending}
-        title="Send"
+        title={sendLabel}
+        aria-label={sendLabel}
+        className="shrink-0"
       >
         {sending ? null : <ProxyIcon name="send" size={18} />}
       </ProxyButton>

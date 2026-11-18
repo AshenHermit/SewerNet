@@ -24,5 +24,10 @@ export * from './lib/proxy/proxy-login-screen';
 export * from './lib/proxy/proxy-login-form';
 export * from './lib/proxy/proxy-chat-screen';
 export * from './lib/proxy/proxy-adaptive-slot';
+export * from './lib/proxy/proxy-room-list-header';
+export * from './lib/proxy/proxy-room-list-items';
+export * from './lib/proxy/proxy-room-list-entry';
+export * from './lib/proxy/proxy-chat-view-empty';
+export * from './lib/proxy/proxy-bottom-navigation';
 
 export * from './lib/proxy/proxy-status-panel';

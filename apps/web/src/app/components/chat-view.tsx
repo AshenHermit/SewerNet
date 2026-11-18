@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { useLingui } from '@lingui/react/macro';
 import {
+  ProxyChatViewEmpty,
   ProxyChatViewError,
   ProxyChatViewHeader,
   ProxyChatViewInputForm,
   ProxyChatViewMessageList,
   ProxyChatViewPanel,
 } from '@sewer-net/ui';
-import { ProxyIcon } from '@sewer-net/icons';
 import type { MatrixRoomEvent } from '@sewer-net/types';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
@@ -50,7 +50,7 @@ const AT_BOTTOM_THRESHOLD_PX = 40;
 export function ChatView({ onAuthError }: ChatViewProps) {
   const credentials = useAuthStore((state) => state.credentials);
   const activeRoomId = useChatStore((state) => state.activeRoomId);
-  const setActiveRoom = useChatStore((state) => state.setActiveRoom);
+  const showRooms = useChatStore((state) => state.showRooms);
   const setError = useChatStore((state) => state.setError);
   const error = useChatStore((state) => state.error);
   const { t } = useLingui();
@@ -138,20 +138,13 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   if (!credentials) return null;
 
   if (!activeRoomId) {
-    return (
-      <section className="flex flex-1 flex-col items-center justify-center gap-3 bg-[var(--sn-surface-1)] text-[var(--sn-text-dim)]">
-        <ProxyIcon name="message" size={48} strokeWidth={1.2} />
-        <p className="text-sm">
-          <Trans>Select a chat to start messaging</Trans>
-        </p>
-      </section>
-    );
+    return <ProxyChatViewEmpty label={t`Select a chat to start messaging`} />;
   }
 
   return (
-    <ProxyChatViewPanel className="min-w-0 flex-1">
+    <ProxyChatViewPanel className="min-h-0 min-w-0 flex-1">
       <ProxyChatViewHeader
-        onBack={() => setActiveRoom(null)}
+        onBack={showRooms}
         backLabel={t`Back`}
         title={roomName}
         subtitle={activeRoom?.roomId}
@@ -166,6 +159,9 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         bottomRef={bottomRef as React.RefObject<HTMLDivElement>}
         hasMore={hasMore}
         onLoadMore={() => void loadOlder()}
+        loadingLabel={t`Loading messages`}
+        emptyLabel={t`No messages yet`}
+        loadMoreLabel={t`Load older messages`}
       />
       {error ? <ProxyChatViewError error={error} /> : null}
       <ProxyChatViewInputForm
@@ -175,6 +171,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         sending={sending}
         onAttach={(file) => void handleAttach(file)}
         attachLabel={t`Attach`}
+        messageLabel={t`Message`}
+        sendLabel={t`Send`}
       />
     </ProxyChatViewPanel>
   );

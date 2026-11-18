@@ -54,6 +54,13 @@ body {
   box-sizing: border-box;
 }
 
+/* Inactive panels of the chat shell are marked with `hidden`. A utility class
+ * on the same element (e.g. `flex`) would otherwise win over the user-agent
+ * `display: none`, so the attribute is enforced here. */
+[hidden] {
+  display: none !important;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--sn-accent) 35%, transparent);
 }

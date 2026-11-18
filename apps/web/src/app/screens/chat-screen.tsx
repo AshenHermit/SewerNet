@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
+import { useLingui } from '@lingui/react/macro';
 import { useAuthStore } from '../stores/auth-store';
 import { RoomList } from '../components/room-list';
 import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
-import { ProxyChatScreen } from '@sewer-net/ui';
+import { getEffectiveSection, useChatStore } from '../stores/chat-store';
+import { ProxyBottomNavigation, ProxyChatScreen } from '@sewer-net/ui';
 
 /** Detects an expired matrix session coming from the SDK error shape. */
 function isUnauthorized(err: unknown): boolean {
@@ -24,6 +26,11 @@ function isUnauthorized(err: unknown): boolean {
 
 export function ChatScreen() {
   const setCredentials = useAuthStore((state) => state.setCredentials);
+  const section = useChatStore((state) => state.section);
+  const activeRoomId = useChatStore((state) => state.activeRoomId);
+  const showRooms = useChatStore((state) => state.showRooms);
+  const showSettings = useChatStore((state) => state.showSettings);
+  const { t } = useLingui();
 
   const handleAuthError = useCallback(
     (err: unknown) => {
@@ -34,11 +41,28 @@ export function ChatScreen() {
     [setCredentials],
   );
 
+  // The shell only ever receives the section it can actually render, so a
+  // stale `chat` request can never show an empty conversation panel.
+  const effectiveSection = getEffectiveSection(section, activeRoomId);
+
   return (
-    <ProxyChatScreen>
-      <Rail />
-      <RoomList />
-      <ChatView onAuthError={handleAuthError} />
-    </ProxyChatScreen>
+    <ProxyChatScreen
+      section={effectiveSection}
+      activeRoomId={activeRoomId}
+      rail={<Rail />}
+      rooms={<RoomList />}
+      chat={<ChatView onAuthError={handleAuthError} />}
+      settings={null}
+      bottomNavigation={
+        <ProxyBottomNavigation
+          section={effectiveSection}
+          chatsLabel={t`Chats`}
+          settingsLabel={t`Settings`}
+          navigationLabel={t`Main navigation`}
+          onRooms={showRooms}
+          onSettings={showSettings}
+        />
+      }
+    />
   );
 }

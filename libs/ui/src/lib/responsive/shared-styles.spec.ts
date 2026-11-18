@@ -8,6 +8,7 @@ const uiRoot = join(stylesDir, '..');
 const repoRoot = join(uiRoot, '..', '..');
 
 const styles = () => readFileSync(join(stylesDir, 'styles.css'), 'utf8');
+const layoutTokens = () => readFileSync(join(stylesDir, 'layout-tokens.css'), 'utf8');
 const appStyles = () => readFileSync(join(repoRoot, 'apps', 'web', 'src', 'styles.css'), 'utf8');
 const uiPackage = () => JSON.parse(readFileSync(join(uiRoot, 'package.json'), 'utf8'));
 
@@ -29,5 +30,14 @@ describe('shared styles connection', () => {
 
   it('connects layout tokens to the shared stylesheet', () => {
     expect(styles()).toContain("@import './layout-tokens.css';");
+  });
+
+  it('enforces the hidden attribute over display utilities', () => {
+    expect(styles()).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important;/);
+  });
+
+  it('derives the compact scroll clearance from the navigation tokens', () => {
+    expect(layoutTokens()).toContain('--sn-bottom-nav-clearance:');
+    expect(styles()).not.toContain('--sn-bottom-nav-clearance:'); // single source
   });
 });

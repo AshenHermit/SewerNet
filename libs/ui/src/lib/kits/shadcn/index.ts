@@ -23,6 +23,11 @@ import { ShadcnLoginForm } from './login-form';
 import { ShadcnChatScreen } from './chat-screen';
 import { ShadcnAdaptiveSlot } from './adaptive-slot';
 import { ShadcnStatusPanel } from './status-panel';
+import { ShadcnRoomListHeader } from './room-list-header';
+import { ShadcnRoomListItems } from './room-list-items';
+import { ShadcnRoomListEntry } from './room-list-entry';
+import { ShadcnChatViewEmpty } from './chat-view-empty';
+import { ShadcnBottomNavigation } from './bottom-navigation';
 
 export const shadcnKit: UiKit = {
   id: 'shadcn',
@@ -52,4 +57,9 @@ export const shadcnKit: UiKit = {
   AdaptiveSlot: ShadcnAdaptiveSlot,
 
   StatusPanel: ShadcnStatusPanel,
+  RoomListHeader: ShadcnRoomListHeader,
+  RoomListItems: ShadcnRoomListItems,
+  RoomListEntry: ShadcnRoomListEntry,
+  ChatViewEmpty: ShadcnChatViewEmpty,
+  BottomNavigation: ShadcnBottomNavigation,
 };
