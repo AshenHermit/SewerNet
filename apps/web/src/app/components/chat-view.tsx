@@ -69,17 +69,23 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   const atBottomRef = useRef(true);
 
   // Track whether the user is reading the latest message: new SDK events
-  // only scroll the view when the user did not scroll away.
+  // only scroll the view when the user did not scroll away. A hidden timeline
+  // (`display: none` shell slots) has no meaningful scroll geometry, so it
+  // neither paginates nor changes the "at the bottom" verdict.
   useEffect(() => {
     const el = bottomRef.current?.parentElement;
     if (!el) return;
-    atBottomRef.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD_PX;
-    function onScroll() {
-      if (!el) return;
+    function measure() {
+      if (!el) return false;
+      if (el.closest('[hidden]')) return false;
       atBottomRef.current =
         el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD_PX;
-      if (el.scrollTop === 0 && hasMore) {
+      return true;
+    }
+    measure();
+    function onScroll() {
+      if (!measure()) return;
+      if (el && el.scrollTop === 0 && hasMore) {
         void loadOlder();
       }
     }
@@ -94,10 +100,13 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     void Promise.resolve(markRoomRead(activeRoomId)).catch(() => undefined);
   }, [activeRoomId]);
 
-  // Keep the newest message visible only when the user is at the bottom.
+  // Keep the newest message visible only when the user is at the bottom. A
+  // hidden timeline must never scroll — the browser cannot lay it out.
   useEffect(() => {
     if (!atBottomRef.current) return;
-    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+    const bottom = bottomRef.current;
+    if (!bottom || bottom.closest('[hidden]')) return;
+    bottom.scrollIntoView?.({ behavior: 'smooth' });
   }, [events.length]);
 
   async function handleSend() {
@@ -142,7 +151,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   }
 
   return (
-    <ProxyChatViewPanel className="min-h-0 min-w-0 flex-1">
+    <ProxyChatViewPanel>
       <ProxyChatViewHeader
         onBack={showRooms}
         backLabel={t`Back`}

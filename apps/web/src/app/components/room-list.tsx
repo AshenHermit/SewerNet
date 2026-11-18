@@ -35,7 +35,7 @@ export function RoomList() {
   }, [rooms, query]);
 
   return (
-    <ProxyRoomListPanel className="min-h-0">
+    <ProxyRoomListPanel>
       <ProxyRoomListHeader title={t`SewerNet`} />
       <ProxyRoomListSearch
         query={query}

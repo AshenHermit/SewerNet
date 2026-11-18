@@ -19,6 +19,7 @@ function panelHidden(panel: ChatSection, section: ChatSection): boolean {
  * never mutates navigation state on a resize.
  */
 export function ShadcnChatScreen({
+  ref,
   section,
   activeRoomId,
   rail,
@@ -34,6 +35,7 @@ export function ShadcnChatScreen({
   return (
     <div
       {...props}
+      ref={ref}
       data-sn-section={section}
       data-sn-room={activeRoomId ?? undefined}
       className={cn(

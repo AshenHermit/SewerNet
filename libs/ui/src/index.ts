@@ -31,3 +31,6 @@ export * from './lib/proxy/proxy-chat-view-empty';
 export * from './lib/proxy/proxy-bottom-navigation';
 
 export * from './lib/proxy/proxy-status-panel';
+
+export * from './lib/responsive/layout-mode';
+export * from './lib/responsive/panel-focus';

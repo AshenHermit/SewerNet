@@ -48,6 +48,7 @@ export function ShadcnRail({
         {onRooms && roomsLabel ? (
           <button
             type="button"
+            data-sn-action="rooms"
             title={roomsLabel}
             onClick={onRooms}
             aria-current={section === 'settings' ? undefined : 'page'}
@@ -73,6 +74,7 @@ export function ShadcnRail({
         {onSettings && settingsLabel ? (
           <button
             type="button"
+            data-sn-action="settings"
             title={settingsLabel}
             onClick={onSettings}
             aria-current={section === 'settings' ? 'page' : undefined}

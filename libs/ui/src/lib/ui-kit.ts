@@ -4,6 +4,7 @@ import type {
   HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  RefAttributes,
 } from 'react';
 import type { AppLocale } from '@sewer-net/types';
 import type { MatrixRoomEvent } from '@sewer-net/types';
@@ -333,7 +334,9 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
  * контроллеры (draft, query, Matrix-подписки) переживают смену разделов и
  * смену layout-режима.
  */
-export interface ChatScreenProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface ChatScreenProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, 'children'>,
+    RefAttributes<HTMLDivElement> {
   section: ChatSection;
   activeRoomId: string | null;
   rail: ReactNode;

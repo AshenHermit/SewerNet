@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { useAuthStore } from '../stores/auth-store';
 import { RoomList } from '../components/room-list';
@@ -7,7 +7,7 @@ import { Rail } from '../components/rail';
 import { SettingsPanel } from '../components/settings-panel';
 import { getEffectiveSection, useChatStore } from '../stores/chat-store';
 import { logoutCurrent } from '../../client/init-matrix';
-import { ProxyBottomNavigation, ProxyChatScreen } from '@sewer-net/ui';
+import { ProxyBottomNavigation, ProxyChatScreen, useLayoutMode, usePanelFocus } from '@sewer-net/ui';
 
 /** Detects an expired matrix session coming from the SDK error shape. */
 function isUnauthorized(err: unknown): boolean {
@@ -60,8 +60,15 @@ export function ChatScreen() {
   // stale `chat` request can never show an empty conversation panel.
   const effectiveSection = getEffectiveSection(section, activeRoomId);
 
+  // Keeps keyboard focus inside the visible panel across navigation and
+  // reflows; it never touches store state, so drafts and sends survive.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const mode = useLayoutMode();
+  usePanelFocus(shellRef, effectiveSection, mode, activeRoomId);
+
   return (
     <ProxyChatScreen
+      ref={shellRef}
       section={effectiveSection}
       activeRoomId={activeRoomId}
       rail={

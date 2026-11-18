@@ -40,7 +40,7 @@ export function ShadcnChatViewHeader({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-sm font-semibold text-[var(--sn-text)]">
+        <h1 data-sn-focus="chat" tabIndex={-1} className="truncate text-sm font-semibold text-[var(--sn-text)]">
           {title}
         </h1>
         {subtitle ? (

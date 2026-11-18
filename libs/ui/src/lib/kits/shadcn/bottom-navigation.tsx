@@ -33,6 +33,7 @@ export function ShadcnBottomNavigation({
     >
       <button
         type="button"
+        data-sn-action="chats"
         aria-current={chatsCurrent ? 'page' : undefined}
         onClick={onRooms}
         className={cn(
@@ -45,6 +46,7 @@ export function ShadcnBottomNavigation({
       </button>
       <button
         type="button"
+        data-sn-action="settings"
         aria-current={section === 'settings' ? 'page' : undefined}
         onClick={onSettings}
         className={cn(

@@ -11,7 +11,7 @@ export function ShadcnRoomListHeader({ title, className, ...props }: RoomListHea
         className,
       )}
     >
-      <h1 className="truncate text-base font-semibold text-[var(--sn-text)]">{title}</h1>
+      <h1 data-sn-focus="rooms" tabIndex={-1} className="truncate text-base font-semibold text-[var(--sn-text)]">{title}</h1>
     </div>
   );
 }
