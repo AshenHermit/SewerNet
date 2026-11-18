@@ -9,6 +9,14 @@ const MEDIA_PATHS = [
 ];
 
 const sessions = new Map();
+/**
+ * The session most recently handed to the worker. `event.clientId` on a fetch
+ * and `event.source.id` on a message are different identifiers for the same
+ * page (and a page is uncontrolled until after the first load), so a per-id
+ * map alone silently drops the token. The fallback keeps media authenticated
+ * across reloads and from sub-frames.
+ */
+let latestSession = null;
 
 function mediaPath(url) {
   try {
@@ -61,11 +69,17 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   const { type, accessToken, baseUrl } = event.data || {};
+  // `event.source.id` is absent for an uncontrolled page: key it under the
+  // shared slot so the lookup below still finds it.
   const key = event.source?.id ?? 'default';
   if (type === 'setSession' && accessToken && baseUrl) {
-    sessions.set(key, { accessToken, baseUrl });
+    const session = { accessToken, baseUrl };
+    sessions.set(key, session);
+    latestSession = session;
   } else if (type === 'clearSession') {
-    sessions.delete(key);
+    // Logout must not leave any copy behind under another client id.
+    sessions.clear();
+    latestSession = null;
   } else if (type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
@@ -77,7 +91,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  const session = sessions.get(event.clientId) ?? sessions.get('default');
+  // Blocker #3: the frame id used for a fetch is not the client id used for
+  // the message that stored the token, so fall back through every id.
+  const session =
+    sessions.get(event.clientId) ?? sessions.get('default') ?? latestSession;
   const target = cleanMediaUrl(url);
 
   event.respondWith(
