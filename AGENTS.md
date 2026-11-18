@@ -14,7 +14,7 @@
    - Мерж разрешен только с зелёной CI;
    - Связывайте issues с PR;
    - Обязательный code review (одобрить хотя бы одному core-разработчику).
-   - CI ещё не настроена (`.github/` — план): до её появления зелёный `npx nx run-many -t typecheck,lint,test,build` обязателен локально перед PR.
+   - CI scaffold есть (`.github/workflows/ci.yml` → reusable `checks.yml`: полный JS gate + policy tests); зелёный GitHub-run ещё не подтверждён, native/Docker jobs добавят следующие планы. До зелёного CI локальный `npx nx run-many -t typecheck,lint,test,build` обязателен перед PR.
 4. **Структура веток**:
    - `main` – стабильная версия;
    - `feat/xxx`, `bugfix/xxx` – для задач и багов.
@@ -36,7 +36,10 @@
   файлов, Markdown, proxy-компоненты/темы, EN/RU (подробности — ARCHITECTURE.md).
 - NestJS backend (`/api/matrix/*`) web-клиентом не используется — остаётся
   stateless-прокси для внешних интеграций и будущих нужд.
-- Не готово: desktop-обёртка (Tauri), GitHub Actions CI, docker-compose prod.
+- CI scaffold: `ci.yml` вызывает reusable `checks.yml` (полный JS workspace gate
+  + CI policy tests); реальный зелёный GitHub-run не подтверждён, native/Docker
+  jobs — из следующих планов.
+- Не готово: desktop-обёртка (Tauri), docker-compose prod.
 
 ## Команды разработки
 
