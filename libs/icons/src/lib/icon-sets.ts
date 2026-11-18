@@ -2,6 +2,7 @@ import {
   Check,
   ChevronLeft,
   Hash,
+  Lock,
   LogOut,
   Menu,
   MessageCircle,
@@ -39,7 +40,8 @@ export type IconName =
   | 'back'
   | 'more'
   | 'room'
-  | 'message';
+  | 'message'
+  | 'lock';
 
 export interface IconProps {
   name: IconName;
@@ -57,6 +59,7 @@ const lucideIcons: IconSet = {
   users: Users,
   send: Send,
   plus: Plus,
+  lock: Lock,
   menu: Menu,
   logout: LogOut,
   smile: Smile,

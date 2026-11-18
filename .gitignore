@@ -56,4 +56,12 @@ test-output
 out
 
 
+dist-types
 storybook-static
+
+# Local code-health scan state
+.desloppify/
+
+CREDENTIALS.md
+
+.env

@@ -1,6 +1,10 @@
 @import 'tailwindcss';
+@import './layout-tokens.css';
 
-/* Same token set as the app shell (apps/web/src/styles.css). */
+@source './lib';
+@source '../../../icons/src';
+
+/* Surface palette. Accent, font and radius come from libs/themes. */
 :root {
   color-scheme: dark;
   --sn-bg: #0b0f0d;
@@ -31,6 +35,56 @@
   --sn-text-dim: #7d8d85;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Dynamic viewport height with the `100vh` fallback for browsers without
+ * `dvh` (older Safari/Chromium). Auth and status pages use it so the layout
+ * follows the mobile keyboard instead of the unchanging layout viewport. */
+.sn-vh-full {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
+  margin: 0;
+  background: var(--sn-bg);
+  color: var(--sn-text);
   font-family: var(--sn-font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Inactive panels of the chat shell are marked with `hidden`. A utility class
+ * on the same element (e.g. `flex`) would otherwise win over the user-agent
+ * `display: none`, so the attribute is enforced here. */
+[hidden] {
+  display: none !important;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--sn-accent) 35%, transparent);
+}
+
+/* Thin, unobtrusive scrollbars in the spirit of Telegram Web K. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sn-surface-3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--sn-surface-3);
+  border-radius: 999px;
 }

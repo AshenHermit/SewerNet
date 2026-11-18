@@ -17,7 +17,7 @@ export function ShadcnLoginScreen({
   signInLabel,
   onHomeserverChange,
   onHomeserverBlur,
-  mas,
+  oidc,
   resolving,
   starting,
   error,
@@ -55,17 +55,26 @@ export function ShadcnLoginScreen({
   return (
     <div
       {...props}
-      className={cn('flex h-full items-center justify-center bg-[var(--sn-bg)] p-4', className)}
+      className={cn(
+        // A short viewport (landscape phone, keyboard open) must scroll the
+        // whole page: dynamic viewport height with the `100vh` fallback, an
+        // auto block margin instead of a forced centering that clips, and the
+        // safe-area insets applied outside the card.
+        'sn-vh-full min-h-dvh w-full overflow-y-auto bg-[var(--sn-bg)]',
+        'px-[max(1rem,var(--sn-safe-left))] py-[max(1rem,var(--sn-safe-top))]',
+        'pb-[max(1rem,var(--sn-safe-bottom))] pr-[max(1rem,var(--sn-safe-right))]',
+        className,
+      )}
     >
-      <div className="w-full max-w-sm rounded-[calc(var(--sn-radius)*1.5)] border border-[var(--sn-border)] bg-[var(--sn-surface-1)] p-6 shadow-lg">
+      <div className="mx-auto my-auto w-full max-w-sm rounded-[calc(var(--sn-radius)*1.5)] border border-[var(--sn-border)] bg-[var(--sn-surface-1)] p-6 shadow-lg">
         <div className="mb-6 flex flex-col items-center gap-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--sn-accent)] text-[var(--sn-accent-contrast)]">
             <ProxyIcon name="message" size={24} />
           </div>
-          <h1 className="text-lg font-semibold text-[var(--sn-text)]">
+          <h1 className="truncate text-lg font-semibold text-[var(--sn-text)]">
             {appName}
           </h1>
-          <p className="text-xs text-[var(--sn-text-muted)]">
+          <p className="max-w-full break-words text-xs text-[var(--sn-text-muted)] [overflow-wrap:anywhere]">
             {subtitle}
           </p>
         </div>
@@ -85,7 +94,7 @@ export function ShadcnLoginScreen({
             />
           </label>
 
-          {mas ? (
+          {oidc ? (
             <>
               <ProxyButton
                 onClick={() => void onContinueWithMatrix()}

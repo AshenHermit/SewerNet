@@ -1,4 +1,4 @@
-import { FormEvent, useCallback } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useRef } from 'react';
 import { cn } from '@sewer-net/utils';
 import { ProxyButton, ProxyInput } from '../../proxy/index';
 import { ProxyIcon } from '@sewer-net/icons';
@@ -10,9 +10,14 @@ export function ShadcnChatViewInputForm({
   onSubmit,
   sending = false,
   onAttach,
+  attachLabel = 'Attach',
+  messageLabel = 'Message',
+  sendLabel = 'Send',
   className,
   ...props
 }: ChatViewInputFormProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSubmit = useCallback(
     (event: FormEvent) => {
       event.preventDefault();
@@ -21,42 +26,71 @@ export function ShadcnChatViewInputForm({
     [onSubmit],
   );
 
+  const handleAttachClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      // Allow picking the same file again later.
+      event.target.value = '';
+      if (file) {
+        onAttach?.(file);
+      }
+    },
+    [onAttach],
+  );
+
   return (
     <form
       {...props}
       onSubmit={handleSubmit}
       className={cn(
-        'flex items-center gap-2 border-t border-[var(--sn-border)] p-3',
+        'flex shrink-0 items-center gap-2 border-t border-[var(--sn-border)] p-3 pb-[calc(0.75rem+var(--sn-safe-bottom))]',
         className,
       )}
     >
       {onAttach ? (
-        <ProxyButton
-          variant="ghost"
-          size="icon"
-          type="button"
-          onClick={onAttach}
-          title="Attach"
-        >
-          <ProxyIcon name="paperclip" />
-        </ProxyButton>
+        <>
+          <ProxyButton
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={handleAttachClick}
+            title={attachLabel}
+            aria-label={attachLabel}
+            className="shrink-0"
+          >
+            <ProxyIcon name="paperclip" />
+          </ProxyButton>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+        </>
       ) : null}
       <ProxyInput
         value={draft}
         onChange={(e) => onChange((e.target as HTMLInputElement).value)}
-        placeholder="Message"
-        aria-label="Message"
-        className="flex-1"
+        placeholder={messageLabel}
+        aria-label={messageLabel}
+        className="min-w-0 flex-1 text-base"
       />
       <ProxyButton
         size="icon"
         type="submit"
         loading={sending}
-        title="Send"
+        title={sendLabel}
+        aria-label={sendLabel}
+        className="shrink-0"
       >
         {sending ? null : <ProxyIcon name="send" size={18} />}
       </ProxyButton>
     </form>
   );
 }
-

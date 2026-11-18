@@ -2,7 +2,9 @@
   "name": "@sewer-net/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run-many -t serve -p backend web --parallel=2"
+  },
   "private": true,
   "devDependencies": {
     "@babel/core": "^7.14.5",

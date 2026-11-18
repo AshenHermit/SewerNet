@@ -14,6 +14,7 @@
    - Мерж разрешен только с зелёной CI;
    - Связывайте issues с PR;
    - Обязательный code review (одобрить хотя бы одному core-разработчику).
+   - CI ещё не настроена (`.github/` — план): до её появления зелёный `npx nx run-many -t typecheck,lint,test,build` обязателен локально перед PR.
 4. **Структура веток**:
    - `main` – стабильная версия;
    - `feat/xxx`, `bugfix/xxx` – для задач и багов.
@@ -22,12 +23,38 @@
    - Автогенерация changelog с помощью стандартных инструментов.
    - Выпуск релизов через GitHub Actions по тегам.
 6. **Документация**:
-   - README для каждой папки;
-   - Storybook для UI-компонентов;
-   - Документация для landing/devlog на сайте.
+   - README: в корне и в каждой библиотеке `libs/*`;
+   - Storybook для proxy-компонентов (`libs/ui`, `npx nx storybook ui`);
+   - Спеки и планы фич — `docs/superpowers/{specs,plans}`;
+   - Лендинг/dev log — `apps/landing`.
+
+## Текущее состояние (ноябрь 2026)
+
+- Web-клиент (MVP) общается с homeserver напрямую через `matrix-js-sdk`:
+  OIDC/MAS-логин (SDK oidc-модуль, PKCE) + парольный fallback, E2EE
+  (rust-crypto), список комнат, история с пагинацией, отправка текста и
+  файлов, Markdown, proxy-компоненты/темы, EN/RU (подробности — ARCHITECTURE.md).
+- NestJS backend (`/api/matrix/*`) web-клиентом не используется — остаётся
+  stateless-прокси для внешних интеграций и будущих нужд.
+- Не готово: desktop-обёртка (Tauri), GitHub Actions CI, docker-compose prod.
+
+## Команды разработки
+
+```bash
+npx nx serve web       # веб-клиент: http://localhost:4200 (/api проксируется на :3000)
+npx nx serve backend   # REST-прокси: http://localhost:3000/api
+npx nx serve landing   # лендинг / dev log (Next.js)
+npx nx storybook ui    # Storybook proxy-компонентов
+
+npx nx run-many -t typecheck,lint,test,build   # полная проверка воркспейса
+npx nx run web:extract-i18n                    # извлечение строк Lingui в locales/*.po
+```
+
+- Тесты: vitest + jsdom (`web`, `landing`, `ui`, `icons`, `utils`); jest (`backend`).
+- Правила рендеринга UI (proxy-компоненты, `apps/web` без стилей) — см. ARCHITECTURE.md.
 
 ## Архитектура
-Систематизация и структура проекта SewerNet должны быть следующими:
-- Двухуровневая архитектура: клиент + сервер;
-- Соцентрация на масштабируемости, кастомизации и удобно читаемом, поддерживаемом коде;
+Ключевые принципы:
+- Клиент общается с homeserver напрямую (matrix-js-sdk, CORS); NestJS backend — отдельный stateless REST-прокси;
+- Фокус на масштабируемости, кастомизации и удобно читаемом, поддерживаемом коде;
 - Используйте готовые решения, но будьте готовы их скорректировать для специфичных подзадач.

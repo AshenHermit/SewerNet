@@ -10,7 +10,7 @@ describe('ProxyRoomListPanel', () => {
         <ProxyRoomListItem id="general">General</ProxyRoomListItem>
       </ProxyRoomListPanel>,
     );
-    expect(screen.getByRole('option', { name: 'General' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'General' })).toBeTruthy();
   });
 });
 

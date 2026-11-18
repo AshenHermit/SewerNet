@@ -3,7 +3,10 @@
   "defaultBase": "master",
   "analytics": false,
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -18,6 +21,9 @@
       "!{projectRoot}/tsconfig.storybook.json"
     ],
     "sharedGlobals": []
+  },
+  "tui": {
+    "enabled": false
   },
   "plugins": [
     {
@@ -103,7 +109,9 @@
   ],
   "targetDefaults": {
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     }
   },
   "generators": {

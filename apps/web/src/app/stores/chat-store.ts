@@ -1,77 +1,60 @@
+import type { ChatSection } from '@sewer-net/ui';
 import { create } from 'zustand';
-import type { MatrixRoomEvent } from '@sewer-net/types';
 
-export interface RoomInfo {
-  id: string;
-  name: string;
-  preview: string;
-  lastTs: number;
-  avatar?: string;
-  topic?: string;
-}
-
+/**
+ * UI-only chat state. Room and timeline data live in the matrix-js-sdk
+ * (consumed through use-rooms/use-timeline hooks); the store keeps the
+ * active room pointer, the visible section and the error surface.
+ *
+ * Nothing here is persisted and nothing reads the viewport: the layout mode is
+ * derived in the UI kit, so a resize never mutates navigation state. Drafts
+ * and the room search query stay in their own controllers.
+ */
 interface ChatState {
-  rooms: RoomInfo[];
   activeRoomId: string | null;
-  /** event id -> message event, keyed per room */
-  messages: Record<string, MatrixRoomEvent[]>;
-  /** Last known /sync position per room, used to resume long-poll after reconnect. */
-  syncedPos: Record<string, string>;
-  loadingRooms: boolean;
-  loadingMessages: boolean;
-  sending: boolean;
+  section: ChatSection;
   error: string | null;
-  setRooms: (rooms: RoomInfo[]) => void;
   setActiveRoom: (roomId: string | null) => void;
-  setMessages: (roomId: string, events: MatrixRoomEvent[]) => void;
-  appendMessage: (roomId: string, event: MatrixRoomEvent) => void;
-  setSyncedPos: (roomId: string, pos: string) => void;
-  setLoadingRooms: (loading: boolean) => void;
-  setLoadingMessages: (loading: boolean) => void;
-  setSending: (sending: boolean) => void;
+  showRooms: () => void;
+  showSettings: () => void;
+  closeSettings: () => void;
+  resetUi: () => void;
   setError: (error: string | null) => void;
 }
 
+const INITIAL_SECTION: ChatSection = 'rooms';
+
 export const useChatStore = create<ChatState>()((set) => ({
-  rooms: [],
   activeRoomId: null,
-  messages: {},
-  loadingRooms: false,
-  loadingMessages: false,
-  sending: false,
+  section: INITIAL_SECTION,
   error: null,
-  syncedPos: {},
-  setRooms: (rooms) => set({ rooms }),
-  setActiveRoom: (activeRoomId) => set({ activeRoomId }),
-  setMessages: (roomId, events) =>
-    set((state) => ({ messages: { ...state.messages, [roomId]: events } })),
-  appendMessage: (roomId, event) =>
-    set((state) => ({
-      messages: {
-        ...state.messages,
-        [roomId]: [...(state.messages[roomId] ?? []), event],
-      },
-    })),
-  setSyncedPos: (roomId, pos) =>
-    set((state) => ({ syncedPos: { ...state.syncedPos, [roomId]: pos } })),
-  setLoadingRooms: (loadingRooms) => set({ loadingRooms }),
-  setLoadingMessages: (loadingMessages) => set({ loadingMessages }),
-  setSending: (sending) => set({ sending }),
+
+  /**
+   * Selecting a room atomically selects it and shows the chat. Clearing the
+   * selection returns to the room list. "Back" is `showRooms()`, which keeps
+   * the selection, so this null path is not the back-navigation path.
+   */
+  setActiveRoom: (activeRoomId) =>
+    set({ activeRoomId, section: activeRoomId === null ? INITIAL_SECTION : 'chat' }),
+
+  showRooms: () => set({ section: INITIAL_SECTION }),
+  showSettings: () => set({ section: 'settings' }),
+  closeSettings: () => set({ section: INITIAL_SECTION }),
+
+  /** Clears the UI navigation, keeping the error surface for the caller to own. */
+  resetUi: () => set({ activeRoomId: null, section: INITIAL_SECTION }),
+
   setError: (error) => set({ error }),
 }));
 
-/** Derives a readable room name from state events, falling back to the id. */
-export function roomNameFromEvents(roomId: string, events: MatrixRoomEvent[]): string {
-  const nameEvent = [...events]
-    .reverse()
-    .find((e) => e.type === 'm.room.name' && typeof e.content?.['name'] === 'string');
-  const name = nameEvent ? (nameEvent.content['name'] as string) : '';
-  return name || roomId.replace(/![^:]*:/, '!…:');
-}
-
-/** Best-effort preview text for the room list. */
-export function previewFromEvent(event: MatrixRoomEvent | undefined): string {
-  if (!event) return '';
-  const content = event.content as { body?: unknown; msgtype?: unknown };
-  return typeof content.body === 'string' ? content.body : event.type;
+/**
+ * Resolves the section that can actually be rendered: requesting the chat
+ * without a selected room falls back to the room list. Any other combination
+ * is returned unchanged. Takes state, never a viewport width.
+ */
+export function getEffectiveSection(
+  section: ChatSection,
+  activeRoomId: string | null,
+): ChatSection {
+  return section === 'chat' && activeRoomId === null ? INITIAL_SECTION : section;
 }
