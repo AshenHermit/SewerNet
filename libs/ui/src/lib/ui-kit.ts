@@ -4,6 +4,7 @@ import type {
   HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  RefAttributes,
 } from 'react';
 import type { AppLocale } from '@sewer-net/types';
 import type { MatrixRoomEvent } from '@sewer-net/types';
@@ -72,6 +73,12 @@ export interface ChatViewMessageListProps extends HTMLAttributes<HTMLDivElement>
   hasMore?: boolean;
   /** Обработчик кнопки «загрузить ещё» при скролле вверх или клике по кнопке. */
   onLoadMore?: () => void;
+  /** Готовая подпись состояния загрузки (перевод — в apps/web). */
+  loadingLabel?: ReactNode;
+  /** Готовая подпись пустого таймлайна. */
+  emptyLabel?: ReactNode;
+  /** Готовая подпись кнопки пагинации. */
+  loadMoreLabel?: string;
 }
 
 /** Одно сообщение в списке чата. */
@@ -95,6 +102,10 @@ export interface ChatViewInputFormProps extends Omit<HTMLAttributes<HTMLFormElem
   onAttach?: (file: File) => void;
   /** Готовая подпись кнопки вложения (перевод — в apps/web). */
   attachLabel?: string;
+  /** Готовая подпись поля ввода. */
+  messageLabel?: string;
+  /** Готовая подпись кнопки отправки. */
+  sendLabel?: string;
 }
 
 /** Поле поиска в списке комнат. */
@@ -123,13 +134,63 @@ export interface RoomListItemContentProps extends HTMLAttributes<HTMLDivElement>
   unread?: number;
 }
 
-/** Левая навигационная панель (кнопки: тема, настройки, выход). */
-export interface RailProps extends HTMLAttributes<HTMLDivElement> {
-  mode?: ThemeMode;
-  onThemeToggle?: () => void;
-  onSettings?: () => void;
-  onLogout?: () => void;
+/** Заголовок списка комнат: единственный H1 экрана с названием клиента. */
+export interface RoomListHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title: string;
 }
+
+/** Прокручиваемый список элементов комнат (`ul`). */
+export interface RoomListItemsProps extends HTMLAttributes<HTMLUListElement> {
+  children?: ReactNode;
+}
+
+/** Один элемент списка комнат (`li`); выбор — внутри вложенной кнопки. */
+export interface RoomListEntryProps extends HTMLAttributes<HTMLLIElement> {
+  children?: ReactNode;
+}
+
+/** Пустое состояние переписки (комната ещё не выбрана). */
+export interface ChatViewEmptyProps extends HTMLAttributes<HTMLDivElement> {
+  icon?: ReactNode;
+  label: ReactNode;
+}
+
+/**
+ * Нижняя навигация компактного режима. Пользовательский текст приходит
+ * готовыми строками; `section='chat'` подсвечивает «Чаты».
+ */
+export interface BottomNavigationProps extends HTMLAttributes<HTMLElement> {
+  section: ChatSection;
+  chatsLabel: string;
+  settingsLabel: string;
+  /** Доступное имя навигационного региона. */
+  navigationLabel: string;
+  onRooms: () => void;
+  onSettings: () => void;
+}
+
+/**
+ * Левая навигационная панель (тема, чаты, настройки, выход).
+ * Весь пользовательский текст приходит готовыми строками из apps/web.
+ */
+export interface RailProps extends HTMLAttributes<HTMLDivElement> {
+  /** Текущий семантический раздел: подсвечивает активный пункт. */
+  section?: ChatSection;
+  /** Доступное имя навигационного региона. */
+  navigationLabel?: string;
+  /** Пункт «Чаты»: переход к списку комнат. */
+  roomsLabel?: string;
+  onRooms?: () => void;
+  settingsLabel?: string;
+  onSettings?: () => void;
+  logoutLabel?: string;
+  onLogout?: () => void;
+  /** Переключение схемы: подпись и иконка ближайшего состояния. */
+  themeToggleLabel?: string;
+  themeIcon?: string;
+  onThemeToggle?: () => void;
+}
+
 
 /** Кнопка навигации на рельсе. */
 export interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -138,10 +199,22 @@ export interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   active?: boolean;
 }
 
-/** Панель внешнего вида (кит, режим, акцент, шрифт, радиус).
- *  Весь пользовательский текст приходит через props (переводы — в apps/web). */
+/**
+ * Панель внешнего вида (кит, режим, акцент, шрифт, радиус).
+ * Весь пользовательский текст приходит через props (переводы — в apps/web).
+ *
+ * `open` — единственный источник правды о видимости: в компактном режиме
+ * панель занимает слот `settings`, в широком — открывается как модальный
+ * `<dialog>`. Оба контейнера используют одну и ту же форму.
+ */
 export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
+  open: boolean;
   onClose: () => void;
+  /** Готовое название раздела настроек (доступное имя формы/диалога). */
+  settingsLabel: string;
+  /** Готовая подпись кнопки выхода из аккаунта. */
+  logoutLabel: string;
+  onLogout: () => void;
   closeAriaLabel: string;
   appearanceLabel: string;
   interfaceLabel: string;
@@ -169,6 +242,37 @@ export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
   localeOptions: { value: AppLocale; label: string }[];
   onReset: () => void;
 }
+
+/** Поля общей формы настроек: общие для экрана и диалога. */
+export type SettingsFormProps = Pick<
+  SettingsPanelProps,
+  | 'appearanceLabel'
+  | 'interfaceLabel'
+  | 'colorSchemeLabel'
+  | 'accentLabel'
+  | 'fontLabel'
+  | 'radiusLabel'
+  | 'resetLabel'
+  | 'kitId'
+  | 'kitLabel'
+  | 'onKitChange'
+  | 'mode'
+  | 'onModeChange'
+  | 'modeOptions'
+  | 'accent'
+  | 'onAccentChange'
+  | 'accentPresets'
+  | 'font'
+  | 'onFontChange'
+  | 'fontOptions'
+  | 'radius'
+  | 'onRadiusChange'
+  | 'locale'
+  | 'onLocaleChange'
+  | 'localeOptions'
+  | 'onReset'
+>;
+
 
 /** Вариант выбора UI-kit. */
 export interface KitOptionProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onSelect'> {
@@ -223,8 +327,40 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
   onSignIn: () => void;
 }
 
-/** Общий экран чата (рельса + список комнат + вид чата). */
-export type ChatScreenProps = HTMLAttributes<HTMLDivElement>;
+/**
+ * Каркас экрана чата с именованными слотами. `section` — уже вычисленный
+ * эффективный раздел: каркас только скрывает неактивные панели, но никогда не
+ * меняет навигационное состояние. Все слоты монтируются постоянно, поэтому
+ * контроллеры (draft, query, Matrix-подписки) переживают смену разделов и
+ * смену layout-режима.
+ */
+export interface ChatScreenProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, 'children'>,
+    RefAttributes<HTMLDivElement> {
+  section: ChatSection;
+  activeRoomId: string | null;
+  rail: ReactNode;
+  rooms: ReactNode;
+  chat: ReactNode;
+  settings: ReactNode;
+  bottomNavigation: ReactNode;
+}
+
+/**
+ * Семантический раздел клиента, общий для приложения и каркаса:
+ * список комнат, переписка или настройки. Ширина экрана на него не влияет.
+ */
+export type ChatSection = 'rooms' | 'chat' | 'settings';
+
+/**
+ * Адаптивный слот: монтирует ровно одно представление для текущего режима.
+ * `undefined` — использовать `fallback`, `null` — намеренно пустое представление.
+ */
+export interface AdaptiveSlotProps {
+  fallback: ReactNode;
+  compact?: ReactNode;
+  wide?: ReactNode;
+}
 
 /**
  * Центрированная статус-карточка (callback-экраны, экраны ошибок):
@@ -267,5 +403,11 @@ export interface UiKit {
   LoginScreen: ComponentType<LoginScreenProps>;
   LoginForm: ComponentType<LoginFormProps>;
   ChatScreen: ComponentType<ChatScreenProps>;
+  AdaptiveSlot: ComponentType<AdaptiveSlotProps>;
   StatusPanel: ComponentType<StatusPanelProps>;
+  RoomListHeader: ComponentType<RoomListHeaderProps>;
+  RoomListItems: ComponentType<RoomListItemsProps>;
+  RoomListEntry: ComponentType<RoomListEntryProps>;
+  ChatViewEmpty: ComponentType<ChatViewEmptyProps>;
+  BottomNavigation: ComponentType<BottomNavigationProps>;
 }

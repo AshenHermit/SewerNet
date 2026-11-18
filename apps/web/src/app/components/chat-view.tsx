@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { useLingui } from '@lingui/react/macro';
 import {
+  ProxyChatViewEmpty,
   ProxyChatViewError,
   ProxyChatViewHeader,
   ProxyChatViewInputForm,
   ProxyChatViewMessageList,
   ProxyChatViewPanel,
 } from '@sewer-net/ui';
-import { ProxyIcon } from '@sewer-net/icons';
 import type { MatrixRoomEvent } from '@sewer-net/types';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
@@ -50,7 +50,7 @@ const AT_BOTTOM_THRESHOLD_PX = 40;
 export function ChatView({ onAuthError }: ChatViewProps) {
   const credentials = useAuthStore((state) => state.credentials);
   const activeRoomId = useChatStore((state) => state.activeRoomId);
-  const setActiveRoom = useChatStore((state) => state.setActiveRoom);
+  const showRooms = useChatStore((state) => state.showRooms);
   const setError = useChatStore((state) => state.setError);
   const error = useChatStore((state) => state.error);
   const { t } = useLingui();
@@ -69,17 +69,23 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   const atBottomRef = useRef(true);
 
   // Track whether the user is reading the latest message: new SDK events
-  // only scroll the view when the user did not scroll away.
+  // only scroll the view when the user did not scroll away. A hidden timeline
+  // (`display: none` shell slots) has no meaningful scroll geometry, so it
+  // neither paginates nor changes the "at the bottom" verdict.
   useEffect(() => {
     const el = bottomRef.current?.parentElement;
     if (!el) return;
-    atBottomRef.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD_PX;
-    function onScroll() {
-      if (!el) return;
+    function measure() {
+      if (!el) return false;
+      if (el.closest('[hidden]')) return false;
       atBottomRef.current =
         el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD_PX;
-      if (el.scrollTop === 0 && hasMore) {
+      return true;
+    }
+    measure();
+    function onScroll() {
+      if (!measure()) return;
+      if (el && el.scrollTop === 0 && hasMore) {
         void loadOlder();
       }
     }
@@ -94,10 +100,13 @@ export function ChatView({ onAuthError }: ChatViewProps) {
     void Promise.resolve(markRoomRead(activeRoomId)).catch(() => undefined);
   }, [activeRoomId]);
 
-  // Keep the newest message visible only when the user is at the bottom.
+  // Keep the newest message visible only when the user is at the bottom. A
+  // hidden timeline must never scroll — the browser cannot lay it out.
   useEffect(() => {
     if (!atBottomRef.current) return;
-    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+    const bottom = bottomRef.current;
+    if (!bottom || bottom.closest('[hidden]')) return;
+    bottom.scrollIntoView?.({ behavior: 'smooth' });
   }, [events.length]);
 
   async function handleSend() {
@@ -138,20 +147,13 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   if (!credentials) return null;
 
   if (!activeRoomId) {
-    return (
-      <section className="flex flex-1 flex-col items-center justify-center gap-3 bg-[var(--sn-surface-1)] text-[var(--sn-text-dim)]">
-        <ProxyIcon name="message" size={48} strokeWidth={1.2} />
-        <p className="text-sm">
-          <Trans>Select a chat to start messaging</Trans>
-        </p>
-      </section>
-    );
+    return <ProxyChatViewEmpty label={t`Select a chat to start messaging`} />;
   }
 
   return (
-    <ProxyChatViewPanel className="min-w-0 flex-1">
+    <ProxyChatViewPanel>
       <ProxyChatViewHeader
-        onBack={() => setActiveRoom(null)}
+        onBack={showRooms}
         backLabel={t`Back`}
         title={roomName}
         subtitle={activeRoom?.roomId}
@@ -166,6 +168,9 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         bottomRef={bottomRef as React.RefObject<HTMLDivElement>}
         hasMore={hasMore}
         onLoadMore={() => void loadOlder()}
+        loadingLabel={t`Loading messages`}
+        emptyLabel={t`No messages yet`}
+        loadMoreLabel={t`Load older messages`}
       />
       {error ? <ProxyChatViewError error={error} /> : null}
       <ProxyChatViewInputForm
@@ -175,6 +180,8 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         sending={sending}
         onAttach={(file) => void handleAttach(file)}
         attachLabel={t`Attach`}
+        messageLabel={t`Message`}
+        sendLabel={t`Send`}
       />
     </ProxyChatViewPanel>
   );

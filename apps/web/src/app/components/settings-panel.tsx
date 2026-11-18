@@ -10,10 +10,10 @@ import { ProxySettingsPanel } from '@sewer-net/ui';
 import { SUPPORTED_LOCALES, type AppLocale } from '@sewer-net/types';
 import { activateLocale } from '../../i18n';
 
-const MODES: { value: ThemeMode; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
+const MODES: { value: ThemeMode }[] = [
+  { value: 'light' },
+  { value: 'dark' },
+  { value: 'system' },
 ];
 
 const FONTS: FontId[] = ['inter', 'system', 'serif', 'mono'];
@@ -25,11 +25,19 @@ async function switchLocale(locale: AppLocale): Promise<void> {
   await activateLocale(locale);
 }
 
+interface SettingsPanelProps {
+  open: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}
+
 /**
- * Appearance settings: UI kit, color mode, accent color, font and radius.
- * Values are applied instantly through CSS variables (see libs/themes).
+ * Appearance settings controller: kit, color mode, accent, font and radius.
+ * Values are applied instantly through CSS variables (see libs/themes) and
+ * stay owned here, so the UI kit may swap the compact screen for the wide
+ * dialog at any time without losing them.
  */
-export function SettingsPanel({ onClose }: { onClose: () => void }) {
+export function SettingsPanel({ open, onClose, onLogout }: SettingsPanelProps) {
   const settings = useThemeStore((state) => state.settings);
   const setKit = useThemeStore((state) => state.setKit);
   const setMode = useThemeStore((state) => state.setMode);
@@ -47,7 +55,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <ProxySettingsPanel
+      open={open}
       onClose={onClose}
+      onLogout={onLogout}
+      settingsLabel={t`Settings`}
+      logoutLabel={t`Log out`}
       closeAriaLabel={t`Close`}
       appearanceLabel={t`Appearance`}
       interfaceLabel={t`Interface`}

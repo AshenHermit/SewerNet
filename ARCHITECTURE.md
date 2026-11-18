@@ -36,6 +36,61 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 6. **Переводы.** `Trans` / `t()` остаются в `apps/web` (логика приложения), ui-kit компоненты принимают уже готовые строки/ноды через props (`label`, `placeholder`, `title`, `children`).
 7. **Исключений нет.** Любой новый экран/компонент в `apps/web` пишется без стилей с первого коммита.
 
+## Адаптивная оболочка (compact / wide)
+
+1. **Единственный breakpoint — `48rem`.** Он объявлен ровно один раз:
+   `libs/ui/src/layout-tokens.css` → `@theme static { --breakpoint-sn-wide: 48rem; }`.
+   Tailwind получает из него утилиту `sn-wide:`, а `libs/ui/src/lib/responsive/layout-mode.ts`
+   читает тот же файл через `?raw` и строит `WIDE_MEDIA_QUERY` для JS. Второй источник
+   правды (свой `768px`, `md:` и т.п.) запрещён.
+2. **Сначала CSS, JS только для того, что CSS не умеет.** Видимость панелей, rail, нижней
+   навигации и вариантов компонентов настраивается утилитами `sn-wide:` и `hidden`.
+   `useLayoutMode()` используется там, где нужно *смонтировать другой компонент* (например,
+   settings: экран на compact ↔ нативный `<dialog>` на wide).
+3. **`AdaptiveSlot`.** `ProxyAdaptiveSlot` монтирует ровно один вариант для текущего режима:
+   `undefined` → `fallback`, `null` → намеренно пусто; активный вариант перемонтируется при
+   пересечении breakpoint. Контролируемое состояние (draft, query, selection) обязано жить
+   **выше** слота — иначе resize его сбросит.
+4. **`ChatScreen` держит все слоты смонтированными** (`rail`, `rooms`, `chat`, `settings`,
+   `bottomNavigation`) и лишь переключает атрибут `hidden` на обёртках
+   `[data-sn-panel=...]`. Порядок в DOM фиксирован. Resize **никогда** не мутирует store:
+   приложение передаёт уже вычисленный `getEffectiveSection(section, activeRoomId)`.
+5. **Фокус.** `usePanelFocus(rootRef, section, mode, activeRoomId)` восстанавливает читаемую
+   позицию: намеренная смена раздела фокусирует новую панель (выбранную комнату либо
+   заголовок `[data-sn-focus="<section>"]`), resize чинит фокус только если элемент исчез
+   или стал невидимым, а фокус вне оболочки (нативный dialog, браузер) не трогается. Хук не
+   пишет в store, поэтому не может повторно отправить сообщение или пометить прочитанным.
+   Разметка помечает цели `data-sn-focus` и действия `data-sn-action`.
+6. **Viewport и safe area.** Мета-тег `apps/web/index.html` содержит `viewport-fit=cover` и
+   `interactive-widget=resizes-content` и **не** ограничивает zoom. Экраны входа и статусов
+   скроллятся страницей (`min-h-dvh`, `.sn-vh-full` с фолбэком `100vh`), используют
+   `--sn-safe-*` и переносят длинный текст; `overflow: hidden` оболочки чата на них не
+   распространяется. Оболочка чата — фиксированная динамическая высота с внутренней
+   прокруткой списка.
+
+### Как добавить новый адаптивный экран
+
+1. Контракт — в `libs/ui/src/lib/ui-kit.ts`: только props с готовыми строками и колбэками.
+2. Реализация — в kit (`libs/ui/src/lib/kits/shadcn/…`): стили и разметка, варианты через
+   `sn-wide:` или `AdaptiveSlot`.
+3. Обёртка `Proxy*` + регистрация в `shadcnKit` и в корневом barrel `libs/ui/src/index.ts`
+   (приложение импортирует только оттуда).
+4. Данные, переводы и store-действия остаются в `apps/web`; состояние, которое должно
+   пережить resize, живёт выше адаптивного слота.
+5. Проверка: unit-тесты kit + app, полноэкранная story в
+   `libs/ui/src/lib/kits/shadcn/responsive-shell.stories.tsx`, затем матрица из
+   `docs/superpowers/verification/2026-11-18-responsive-web.md`.
+
+Команды проверки:
+
+```bash
+npx nx run-many -p ui,web -t typecheck,lint,test     # unit + типы + lint
+npx nx run ui:build-storybook                        # harness собирается
+npx nx storybook ui --port=6006                      # ручная browser-матрица
+npx nx serve web                                     # auth/status экраны
+```
+
+
 ## Список комнат и таймлайн (SDK-хуки)
 
 ```

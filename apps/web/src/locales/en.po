@@ -12,19 +12,19 @@ msgstr ""
 #~ msgid "{0}"
 #~ msgstr "{0}"
 
-#: apps/web/src/app/components/settings-panel.tsx:55
+#: apps/web/src/app/components/settings-panel.tsx:67
 msgid "Accent color"
 msgstr "Accent color"
 
-#: apps/web/src/app/components/settings-panel.tsx:52
+#: apps/web/src/app/components/settings-panel.tsx:64
 msgid "Appearance"
 msgstr "Appearance"
 
-#: apps/web/src/app/components/chat-view.tsx:177
+#: apps/web/src/app/components/chat-view.tsx:173
 msgid "Attach"
 msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:155
+#: apps/web/src/app/components/chat-view.tsx:148
 msgid "Back"
 msgstr "Back"
 
@@ -32,11 +32,17 @@ msgstr "Back"
 msgid "Back to sign in"
 msgstr "Back to sign in"
 
-#: apps/web/src/app/components/settings-panel.tsx:51
+#: apps/web/src/app/components/rail.tsx:33
+#: apps/web/src/app/components/room-list.tsx:48
+#: apps/web/src/app/screens/chat-screen.tsx:87
+msgid "Chats"
+msgstr "Chats"
+
+#: apps/web/src/app/components/settings-panel.tsx:63
 msgid "Close"
 msgstr "Close"
 
-#: apps/web/src/app/components/settings-panel.tsx:54
+#: apps/web/src/app/components/settings-panel.tsx:66
 msgid "Color scheme"
 msgstr "Color scheme"
 
@@ -44,11 +50,11 @@ msgstr "Color scheme"
 msgid "Continue with Matrix"
 msgstr "Continue with Matrix"
 
-#: apps/web/src/app/components/settings-panel.tsx:57
+#: apps/web/src/app/components/settings-panel.tsx:69
 msgid "Corner radius"
 msgstr "Corner radius"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:56
+#: apps/web/src/app/features/auth/require-auth.tsx:63
 msgid "Could not restore the session"
 msgstr "Could not restore the session"
 
@@ -56,11 +62,11 @@ msgstr "Could not restore the session"
 msgid "Create account"
 msgstr "Create account"
 
-#: apps/web/src/app/components/settings-panel.tsx:44
+#: apps/web/src/app/components/settings-panel.tsx:52
 msgid "Dark"
 msgstr "Dark"
 
-#: apps/web/src/app/components/chat-view.tsx:160
+#: apps/web/src/app/components/chat-view.tsx:153
 msgid "Encrypted"
 msgstr "Encrypted"
 
@@ -68,7 +74,7 @@ msgstr "Encrypted"
 msgid "Finishing sign-in…"
 msgstr "Finishing sign-in…"
 
-#: apps/web/src/app/components/settings-panel.tsx:56
+#: apps/web/src/app/components/settings-panel.tsx:68
 msgid "Font"
 msgstr "Font"
 
@@ -76,53 +82,66 @@ msgstr "Font"
 msgid "Homeserver URL"
 msgstr "Homeserver URL"
 
-#: apps/web/src/app/components/settings-panel.tsx:53
+#: apps/web/src/app/components/settings-panel.tsx:65
 msgid "Interface"
 msgstr "Interface"
 
-#: apps/web/src/app/components/settings-panel.tsx:43
+#: apps/web/src/app/components/settings-panel.tsx:51
 msgid "Light"
 msgstr "Light"
+
+#: apps/web/src/app/components/chat-view.tsx:164
+msgid "Load older messages"
+msgstr "Load older messages"
 
 #: apps/web/src/app/components/room-list.tsx:38
 #~ msgid "Loading chats…"
 #~ msgstr "Loading chats…"
 
+#: apps/web/src/app/components/chat-view.tsx:162
+msgid "Loading messages"
+msgstr "Loading messages"
+
 #: apps/web/src/app/components/chat-view.tsx:165
 #~ msgid "Loading messages…"
 #~ msgstr "Loading messages…"
 
-#: apps/web/src/app/components/rail.tsx:59
-#: apps/web/src/app/features/auth/require-auth.tsx:62
+#: apps/web/src/app/components/rail.tsx:37
+#: apps/web/src/app/components/settings-panel.tsx:62
+#: apps/web/src/app/features/auth/require-auth.tsx:69
 msgid "Log out"
 msgstr "Log out"
 
-#: apps/web/src/app/components/chat-view.tsx:201
-#: apps/web/src/app/components/chat-view.tsx:202
-#~ msgid "Message"
-#~ msgstr "Message"
+#: apps/web/src/app/components/rail.tsx:32
+#: apps/web/src/app/screens/chat-screen.tsx:89
+msgid "Main navigation"
+msgstr "Main navigation"
 
-#: apps/web/src/app/components/room-list.tsx:37
+#: apps/web/src/app/components/chat-view.tsx:174
+msgid "Message"
+msgstr "Message"
+
+#: apps/web/src/app/components/room-list.tsx:46
 msgid "No chats yet"
 msgstr "No chats yet"
 
-#: apps/web/src/app/components/chat-view.tsx:169
-#~ msgid "No messages yet"
-#~ msgstr "No messages yet"
+#: apps/web/src/app/components/chat-view.tsx:163
+msgid "No messages yet"
+msgstr "No messages yet"
 
 #: apps/web/src/app/screens/welcome-screen.tsx:102
 msgid "Password"
 msgstr "Password"
 
-#: apps/web/src/app/components/settings-panel.tsx:58
+#: apps/web/src/app/components/settings-panel.tsx:70
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:69
+#: apps/web/src/app/features/auth/require-auth.tsx:76
 msgid "Restoring session…"
 msgstr "Restoring session…"
 
-#: apps/web/src/app/components/room-list.tsx:34
+#: apps/web/src/app/components/room-list.tsx:43
 msgid "Search"
 msgstr "Search"
 
@@ -130,18 +149,21 @@ msgstr "Search"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:145
+#: apps/web/src/app/components/chat-view.tsx:141
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 
-#: apps/web/src/app/components/chat-view.tsx:205
-#~ msgid "Send"
-#~ msgstr "Send"
+#: apps/web/src/app/components/chat-view.tsx:175
+msgid "Send"
+msgstr "Send"
 
-#: apps/web/src/app/components/rail.tsx:54
+#: apps/web/src/app/components/rail.tsx:35
+#: apps/web/src/app/components/settings-panel.tsx:61
+#: apps/web/src/app/screens/chat-screen.tsx:88
 msgid "Settings"
 msgstr "Settings"
 
+#: apps/web/src/app/components/room-list.tsx:39
 #: apps/web/src/app/screens/welcome-screen.tsx:97
 msgid "SewerNet"
 msgstr "SewerNet"
@@ -170,27 +192,27 @@ msgstr "Sign-in session expired. Please try again."
 msgid "Sign-in was cancelled"
 msgstr "Sign-in was cancelled"
 
-#: apps/web/src/app/components/rail.tsx:48
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to dark theme"
 msgstr "Switch to dark theme"
 
-#: apps/web/src/app/components/rail.tsx:47
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to light theme"
 msgstr "Switch to light theme"
 
-#: apps/web/src/app/components/settings-panel.tsx:45
+#: apps/web/src/app/components/settings-panel.tsx:53
 msgid "System"
 msgstr "System"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:57
+#: apps/web/src/app/features/auth/require-auth.tsx:64
 msgid "The homeserver is unreachable or the session expired."
 msgstr "The homeserver is unreachable or the session expired."
 
-#: apps/web/src/app/features/auth/require-auth.tsx:58
+#: apps/web/src/app/features/auth/require-auth.tsx:65
 msgid "Try again"
 msgstr "Try again"
 
-#: apps/web/src/app/components/settings-panel.tsx:60
+#: apps/web/src/app/components/settings-panel.tsx:72
 msgid "UI kit"
 msgstr "UI kit"
 

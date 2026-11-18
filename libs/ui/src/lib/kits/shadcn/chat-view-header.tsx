@@ -18,14 +18,15 @@ export function ShadcnChatViewHeader({
     <header
       {...props}
       className={cn(
-        'flex h-14 items-center gap-3 border-b border-[var(--sn-border)] px-4',
+        'flex h-14 shrink-0 items-center gap-3 border-b border-[var(--sn-border)] px-4 pt-[var(--sn-safe-top)]',
         className,
       )}
     >
       {onBack ? (
         <button
+          type="button"
           onClick={onBack}
-          className="text-[var(--sn-text-muted)] hover:text-[var(--sn-text)] md:hidden"
+          className="sn-wide:hidden -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-[calc(var(--sn-radius)*0.75)] text-[var(--sn-text-muted)] hover:text-[var(--sn-text)]"
           aria-label={typeof backLabel === 'string' ? backLabel : undefined}
         >
           <ProxyIcon name="back" />
@@ -38,8 +39,8 @@ export function ShadcnChatViewHeader({
           {avatar ?? <ProxyIcon name="room" size={18} />}
         </span>
       )}
-      <div className="min-w-0">
-        <h1 className="truncate text-sm font-semibold text-[var(--sn-text)]">
+      <div className="min-w-0 flex-1">
+        <h1 data-sn-focus="chat" tabIndex={-1} className="truncate text-sm font-semibold text-[var(--sn-text)]">
           {title}
         </h1>
         {subtitle ? (

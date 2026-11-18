@@ -36,11 +36,8 @@ beforeAll(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useChatStore.setState({
-    activeRoomId: null,
-    setActiveRoom: (activeRoomId: string | null) =>
-      useChatStore.setState({ activeRoomId }),
-  });
+  // Reset data only: real store actions must be exercised by the component.
+  useChatStore.setState({ activeRoomId: null, section: 'rooms', error: null });
 });
 
 describe('RoomList', () => {
@@ -83,6 +80,19 @@ describe('RoomList', () => {
     fireEvent.click(screen.getByText('Alpha'));
 
     expect(useChatStore.getState().activeRoomId).toBe('!a');
+    // Selecting through the real action also opens the chat section.
+    expect(useChatStore.getState().section).toBe('chat');
+  });
+
+  it('marks the selected room with aria-current', () => {
+    mockedUseRooms.mockReturnValue(entries({ roomId: '!a', name: 'Alpha' }));
+    useChatStore.setState({ activeRoomId: '!a', section: 'chat' });
+
+    renderList();
+
+    const button = screen.getByRole('button', { name: /Alpha/ });
+    expect(button.getAttribute('aria-current')).toBe('true');
+    expect(button.getAttribute('data-room-id')).toBe('!a');
   });
 
   it('shows the empty state when there are no rooms', () => {
@@ -91,5 +101,18 @@ describe('RoomList', () => {
     renderList();
 
     expect(screen.getByText('No chats yet')).toBeTruthy();
+  });
+
+  it('renders the list as a labelled list of room buttons', () => {
+    mockedUseRooms.mockReturnValue(
+      entries({ roomId: '!a', name: 'Alpha' }, { roomId: '!b', name: 'Beta' }),
+    );
+
+    const { container } = renderList();
+
+    expect(screen.getByRole('list', { name: 'Chats' })).toBeTruthy();
+    expect(container.querySelectorAll('ul > li')).toHaveLength(2);
+    expect(container.querySelectorAll('ul > li > button')).toHaveLength(2);
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
 });
