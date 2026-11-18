@@ -269,7 +269,11 @@ describe('ChatScreen navigation and logout', () => {
     const nav = container.querySelector('[data-sn-nav="bottom"]') as HTMLElement;
     expect(nav.hasAttribute('hidden')).toBe(false);
 
-    fireEvent.click(within(nav).getByRole('button', { name: 'Settings' }));
+    // Widen: the bottom bar is CSS-hidden past 48rem, so navigation goes
+    // through the rail, exactly like a real wide window.
+    act(() => media.dispatch(true));
+    const rail = container.querySelector('[data-sn-nav="rail"]') as HTMLElement;
+    fireEvent.click(within(rail).getByRole('button', { name: 'Settings' }));
     expect(useChatStore.getState().section).toBe('settings');
     expect(screen.getByRole('form', { name: 'Appearance' })).toBeTruthy();
 
@@ -277,10 +281,29 @@ describe('ChatScreen navigation and logout', () => {
     expect(useChatStore.getState().section).toBe('rooms');
     expect(useChatStore.getState().activeRoomId).toBe('!a:hs');
 
-    fireEvent.click(within(nav).getByRole('button', { name: 'Settings' }));
+    fireEvent.click(within(rail).getByRole('button', { name: 'Settings' }));
+
+    // Back to compact: only the bottom bar can reach the sections now.
+    act(() => media.dispatch(false));
     fireEvent.click(within(nav).getByRole('button', { name: 'Chats' }));
     expect(useChatStore.getState().section).toBe('rooms');
     expect(useChatStore.getState().activeRoomId).toBe('!a:hs');
+  });
+
+  it('hides the compact navigation on wide layouts at the kit level', () => {
+    mockedUseRooms.mockReturnValue([{ roomId: '!a:hs', name: 'Alpha' }]);
+
+    const { container } = renderScreen();
+    const nav = container.querySelector('[data-sn-nav="bottom"]') as HTMLElement;
+    const rail = container.querySelector('[data-sn-nav="rail"]') as HTMLElement;
+
+    // The shell gets exactly one navigation per layout mode: the rail is
+    // `hidden sn-wide:flex`, the bottom bar the opposite. The bar also owns
+    // its compact-only spacing, so the shell slot carries no metrics.
+    expect(nav.className).toContain('sn-wide:hidden');
+    expect(nav.className).not.toContain('px-[var(--sn-bottom-nav-gap)]');
+    expect(rail.className).toContain('hidden');
+    expect(rail.className).toContain('sn-wide:flex');
   });
 
   it('marks the bottom navigation entries current for the visible section', () => {

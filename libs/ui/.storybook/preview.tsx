@@ -3,16 +3,23 @@ import { UiKitProvider } from '../src/index.js';
 import { IconSetProvider } from '@sewer-net/icons';
 import '../src/styles.css';
 
-/** Wraps every story with the proxy providers, as the real app shell does. */
-const withProviders: Decorator = (Story) => (
-  <UiKitProvider>
-    <IconSetProvider>
-      <div className="p-4">
-        <Story />
-      </div>
-    </IconSetProvider>
-  </UiKitProvider>
-);
+/**
+ * Wraps every component story with the proxy providers, as the real app shell
+ * does. The padding belongs to component stories only: acceptance stories draw
+ * their own fullscreen shell.
+ */
+const withProviders: Decorator = (Story, context) => {
+  const fullscreen = context.parameters.layout === 'fullscreen';
+  return (
+    <UiKitProvider>
+      <IconSetProvider>
+        <div className={fullscreen ? 'h-full w-full' : 'p-4'}>
+          <Story />
+        </div>
+      </IconSetProvider>
+    </UiKitProvider>
+  );
+};
 
 const preview: Preview = {
   parameters: {

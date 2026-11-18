@@ -36,8 +36,9 @@ describe('shared styles connection', () => {
     expect(styles()).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important;/);
   });
 
-  it('derives the compact scroll clearance from the navigation tokens', () => {
-    expect(layoutTokens()).toContain('--sn-bottom-nav-clearance:');
-    expect(styles()).not.toContain('--sn-bottom-nav-clearance:'); // single source
+  it('sizes the compact navigation from the layout tokens only', () => {
+    expect(layoutTokens()).toContain('--sn-bottom-nav-height:');
+    expect(layoutTokens()).toContain('--sn-bottom-nav-gap:');
+    expect(styles()).not.toContain('--sn-bottom-nav-height:'); // single source
   });
 });

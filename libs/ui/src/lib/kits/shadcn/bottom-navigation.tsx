@@ -5,7 +5,8 @@ import type { BottomNavigationProps } from '../../ui-kit';
 /**
  * Compact bottom navigation. Two destinations only: the room list (which also
  * owns the chat section, so "Chats" stays current while reading) and settings.
- * The nav is a landmark; the tap targets are full-height buttons.
+ * The nav is a landmark; the tap targets are full-height buttons. It owns its
+ * own safe-area padding so the shell slot only has to hide it on wide.
  */
 export function ShadcnBottomNavigation({
   section,
@@ -27,7 +28,7 @@ export function ShadcnBottomNavigation({
       aria-label={navigationLabel}
       data-sn-bottom-nav=""
       className={cn(
-        'flex shrink-0 items-stretch border-t border-[var(--sn-border)] bg-[var(--sn-surface-1)]',
+        'flex shrink-0 items-stretch border-t border-[var(--sn-border)] bg-[var(--sn-surface-1)] px-[var(--sn-bottom-nav-gap)] pb-[calc(var(--sn-bottom-nav-gap)+var(--sn-safe-bottom))]',
         className,
       )}
     >

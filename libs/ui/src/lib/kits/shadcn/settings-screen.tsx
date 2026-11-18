@@ -52,7 +52,7 @@ export function ShadcnSettingsScreen({
 
       <ShadcnSettingsForm {...settingsFormProps(props)} />
 
-      <div className="shrink-0 border-t border-[var(--sn-border)] px-4 pt-3 pb-[calc(var(--sn-bottom-nav-clearance)+var(--sn-safe-bottom))] sn-wide:pb-3">
+      <div className="shrink-0 border-t border-[var(--sn-border)] px-4 pt-3 pb-3">
         <button
           type="button"
           onClick={onLogout}

@@ -30,6 +30,10 @@ export function ShadcnChatScreen({
   className,
   ...props
 }: ChatScreenProps) {
+  // Compact-only navigation: on wide the rail owns both destinations, and the
+  // chat section hides the bar on compact so the conversation gets the height.
+  // The slot lives in the horizontal row so the bar can stretch, and only its
+  // own `hidden` attribute decides visibility.
   const navVisible = bottomNavigation !== null && section !== 'chat';
 
   return (
@@ -50,7 +54,7 @@ export function ShadcnChatScreen({
       ) : null}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className={cn('flex min-h-0 min-w-0 flex-1', section !== 'chat' && 'pb-[var(--sn-bottom-nav-clearance)] sn-wide:pb-0')}>
+        <div className="flex min-h-0 min-w-0 flex-1">
           {PANELS.map((panel) => (
             <div
               key={panel}
@@ -64,17 +68,16 @@ export function ShadcnChatScreen({
               {panel === 'rooms' ? rooms : panel === 'chat' ? chat : settings}
             </div>
           ))}
-        </div>
 
-        {bottomNavigation !== null ? (
+          {/* Owns the compact navigation slot, so no padding reaches the widget. */}
           <div
             data-sn-nav="bottom"
-            hidden={!navVisible}
-            className="shrink-0 px-[var(--sn-bottom-nav-gap)] pb-[calc(var(--sn-bottom-nav-gap)+var(--sn-safe-bottom))]"
+            hidden={bottomNavigation === null || !navVisible}
+            className="shrink-0 sn-wide:hidden"
           >
             {bottomNavigation}
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );

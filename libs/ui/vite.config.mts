@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import type { Plugin } from 'vite';
 
 /**
@@ -39,7 +40,10 @@ function rawCssInclude(file: string = RAW_CSS_FILE): RegExp {
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/libs/ui',
-  plugins: [rawCssPlugin(), react()],
+  // `tailwindcss()` compiles `src/styles.css` for Storybook; the app builds its
+  // own copy. Without it a Storybook canvas renders unstyled markup, which
+  // makes browser geometry evidence meaningless.
+  plugins: [rawCssPlugin(), react(), tailwindcss()],
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [],
