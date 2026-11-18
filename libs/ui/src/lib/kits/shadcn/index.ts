@@ -1,4 +1,4 @@
-﻿import type { UiKit } from '../../ui-kit';
+import type { UiKit } from '../../ui-kit';
 import { ShadcnButton } from './button';
 import { ShadcnInput } from './input';
 import { ShadcnPanel } from './panel';

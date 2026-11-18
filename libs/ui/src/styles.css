@@ -41,6 +41,14 @@ body,
   height: 100%;
 }
 
+/* Dynamic viewport height with the `100vh` fallback for browsers without
+ * `dvh` (older Safari/Chromium). Auth and status pages use it so the layout
+ * follows the mobile keyboard instead of the unchanging layout viewport. */
+.sn-vh-full {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   margin: 0;
   background: var(--sn-bg);
