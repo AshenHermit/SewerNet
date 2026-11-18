@@ -18,7 +18,7 @@ libs/
   utils/      # общие утилиты (cn и др.)
 scripts/      # вспомогательные скрипты
 docker/       # (план) prod docker-compose
-.github/      # (план) GitHub Actions
+.github/      # GitHub Actions: ci.yml + переиспользуемый checks.yml
 ```
 
 ## Быстрый старт
@@ -41,11 +41,25 @@ npx nx serve landing
 npx nx storybook ui
 ```
 
-Проверка всего воркспейса:
+## Проверка воркспейса и CI
+
+Полная JS-проверка воркспейса (те же шаги выполняет Linux CI):
 
 ```bash
 npx nx run-many -t typecheck,lint,test,build
 ```
+
+- Node-тесты политики CI (workflow YAML, кэши, артефакты):
+  `node --test "tools/ci/*.test.mjs"`.
+- `.github/workflows/ci.yml` запускается на `pull_request`, push в `master` и
+  вручную, права только `contents: read`. Реальный gate живёт в
+  переиспользуемом `.github/workflows/checks.yml` (job `javascript`), который
+  позже будет вызываться из release-пайплайна.
+- Native-проверки (Tauri/Rust/MSVC/WebView2, позже) — **отдельная** команда вне
+  `run-many`: JS-gate не требует Windows-toolchain, native и Docker jobs появятся
+  в следующих планах.
+- Зелёный CI на GitHub пока не подтверждён: первый реальный запуск произойдёт
+  после push/PR, до этого обязателен локальный зелёный gate выше.
 
 ## Авторизация
 

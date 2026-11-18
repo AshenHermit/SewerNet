@@ -1,0 +1,96 @@
+# Reusable JavaScript workspace gate (Linux runner).
+#
+# Only read-only, unsigned JS checks run here. Signed release workflows must
+# use their own cache namespace and must not restore these caches: untrusted
+# pull request runs populate them.
+name: Workspace checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    name: JavaScript (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # Full history plus tags: the future release gate must prove that a
+          # stable tag is reachable from the default branch.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.11.0
+
+      - name: Restore npm download cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.npm/_cacache
+          key: npm-${{ runner.os }}-node-24.11.0-npm-11.6.1-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node-24.11.0-npm-11.6.1-
+
+      - name: Pin npm
+        run: |
+          npm install --global npm@11.6.1
+          npm --version
+
+      - name: Restore Nx cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-node-24.11.0-npm-11.6.1-${{ hashFiles('package-lock.json', 'nx.json', 'tsconfig.base.json', 'tsconfig.json') }}
+          restore-keys: |
+            nx-${{ runner.os }}-node-24.11.0-npm-11.6.1-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check CI policy
+        run: node --test "tools/ci/*.test.mjs"
+
+      - name: Run full workspace gate
+        run: npx nx run-many -t typecheck,lint,test,build
+
+      - name: Upload web build
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: web-dist
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload landing build
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: landing-next
+          # Next.js output stays available until the deployment plan switches
+          # the landing build to a static `out` export. The internal Next cache
+          # is never uploaded and `.next` is never cached across runs.
+          path: |
+            apps/landing/.next
+            !apps/landing/.next/cache
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: test-reports
+          path: |
+            apps/*/test-output
+            libs/*/test-output
+          if-no-files-found: ignore
+          retention-days: 7
