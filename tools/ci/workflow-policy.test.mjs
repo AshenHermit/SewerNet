@@ -34,9 +34,16 @@ const ALLOWED_ARTIFACT_PATHS = [
   'libs/*/test-output',
 ];
 
-// Cache allowlist: npm download cache and the local Nx cache for the unsigned
-// JavaScript checks only.
+// Cache allowlist for the `javascript` job: npm download cache and the local
+// Nx cache for the unsigned JavaScript checks only.
 const ALLOWED_CACHE_PATHS = ['~/.npm/_cacache', '.nx/cache'];
+
+// Packaging/signing outputs must never be cached or uploaded by any job. Later
+// plans may add native (cargo) and Docker jobs, but those stay build-only:
+// `src-tauri/target`, release bundles and their installers/signatures are not
+// cache or artifact material for CI checks.
+const PACKAGING_OUTPUT_PATTERN =
+  /(src-tauri[\\/]target|(^|[\\/])(bundle|release|signing)([\\/]|$)|\.(exe|msi|msix|dmg|deb|rpm|appx|pkg|sig)$)/i;
 
 function readWorkflow(name) {
   const file = path.join(workflowsDir, name);
@@ -53,6 +60,19 @@ function workflowSteps(workflow) {
   return workflowJobs(workflow).flatMap(([, job]) => job.steps ?? []);
 }
 
+function jobSteps(job) {
+  return job?.steps ?? [];
+}
+
+function readJob(workflowName, jobName) {
+  const { workflow } = readWorkflow(workflowName);
+  const job = workflow.jobs?.[jobName];
+
+  assert.ok(job, `${workflowName} must expose a "${jobName}" job`);
+
+  return { job, workflow };
+}
+
 function stepPaths(step) {
   const value = step.with?.path;
 
@@ -65,10 +85,14 @@ function stepPaths(step) {
   return lines.map((line) => line.trim()).filter(Boolean);
 }
 
-function actionSteps(workflow) {
-  return workflowSteps(workflow).filter(
+function actionStepsIn(steps) {
+  return steps.filter(
     (step) => typeof step.uses === 'string' && !step.uses.startsWith('./'),
   );
+}
+
+function actionSteps(workflow) {
+  return actionStepsIn(workflowSteps(workflow));
 }
 
 function isAllowedArtifactPath(candidate) {
@@ -106,6 +130,16 @@ test('ci_policy_is_read_only', () => {
     for (const [scope, access] of Object.entries(workflow.permissions)) {
       assert.equal(access, 'read', `${name} must keep ${scope} read-only`);
     }
+
+    for (const [jobName, job] of workflowJobs(workflow)) {
+      for (const [scope, access] of Object.entries(job.permissions ?? {})) {
+        assert.equal(
+          access,
+          'read',
+          `${name}:${jobName} must keep ${scope} read-only`,
+        );
+      }
+    }
   }
 
   const group = String(ci.workflow.concurrency?.group ?? '');
@@ -126,20 +160,19 @@ test('ci_policy_is_read_only', () => {
 });
 
 test('checks_run_full_workspace_nonwatch', () => {
-  const { workflow: checks } = readWorkflow('checks.yml');
   const { workflow: ci } = readWorkflow('ci.yml');
-  const job = checks.jobs.javascript;
+  const { job } = readJob('checks.yml', 'javascript');
 
   assert.equal(
     ci.jobs.javascript.uses,
     './.github/workflows/checks.yml',
     'ci.yml must call the reusable checks workflow',
   );
-  assert.ok(job, 'checks.yml must expose a javascript job');
+  assert.equal(job['runs-on'], 'ubuntu-latest');
   assert.equal(job.env.CI, 'true');
   assert.equal(job['timeout-minutes'], 30);
 
-  const runs = job.steps
+  const runs = jobSteps(job)
     .filter((step) => typeof step.run === 'string')
     .map((step) => step.run);
 
@@ -169,14 +202,16 @@ test('checks_run_full_workspace_nonwatch', () => {
   );
   assert.ok(policyStepIndex >= 0 && policyStepIndex < gateStepIndex);
 
-  const checkout = actionSteps(checks).find((step) =>
+  const jobActionSteps = actionStepsIn(jobSteps(job));
+
+  const checkout = jobActionSteps.find((step) =>
     step.uses.startsWith('actions/checkout@'),
   );
   assert.ok(checkout, 'checks.yml must check out the repository');
   assert.equal(checkout.with['fetch-depth'], 0);
   assert.equal(checkout.with['persist-credentials'], false);
 
-  const setupNode = actionSteps(checks).find((step) =>
+  const setupNode = jobActionSteps.find((step) =>
     step.uses.startsWith('actions/setup-node@'),
   );
   assert.ok(setupNode, 'checks.yml must set up Node.js');
@@ -184,67 +219,66 @@ test('checks_run_full_workspace_nonwatch', () => {
 });
 
 test('artifacts_are_allowlisted', () => {
-  for (const name of ['ci.yml', 'checks.yml']) {
-    const { workflow } = readWorkflow(name);
-    const steps = workflowSteps(workflow);
-    const gateIndex = steps.findIndex((step) => step.run === FULL_GATE_COMMAND);
+  // The allowlist describes what the JavaScript gate may publish; other jobs
+  // added later (native, Docker) own their artifacts in their own plans.
+  const { job } = readJob('checks.yml', 'javascript');
+  const steps = jobSteps(job);
+  const gateIndex = steps.findIndex((step) => step.run === FULL_GATE_COMMAND);
 
-    for (const [index, step] of steps.entries()) {
-      const isUpload =
-        typeof step.uses === 'string' &&
-        step.uses.startsWith('actions/upload-artifact@');
+  assert.ok(gateIndex >= 0, 'checks.yml: javascript job must run the full gate');
 
-      if (!isUpload) {
-        continue;
-      }
+  for (const [index, step] of steps.entries()) {
+    const isUpload =
+      typeof step.uses === 'string' &&
+      step.uses.startsWith('actions/upload-artifact@');
 
-      const paths = stepPaths(step);
-      assert.ok(
-        paths.length > 0,
-        `${name}: artifact upload needs explicit paths`,
-      );
-
-      for (const candidate of paths) {
-        assert.ok(
-          isAllowedArtifactPath(candidate),
-          `${name}: ${candidate} is outside the artifact allowlist`,
-        );
-        assert.ok(
-          !candidate.includes('${{') &&
-            !candidate.includes('github.workspace') &&
-            candidate !== '.' &&
-            candidate !== '**',
-          `${name}: upload must not cover the whole workspace`,
-        );
-      }
-
-      const isTestReport = paths.some((candidate) =>
-        candidate.includes('test-output'),
-      );
-      if (isTestReport) {
-        assert.equal(
-          step.if,
-          'failure()',
-          `${name}: test reports upload on failure only`,
-        );
-      } else {
-        assert.ok(
-          !step.if || step.if === 'success()',
-          `${name}: build artifacts upload only after a green gate`,
-        );
-      }
-
-      if (gateIndex >= 0) {
-        assert.ok(
-          index > gateIndex,
-          `${name}: artifacts upload only after the gate ran`,
-        );
-      }
+    if (!isUpload) {
+      continue;
     }
+
+    const paths = stepPaths(step);
+    assert.ok(
+      paths.length > 0,
+      'checks.yml: artifact upload needs explicit paths',
+    );
+
+    for (const candidate of paths) {
+      assert.ok(
+        isAllowedArtifactPath(candidate),
+        `checks.yml: ${candidate} is outside the artifact allowlist`,
+      );
+      assert.ok(
+        !candidate.includes('${{') &&
+          !candidate.includes('github.workspace') &&
+          candidate !== '.' &&
+          candidate !== '**',
+        'checks.yml: upload must not cover the whole workspace',
+      );
+    }
+
+    const isTestReport = paths.some((candidate) =>
+      candidate.includes('test-output'),
+    );
+    if (isTestReport) {
+      assert.equal(
+        step.if,
+        'failure()',
+        'checks.yml: test reports upload on failure only',
+      );
+    } else {
+      assert.ok(
+        !step.if || step.if === 'success()',
+        'checks.yml: build artifacts upload only after a green gate',
+      );
+    }
+
+    assert.ok(
+      index > gateIndex,
+      'checks.yml: artifacts upload only after the gate ran',
+    );
   }
 
-  const { workflow: checks } = readWorkflow('checks.yml');
-  const uploads = workflowSteps(checks).filter(
+  const uploads = jobSteps(job).filter(
     (step) =>
       typeof step.uses === 'string' &&
       step.uses.startsWith('actions/upload-artifact@'),
@@ -269,23 +303,30 @@ test('artifacts_are_allowlisted', () => {
   assert.ok(webUpload, 'web build must be uploaded explicitly');
 });
 
-test('cache_excludes_native_and_secrets', () => {
-  const { workflow: checks } = readWorkflow('checks.yml');
-  const cacheSteps = actionSteps(checks).filter((step) =>
+test('javascript_cache_roots_are_npm_and_nx_only', () => {
+  const { job } = readJob('checks.yml', 'javascript');
+  const steps = jobSteps(job);
+  const cacheSteps = actionStepsIn(steps).filter((step) =>
     step.uses.startsWith('actions/cache@'),
   );
 
-  assert.equal(cacheSteps.length, 2, 'only npm and Nx caches are configured');
+  assert.equal(
+    cacheSteps.length,
+    2,
+    'the javascript job configures only the npm and Nx caches',
+  );
 
   const cachedPaths = cacheSteps.flatMap(stepPaths).sort();
-  assert.deepEqual(cachedPaths, [...ALLOWED_CACHE_PATHS].sort());
+  assert.deepEqual(
+    cachedPaths,
+    [...ALLOWED_CACHE_PATHS].sort(),
+    'cache roots stay limited to the npm download cache and .nx/cache',
+  );
 
   for (const candidate of cachedPaths) {
     assert.ok(
-      !/(src-tauri|\btarget\b|release|\.next|node_modules|test-output|dist)/.test(
-        candidate.replace(/^!/, ''),
-      ),
-      `${candidate} must never be cached`,
+      !/\.next|node_modules|test-output|dist/.test(candidate.replace(/^!/, '')),
+      `${candidate} must never be a cache root`,
     );
   }
 
@@ -315,7 +356,6 @@ test('cache_excludes_native_and_secrets', () => {
   assert.match(nxCacheKey, /hashFiles\([^)]*tsconfig\.base\.json/);
 
   // Caches must be restored before the steps that consume them.
-  const steps = checks.jobs.javascript.steps;
   const npmCacheIndex = steps.findIndex((step) =>
     stepPaths(step).includes('~/.npm/_cacache'),
   );
@@ -330,8 +370,38 @@ test('cache_excludes_native_and_secrets', () => {
 
   for (const name of ['ci.yml', 'checks.yml']) {
     const { raw } = readWorkflow(name);
-    assert.ok(!/src-tauri/.test(raw), `${name} must not touch native artifacts`);
     assert.ok(!/\$\{\{\s*secrets\./.test(raw), `${name} must stay secret-free`);
+  }
+});
+
+// File-global invariant: later plans may add native (cargo) and Docker jobs,
+// but no job may cache or publish packaging/signing outputs.
+test('no_job_caches_or_uploads_packaging_outputs', () => {
+  for (const name of ['ci.yml', 'checks.yml']) {
+    const { workflow } = readWorkflow(name);
+
+    for (const [jobName, job] of workflowJobs(workflow)) {
+      for (const step of jobSteps(job)) {
+        const paths = stepPaths(step);
+        const isCache =
+          typeof step.uses === 'string' &&
+          step.uses.startsWith('actions/cache@');
+        const isUpload =
+          typeof step.uses === 'string' &&
+          step.uses.startsWith('actions/upload-artifact@');
+
+        if (!isCache && !isUpload) {
+          continue;
+        }
+
+        for (const candidate of paths) {
+          assert.ok(
+            !PACKAGING_OUTPUT_PATTERN.test(candidate.replace(/^!/, '')),
+            `${name}:${jobName}: ${candidate} is a packaging/signing output`,
+          );
+        }
+      }
+    }
   }
 });
 
