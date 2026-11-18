@@ -12,11 +12,11 @@ msgstr ""
 #~ msgid "{0}"
 #~ msgstr "{0}"
 
-#: apps/web/src/app/components/settings-panel.tsx:55
+#: apps/web/src/app/components/settings-panel.tsx:67
 msgid "Accent color"
 msgstr "Accent color"
 
-#: apps/web/src/app/components/settings-panel.tsx:52
+#: apps/web/src/app/components/settings-panel.tsx:64
 msgid "Appearance"
 msgstr "Appearance"
 
@@ -32,16 +32,17 @@ msgstr "Back"
 msgid "Back to sign in"
 msgstr "Back to sign in"
 
+#: apps/web/src/app/components/rail.tsx:33
 #: apps/web/src/app/components/room-list.tsx:48
-#: apps/web/src/app/screens/chat-screen.tsx:59
+#: apps/web/src/app/screens/chat-screen.tsx:87
 msgid "Chats"
 msgstr "Chats"
 
-#: apps/web/src/app/components/settings-panel.tsx:51
+#: apps/web/src/app/components/settings-panel.tsx:63
 msgid "Close"
 msgstr "Close"
 
-#: apps/web/src/app/components/settings-panel.tsx:54
+#: apps/web/src/app/components/settings-panel.tsx:66
 msgid "Color scheme"
 msgstr "Color scheme"
 
@@ -49,7 +50,7 @@ msgstr "Color scheme"
 msgid "Continue with Matrix"
 msgstr "Continue with Matrix"
 
-#: apps/web/src/app/components/settings-panel.tsx:57
+#: apps/web/src/app/components/settings-panel.tsx:69
 msgid "Corner radius"
 msgstr "Corner radius"
 
@@ -61,7 +62,7 @@ msgstr "Could not restore the session"
 msgid "Create account"
 msgstr "Create account"
 
-#: apps/web/src/app/components/settings-panel.tsx:44
+#: apps/web/src/app/components/settings-panel.tsx:52
 msgid "Dark"
 msgstr "Dark"
 
@@ -73,7 +74,7 @@ msgstr "Encrypted"
 msgid "Finishing sign-in…"
 msgstr "Finishing sign-in…"
 
-#: apps/web/src/app/components/settings-panel.tsx:56
+#: apps/web/src/app/components/settings-panel.tsx:68
 msgid "Font"
 msgstr "Font"
 
@@ -81,11 +82,11 @@ msgstr "Font"
 msgid "Homeserver URL"
 msgstr "Homeserver URL"
 
-#: apps/web/src/app/components/settings-panel.tsx:53
+#: apps/web/src/app/components/settings-panel.tsx:65
 msgid "Interface"
 msgstr "Interface"
 
-#: apps/web/src/app/components/settings-panel.tsx:43
+#: apps/web/src/app/components/settings-panel.tsx:51
 msgid "Light"
 msgstr "Light"
 
@@ -105,12 +106,14 @@ msgstr "Loading messages"
 #~ msgid "Loading messages…"
 #~ msgstr "Loading messages…"
 
-#: apps/web/src/app/components/rail.tsx:62
+#: apps/web/src/app/components/rail.tsx:37
+#: apps/web/src/app/components/settings-panel.tsx:62
 #: apps/web/src/app/features/auth/require-auth.tsx:69
 msgid "Log out"
 msgstr "Log out"
 
-#: apps/web/src/app/screens/chat-screen.tsx:61
+#: apps/web/src/app/components/rail.tsx:32
+#: apps/web/src/app/screens/chat-screen.tsx:89
 msgid "Main navigation"
 msgstr "Main navigation"
 
@@ -130,7 +133,7 @@ msgstr "No messages yet"
 msgid "Password"
 msgstr "Password"
 
-#: apps/web/src/app/components/settings-panel.tsx:58
+#: apps/web/src/app/components/settings-panel.tsx:70
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
@@ -154,8 +157,9 @@ msgstr "Select a chat to start messaging"
 msgid "Send"
 msgstr "Send"
 
-#: apps/web/src/app/components/rail.tsx:57
-#: apps/web/src/app/screens/chat-screen.tsx:60
+#: apps/web/src/app/components/rail.tsx:35
+#: apps/web/src/app/components/settings-panel.tsx:61
+#: apps/web/src/app/screens/chat-screen.tsx:88
 msgid "Settings"
 msgstr "Settings"
 
@@ -188,15 +192,15 @@ msgstr "Sign-in session expired. Please try again."
 msgid "Sign-in was cancelled"
 msgstr "Sign-in was cancelled"
 
-#: apps/web/src/app/components/rail.tsx:51
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to dark theme"
 msgstr "Switch to dark theme"
 
-#: apps/web/src/app/components/rail.tsx:50
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to light theme"
 msgstr "Switch to light theme"
 
-#: apps/web/src/app/components/settings-panel.tsx:45
+#: apps/web/src/app/components/settings-panel.tsx:53
 msgid "System"
 msgstr "System"
 
@@ -208,7 +212,7 @@ msgstr "The homeserver is unreachable or the session expired."
 msgid "Try again"
 msgstr "Try again"
 
-#: apps/web/src/app/components/settings-panel.tsx:60
+#: apps/web/src/app/components/settings-panel.tsx:72
 msgid "UI kit"
 msgstr "UI kit"
 

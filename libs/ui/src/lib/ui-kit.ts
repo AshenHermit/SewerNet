@@ -168,13 +168,28 @@ export interface BottomNavigationProps extends HTMLAttributes<HTMLElement> {
   onSettings: () => void;
 }
 
-/** Левая навигационная панель (кнопки: тема, настройки, выход). */
+/**
+ * Левая навигационная панель (тема, чаты, настройки, выход).
+ * Весь пользовательский текст приходит готовыми строками из apps/web.
+ */
 export interface RailProps extends HTMLAttributes<HTMLDivElement> {
-  mode?: ThemeMode;
-  onThemeToggle?: () => void;
+  /** Текущий семантический раздел: подсвечивает активный пункт. */
+  section?: ChatSection;
+  /** Доступное имя навигационного региона. */
+  navigationLabel?: string;
+  /** Пункт «Чаты»: переход к списку комнат. */
+  roomsLabel?: string;
+  onRooms?: () => void;
+  settingsLabel?: string;
   onSettings?: () => void;
+  logoutLabel?: string;
   onLogout?: () => void;
+  /** Переключение схемы: подпись и иконка ближайшего состояния. */
+  themeToggleLabel?: string;
+  themeIcon?: string;
+  onThemeToggle?: () => void;
 }
+
 
 /** Кнопка навигации на рельсе. */
 export interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -183,10 +198,22 @@ export interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   active?: boolean;
 }
 
-/** Панель внешнего вида (кит, режим, акцент, шрифт, радиус).
- *  Весь пользовательский текст приходит через props (переводы — в apps/web). */
+/**
+ * Панель внешнего вида (кит, режим, акцент, шрифт, радиус).
+ * Весь пользовательский текст приходит через props (переводы — в apps/web).
+ *
+ * `open` — единственный источник правды о видимости: в компактном режиме
+ * панель занимает слот `settings`, в широком — открывается как модальный
+ * `<dialog>`. Оба контейнера используют одну и ту же форму.
+ */
 export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
+  open: boolean;
   onClose: () => void;
+  /** Готовое название раздела настроек (доступное имя формы/диалога). */
+  settingsLabel: string;
+  /** Готовая подпись кнопки выхода из аккаунта. */
+  logoutLabel: string;
+  onLogout: () => void;
   closeAriaLabel: string;
   appearanceLabel: string;
   interfaceLabel: string;
@@ -214,6 +241,37 @@ export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
   localeOptions: { value: AppLocale; label: string }[];
   onReset: () => void;
 }
+
+/** Поля общей формы настроек: общие для экрана и диалога. */
+export type SettingsFormProps = Pick<
+  SettingsPanelProps,
+  | 'appearanceLabel'
+  | 'interfaceLabel'
+  | 'colorSchemeLabel'
+  | 'accentLabel'
+  | 'fontLabel'
+  | 'radiusLabel'
+  | 'resetLabel'
+  | 'kitId'
+  | 'kitLabel'
+  | 'onKitChange'
+  | 'mode'
+  | 'onModeChange'
+  | 'modeOptions'
+  | 'accent'
+  | 'onAccentChange'
+  | 'accentPresets'
+  | 'font'
+  | 'onFontChange'
+  | 'fontOptions'
+  | 'radius'
+  | 'onRadiusChange'
+  | 'locale'
+  | 'onLocaleChange'
+  | 'localeOptions'
+  | 'onReset'
+>;
+
 
 /** Вариант выбора UI-kit. */
 export interface KitOptionProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onSelect'> {

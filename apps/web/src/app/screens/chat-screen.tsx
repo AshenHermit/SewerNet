@@ -4,7 +4,9 @@ import { useAuthStore } from '../stores/auth-store';
 import { RoomList } from '../components/room-list';
 import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
+import { SettingsPanel } from '../components/settings-panel';
 import { getEffectiveSection, useChatStore } from '../stores/chat-store';
+import { logoutCurrent } from '../../client/init-matrix';
 import { ProxyBottomNavigation, ProxyChatScreen } from '@sewer-net/ui';
 
 /** Detects an expired matrix session coming from the SDK error shape. */
@@ -30,6 +32,8 @@ export function ChatScreen() {
   const activeRoomId = useChatStore((state) => state.activeRoomId);
   const showRooms = useChatStore((state) => state.showRooms);
   const showSettings = useChatStore((state) => state.showSettings);
+  const closeSettings = useChatStore((state) => state.closeSettings);
+  const resetUi = useChatStore((state) => state.resetUi);
   const { t } = useLingui();
 
   const handleAuthError = useCallback(
@@ -41,6 +45,17 @@ export function ChatScreen() {
     [setCredentials],
   );
 
+  /**
+   * Logout order matters: credentials and UI navigation are cleared first, so
+   * the chat UI unmounts before the client is torn down and no component ever
+   * calls getMatrixClient() on a stopped client.
+   */
+  const handleLogout = useCallback(() => {
+    setCredentials(null);
+    resetUi();
+    void Promise.resolve(logoutCurrent());
+  }, [setCredentials, resetUi]);
+
   // The shell only ever receives the section it can actually render, so a
   // stale `chat` request can never show an empty conversation panel.
   const effectiveSection = getEffectiveSection(section, activeRoomId);
@@ -49,10 +64,23 @@ export function ChatScreen() {
     <ProxyChatScreen
       section={effectiveSection}
       activeRoomId={activeRoomId}
-      rail={<Rail />}
+      rail={
+        <Rail
+          section={effectiveSection}
+          onRooms={showRooms}
+          onSettings={showSettings}
+          onLogout={handleLogout}
+        />
+      }
       rooms={<RoomList />}
       chat={<ChatView onAuthError={handleAuthError} />}
-      settings={null}
+      settings={
+        <SettingsPanel
+          open={effectiveSection === 'settings'}
+          onClose={closeSettings}
+          onLogout={handleLogout}
+        />
+      }
       bottomNavigation={
         <ProxyBottomNavigation
           section={effectiveSection}

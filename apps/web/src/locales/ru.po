@@ -7,11 +7,11 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ru\n"
 
-#: apps/web/src/app/components/settings-panel.tsx:55
+#: apps/web/src/app/components/settings-panel.tsx:67
 msgid "Accent color"
 msgstr "Акцентный цвет"
 
-#: apps/web/src/app/components/settings-panel.tsx:52
+#: apps/web/src/app/components/settings-panel.tsx:64
 msgid "Appearance"
 msgstr "Внешний вид"
 
@@ -27,16 +27,17 @@ msgstr "Назад"
 msgid "Back to sign in"
 msgstr "Вернуться ко входу"
 
+#: apps/web/src/app/components/rail.tsx:33
 #: apps/web/src/app/components/room-list.tsx:48
-#: apps/web/src/app/screens/chat-screen.tsx:59
+#: apps/web/src/app/screens/chat-screen.tsx:87
 msgid "Chats"
 msgstr "Чаты"
 
-#: apps/web/src/app/components/settings-panel.tsx:51
+#: apps/web/src/app/components/settings-panel.tsx:63
 msgid "Close"
 msgstr "Закрыть"
 
-#: apps/web/src/app/components/settings-panel.tsx:54
+#: apps/web/src/app/components/settings-panel.tsx:66
 msgid "Color scheme"
 msgstr "Цветовая схема"
 
@@ -44,7 +45,7 @@ msgstr "Цветовая схема"
 msgid "Continue with Matrix"
 msgstr "Продолжить с Matrix"
 
-#: apps/web/src/app/components/settings-panel.tsx:57
+#: apps/web/src/app/components/settings-panel.tsx:69
 msgid "Corner radius"
 msgstr "Скругление углов"
 
@@ -56,7 +57,7 @@ msgstr "Не удалось восстановить сессию"
 msgid "Create account"
 msgstr "Создать аккаунт"
 
-#: apps/web/src/app/components/settings-panel.tsx:44
+#: apps/web/src/app/components/settings-panel.tsx:52
 msgid "Dark"
 msgstr "Тёмная"
 
@@ -68,7 +69,7 @@ msgstr "Зашифровано"
 msgid "Finishing sign-in…"
 msgstr "Завершаем вход…"
 
-#: apps/web/src/app/components/settings-panel.tsx:56
+#: apps/web/src/app/components/settings-panel.tsx:68
 msgid "Font"
 msgstr "Шрифт"
 
@@ -76,11 +77,11 @@ msgstr "Шрифт"
 msgid "Homeserver URL"
 msgstr "Адрес homeserver"
 
-#: apps/web/src/app/components/settings-panel.tsx:53
+#: apps/web/src/app/components/settings-panel.tsx:65
 msgid "Interface"
 msgstr "Интерфейс"
 
-#: apps/web/src/app/components/settings-panel.tsx:43
+#: apps/web/src/app/components/settings-panel.tsx:51
 msgid "Light"
 msgstr "Светлая"
 
@@ -100,12 +101,14 @@ msgstr "Загрузка сообщений"
 #~ msgid "Loading messages…"
 #~ msgstr "Загрузка сообщений…"
 
-#: apps/web/src/app/components/rail.tsx:62
+#: apps/web/src/app/components/rail.tsx:37
+#: apps/web/src/app/components/settings-panel.tsx:62
 #: apps/web/src/app/features/auth/require-auth.tsx:69
 msgid "Log out"
 msgstr "Выйти"
 
-#: apps/web/src/app/screens/chat-screen.tsx:61
+#: apps/web/src/app/components/rail.tsx:32
+#: apps/web/src/app/screens/chat-screen.tsx:89
 msgid "Main navigation"
 msgstr "Основная навигация"
 
@@ -125,7 +128,7 @@ msgstr "Пока нет сообщений"
 msgid "Password"
 msgstr "Пароль"
 
-#: apps/web/src/app/components/settings-panel.tsx:58
+#: apps/web/src/app/components/settings-panel.tsx:70
 msgid "Reset to defaults"
 msgstr "Сбросить настройки"
 
@@ -149,8 +152,9 @@ msgstr "Выберите чат, чтобы начать переписку"
 msgid "Send"
 msgstr "Отправить"
 
-#: apps/web/src/app/components/rail.tsx:57
-#: apps/web/src/app/screens/chat-screen.tsx:60
+#: apps/web/src/app/components/rail.tsx:35
+#: apps/web/src/app/components/settings-panel.tsx:61
+#: apps/web/src/app/screens/chat-screen.tsx:88
 msgid "Settings"
 msgstr "Настройки"
 
@@ -183,15 +187,15 @@ msgstr "Сессия входа истекла. Попробуйте снова.
 msgid "Sign-in was cancelled"
 msgstr "Вход отменён"
 
-#: apps/web/src/app/components/rail.tsx:51
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to dark theme"
 msgstr "Переключить на тёмную тему"
 
-#: apps/web/src/app/components/rail.tsx:50
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to light theme"
 msgstr "Переключить на светлую тему"
 
-#: apps/web/src/app/components/settings-panel.tsx:45
+#: apps/web/src/app/components/settings-panel.tsx:53
 msgid "System"
 msgstr "Системная"
 
@@ -203,7 +207,7 @@ msgstr "Homeserver недоступен или сессия истекла."
 msgid "Try again"
 msgstr "Попробовать снова"
 
-#: apps/web/src/app/components/settings-panel.tsx:60
+#: apps/web/src/app/components/settings-panel.tsx:72
 msgid "UI kit"
 msgstr "UI-комплект"
 

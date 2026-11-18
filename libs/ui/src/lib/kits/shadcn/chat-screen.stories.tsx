@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ProxyChatScreen } from '../../proxy/proxy-chat-screen';
 import { ProxyRail } from '../../proxy/proxy-rail';
-import { ProxyRailButton } from '../../proxy/proxy-rail-button';
 import { ProxyRoomListPanel } from '../../proxy/proxy-room-list-panel';
 import { ProxyRoomListHeader } from '../../proxy/proxy-room-list-header';
 import { ProxyRoomListItems } from '../../proxy/proxy-room-list-items';
@@ -50,9 +49,19 @@ const meta: Meta<typeof ProxyChatScreen> = {
     section: 'rooms',
     activeRoomId: null,
     rail: (
-      <ProxyRail mode="dark" onThemeToggle={noop} onSettings={noop} onLogout={noop}>
-        <ProxyRailButton icon="settings" title="Settings" />
-      </ProxyRail>
+      <ProxyRail
+        section="rooms"
+        navigationLabel="Main navigation"
+        roomsLabel="Chats"
+        onRooms={noop}
+        settingsLabel="Settings"
+        onSettings={noop}
+        logoutLabel="Log out"
+        onLogout={noop}
+        themeToggleLabel="Switch to dark theme"
+        themeIcon="moon"
+        onThemeToggle={noop}
+      />
     ),
     rooms: <Rooms />,
     chat: <Chat />,
