@@ -19,6 +19,7 @@ import {
   getSessionEpoch,
   logoutAccount,
   logoutCurrent,
+  publishSessionToSw,
   refreshSessionTokens,
   registerLiveSessionOps,
   _resetSessionForTesting,
@@ -509,6 +510,60 @@ describe('logout', () => {
     expect(persistence.snapshot.accounts[USER]).toBeUndefined();
     expect(getAccount(USER)).toBeNull();
     expect(useAuthStore.getState().credentials).toBeNull();
+  });
+
+  it('delayed_logout_worker_clear_cannot_erase_a_new_login_session', async () => {
+    await initializePlatform();
+    const persistence = new FakePersistence();
+    await initializeAccounts(persistence);
+    await saveAndActivateAccount(alice);
+    hydrateAuthStore();
+
+    let releaseOldLookup!: (registration: { active: ServiceWorker }) => void;
+    const oldLookup = new Promise<{ active: ServiceWorker }>((resolve) => {
+      releaseOldLookup = resolve;
+    });
+    let lookupCount = 0;
+    let workerSession: { accessToken: string; baseUrl: string } | null = null;
+    const worker = {
+      postMessage: vi.fn((message: { type: string; accessToken?: string; baseUrl?: string }) => {
+        workerSession = message.type === 'setSession'
+          ? { accessToken: message.accessToken ?? '', baseUrl: message.baseUrl ?? '' }
+          : null;
+      }),
+    } as unknown as ServiceWorker;
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        getRegistration: vi.fn(() => {
+          lookupCount += 1;
+          return lookupCount === 1 ? oldLookup : Promise.resolve({ active: worker });
+        }),
+        register: vi.fn(),
+      },
+    });
+
+    await logoutAccount(USER);
+    await vi.waitFor(() => expect(lookupCount).toBe(1));
+    expect(getAccount(USER)).toBeNull();
+
+    const newLogin = { ...alice, accessToken: 'tok-new', refreshToken: 'rt-new' };
+    await commitLogin(newLogin);
+    await publishSessionToSw(newLogin.accessToken, newLogin.homeserverUrl);
+    expect(workerSession).toEqual({
+      accessToken: 'tok-new',
+      baseUrl: newLogin.homeserverUrl,
+    });
+
+    releaseOldLookup({ active: worker });
+    // Let the delayed logout lookup finish; its stale clear must be discarded.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(worker.postMessage).toHaveBeenCalledTimes(1);
+    expect(workerSession).toEqual({
+      accessToken: 'tok-new',
+      baseUrl: newLogin.homeserverUrl,
+    });
   });
 });
 

@@ -8,6 +8,7 @@
  */
 
 const REGISTRATION_LOOKUP_TIMEOUT_MS = 2_000;
+let sessionMessageVersion = 0;
 
 /**
  * Races a lookup against a timer. `navigator.serviceWorker.ready` never settles
@@ -44,7 +45,11 @@ async function activeWorker(): Promise<ServiceWorker | null> {
 }
 
 export async function postSessionToSw(accessToken: string, baseUrl: string): Promise<void> {
+  const version = ++sessionMessageVersion;
   const worker = await activeWorker();
+  if (version !== sessionMessageVersion) {
+    return;
+  }
   try {
     worker?.postMessage({ type: 'setSession', accessToken, baseUrl });
   } catch {
@@ -53,7 +58,11 @@ export async function postSessionToSw(accessToken: string, baseUrl: string): Pro
 }
 
 export async function clearSessionFromSw(): Promise<void> {
+  const version = ++sessionMessageVersion;
   const worker = await activeWorker();
+  if (version !== sessionMessageVersion) {
+    return;
+  }
   try {
     worker?.postMessage({ type: 'clearSession' });
   } catch {

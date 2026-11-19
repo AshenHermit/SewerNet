@@ -322,6 +322,10 @@ export async function logoutAccount(userId: string): Promise<void> {
     // the client is excluded from every map even if stop() throws
   }
   clearPublishedCredentials(userId);
+  // Start the optional worker clear now to capture its ordering before any
+  // awaited local teardown. It remains fire-and-forget, and a later publish
+  // invalidates it inside `sw-session` before it can erase the newer session.
+  void clearBrowserSwSession();
 
   try {
     if (account) {
@@ -333,9 +337,7 @@ export async function logoutAccount(userId: string): Promise<void> {
     quarantineAccount(userId, 'delete-failed');
     throw err;
   } finally {
-    // Best-effort and never awaited: neither the browser media proxy nor token
-    // revocation may hold up (or precede) the durable deletion above.
-    void clearBrowserSwSession();
+    // Token revocation is best-effort and never delays local deletion.
     void bestEffortNetworkLogout(client);
   }
 }
