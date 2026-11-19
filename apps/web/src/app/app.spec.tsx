@@ -6,6 +6,7 @@ import { IconSetProvider } from '@sewer-net/icons';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './app';
+import { useAuthStore } from './stores/auth-store';
 
 // The welcome screen probes the homeserver for auth capabilities on mount;
 // keep tests offline by stubbing the discovery layer.
@@ -31,6 +32,8 @@ beforeAll(() => {
 describe('App', () => {
   it('shows the welcome screen when not authenticated', () => {
     localStorage.clear();
+    // The real bootstrap finished without a stored session: storage is ready.
+    useAuthStore.setState({ credentials: null, status: 'ready' });
     render(
       <I18nProvider i18n={i18n}>
         <UiKitProvider>

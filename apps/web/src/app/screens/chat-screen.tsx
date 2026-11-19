@@ -1,12 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { useLingui } from '@lingui/react/macro';
-import { useAuthStore } from '../stores/auth-store';
 import { RoomList } from '../components/room-list';
 import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
 import { SettingsPanel } from '../components/settings-panel';
 import { getEffectiveSection, useChatStore } from '../stores/chat-store';
 import { logoutCurrent } from '../../client/init-matrix';
+import { clearPublishedCredentials } from '../stores/auth-store';
 import { ProxyBottomNavigation, ProxyChatScreen, useLayoutMode, usePanelFocus } from '@sewer-net/ui';
 
 /** Detects an expired matrix session coming from the SDK error shape. */
@@ -27,7 +27,6 @@ function isUnauthorized(err: unknown): boolean {
 }
 
 export function ChatScreen() {
-  const setCredentials = useAuthStore((state) => state.setCredentials);
   const section = useChatStore((state) => state.section);
   const activeRoomId = useChatStore((state) => state.activeRoomId);
   const showRooms = useChatStore((state) => state.showRooms);
@@ -36,14 +35,13 @@ export function ChatScreen() {
   const resetUi = useChatStore((state) => state.resetUi);
   const { t } = useLingui();
 
-  const handleAuthError = useCallback(
-    (err: unknown) => {
-      if (isUnauthorized(err)) {
-        setCredentials(null);
-      }
-    },
-    [setCredentials],
-  );
+  const handleAuthError = useCallback((err: unknown) => {
+    if (isUnauthorized(err)) {
+      // The live session is unusable: drop it from the UI (RequireAuth sends
+      // the user to sign in again) without pretending the token is valid.
+      clearPublishedCredentials();
+    }
+  }, []);
 
   /**
    * Logout order matters: credentials and UI navigation are cleared first, so
@@ -51,10 +49,14 @@ export function ChatScreen() {
    * calls getMatrixClient() on a stopped client.
    */
   const handleLogout = useCallback(() => {
-    setCredentials(null);
+    clearPublishedCredentials();
     resetUi();
-    void Promise.resolve(logoutCurrent());
-  }, [setCredentials, resetUi]);
+    void logoutCurrent().catch((err) => {
+      // The durable logout reports failures through the auth store; never
+      // present a failed deletion as a successful sign-out.
+      console.error('[sewernet] logout failed:', err);
+    });
+  }, [resetUi]);
 
   // The shell only ever receives the section it can actually render, so a
   // stale `chat` request can never show an empty conversation panel.

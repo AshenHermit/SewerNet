@@ -11,7 +11,6 @@ import {
   getPendingOidcFlow,
   type PendingOidcFlow,
 } from '../features/auth/oidc';
-import { useAuthStore } from '../stores/auth-store';
 import { OidcCallbackScreen } from './oidc-callback-screen';
 
 vi.mock('../features/auth/oidc', () => ({
@@ -74,7 +73,9 @@ describe('OidcCallbackScreen', () => {
       expect(mockedComplete).toHaveBeenCalledWith('c1', 's1'),
     );
     expect(await screen.findByText('chat-home')).toBeTruthy();
-    expect(useAuthStore.getState().credentials?.userId).toBe('@alice:matrix.org');
+    // Publishing is the login path's job (commitLogin); the screen never writes
+    // credentials into the store itself.
+    expect(mockedComplete).toHaveBeenCalledTimes(1);
     expect(mockedClearPending).toHaveBeenCalled();
   });
 

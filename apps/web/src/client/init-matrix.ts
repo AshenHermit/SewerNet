@@ -7,11 +7,16 @@ import {
   type MatrixClient,
 } from 'matrix-js-sdk';
 import { OidcTokenRefresher } from 'matrix-js-sdk/lib/oidc';
-import type { AccessTokens, TokenRefreshFunction } from 'matrix-js-sdk/lib/http-api';
+import type { TokenRefreshFunction } from 'matrix-js-sdk/lib/http-api';
 import type { MatrixCredentials, OidcSession } from './account-types';
-import { getAccount, removeAccount, setActiveAccount, upsertAccount } from './accounts';
-import { clearSessionFromSw, postSessionToSw } from '../lib/sw-session';
-import { useAuthStore } from '../app/stores/auth-store';
+import {
+  captureSession,
+  commitLogin,
+  publishSessionToSw,
+  refreshSessionTokens,
+  registerLiveSessionOps,
+  type SessionClient,
+} from './session';
 
 let _client: MatrixClient | null = null;
 /**
@@ -119,9 +124,7 @@ export async function loginWithPassword(
     refreshToken: response.refresh_token,
     expiresInMs: typeof response.expires_in_ms === 'number' ? response.expires_in_ms : undefined,
   };
-  await upsertAccount(credentials);
-  await setActiveAccount(credentials.userId);
-  useAuthStore.getState().setCredentials(credentials);
+  await commitLogin(credentials);
   await requestPersistentStorage();
   return credentials;
 }
@@ -178,42 +181,34 @@ export function createAuthenticatedClient(opts: {
       )
     : null;
 
-  const persistRefreshed = async (tokens: AccessTokens): Promise<void> => {
-    const prev = getAccount(userId);
-    const homeserverUrl = prev?.homeserverUrl ?? baseUrl;
-    await upsertAccount({
-      userId,
-      deviceId: prev?.deviceId ?? deviceId,
-      homeserverUrl,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken ?? prev?.refreshToken ?? refreshToken,
-      expiresInMs: tokens.expiry ? tokens.expiry.getTime() - Date.now() : prev?.expiresInMs,
-      oidc: prev?.oidc ?? oidc,
-    });
-    // Keep the media proxy in sync with the rotated token.
-    void postSessionToSw(tokens.accessToken, homeserverUrl);
-  };
-
   let tokenRefreshFunction: TokenRefreshFunction | undefined;
   if (oidcRefresher) {
-    tokenRefreshFunction = async (refreshToken: string) => {
-      const tokens = await oidcRefresher.doRefreshAccessToken(refreshToken);
-      await persistRefreshed(tokens);
-      return tokens;
+    tokenRefreshFunction = async (refreshTokenValue: string) => {
+      const capture = captureSession(userId, deviceId);
+      return refreshSessionTokens(
+        capture,
+        () => oidcRefresher.doRefreshAccessToken(refreshTokenValue),
+        { baseUrl, refreshToken, oidc },
+      );
     };
   } else if (refreshToken) {
     tokenRefreshFunction = async (token: string) => {
-      const response = await nativeRefresh(client, token);
-      const tokens: AccessTokens = {
-        accessToken: response.access_token,
-        refreshToken: response.refresh_token,
-        expiry:
-          typeof response.expires_in_ms === 'number'
-            ? new Date(Date.now() + response.expires_in_ms)
-            : undefined,
-      };
-      await persistRefreshed(tokens);
-      return tokens;
+      const capture = captureSession(userId, deviceId);
+      return refreshSessionTokens(
+        capture,
+        async () => {
+          const response = await nativeRefresh(client, token);
+          return {
+            accessToken: response.access_token,
+            refreshToken: response.refresh_token,
+            expiry:
+              typeof response.expires_in_ms === 'number'
+                ? new Date(Date.now() + response.expires_in_ms)
+                : undefined,
+          };
+        },
+        { baseUrl, refreshToken, oidc },
+      );
     };
   }
 
@@ -330,7 +325,8 @@ async function buildClient(
   }
 
   // Authenticated media (avatars) needs the bearer token inside the worker.
-  void postSessionToSw(credentials.accessToken, credentials.homeserverUrl);
+  // Browser-only and best-effort: a desktop runtime has no supported worker.
+  void publishSessionToSw(credentials.accessToken, credentials.homeserverUrl);
   return client;
 }
 
@@ -365,38 +361,45 @@ async function deletePersistedDatabases(userId: string): Promise<void> {
 }
 
 /** Logs out the current client and wipes all persisted state for it. */
-export async function logoutCurrent(): Promise<void> {
-  const client = _client;
-  if (!client) {
-    return;
-  }
-  const userId = client.getUserId?.();
+export { logoutCurrent } from './session';
 
-  _client = null;
-  if (userId) {
-    if (clients.get(userId) === client) {
-      clients.delete(userId);
-    }
-    firstSyncDone.delete(userId);
-    firstSyncWaiters.delete(userId);
-  } else {
-    for (const [id, c] of clients) {
-      if (c === client) clients.delete(id);
+/**
+ * Stops and excludes a live client without deleting any credentials: the
+ * account stays committed, only the running session is gone (quarantine/logout
+ * step before local deletion).
+ */
+export function stopAccountSession(userId: string): void {
+  const existing = clients.get(userId);
+  if (existing) {
+    clients.delete(userId);
+    try {
+      existing.stopClient();
+    } catch {
+      // a client that cannot stop is still excluded from every map
     }
   }
-
-  client.stopClient();
-  try {
-    await Promise.race([
-      client.logout(true),
-      new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
-    ]);
-  } catch {
-    // network errors must not block local cleanup
+  if (
+    _client &&
+    (_client === existing || _client.getUserId?.() === userId)
+  ) {
+    _client = null;
   }
-  await clearSessionFromSw();
-  if (userId) {
-    await deletePersistedDatabases(userId);
-    await removeAccount(userId);
+  if (activeUserId === userId) {
+    activeUserId = null;
   }
+  firstSyncDone.delete(userId);
+  firstSyncWaiters.delete(userId);
+  resumePromises.delete(userId);
 }
+
+/** The live client for a user, used for best-effort network logout. */
+export function getAccountClient(userId: string): SessionClient | null {
+  return (clients.get(userId) as SessionClient | undefined) ?? null;
+}
+
+registerLiveSessionOps({
+  stop: stopAccountSession,
+  getClient: getAccountClient,
+  deleteLocalData: deletePersistedDatabases,
+  getActiveUserId: () => activeUserId,
+});

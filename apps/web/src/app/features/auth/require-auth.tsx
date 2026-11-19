@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ProxyButton, ProxyStatusPanel } from '@sewer-net/ui';
 import { logoutCurrent, prewarmCrypto, resume } from '../../../client/init-matrix';
-import { useAuthStore } from '../../stores/auth-store';
+import { clearPublishedCredentials, useAuthStore } from '../../stores/auth-store';
 
 type AuthGateState = 'pending' | 'ready' | 'unauthenticated' | 'error';
 
@@ -13,7 +13,9 @@ type AuthGateState = 'pending' | 'ready' | 'unauthenticated' | 'error';
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const credentials = useAuthStore((state) => state.credentials);
-  const setCredentials = useAuthStore((state) => state.setCredentials);
+  const status = useAuthStore((state) => state.status);
+  const error = useAuthStore((state) => state.error);
+  const navigate = useNavigate();
   const [state, setState] = useState<AuthGateState>('pending');
   const [attempt, setAttempt] = useState(0);
 
@@ -48,6 +50,30 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     };
   }, [credentials, attempt]);
 
+  // The durable snapshot is still loading: never resume a guessed session.
+  if (status === 'loading') {
+    return <ProxyStatusPanel title={<Trans>Restoring session…</Trans>} />;
+  }
+
+  // Storage could not be read or a session was quarantined: visible error,
+  // explicit new login instead of resuming a possibly broken session.
+  if (status === 'storage-error') {
+    return (
+      <ProxyStatusPanel
+        title={<Trans>Could not restore the session</Trans>}
+        detail={
+          error ? (
+            <Trans>Sign in again to continue.</Trans>
+          ) : (
+            <Trans>The homeserver is unreachable or the session expired.</Trans>
+          )
+        }
+        actionLabel={<Trans>Sign in</Trans>}
+        onAction={() => navigate('/welcome', { replace: true })}
+      />
+    );
+  }
+
   if (state === 'unauthenticated') {
     return <Navigate to="/welcome" replace />;
   }
@@ -55,8 +81,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (state === 'error') {
     const onRetry = () => setAttempt((n) => n + 1);
     const onLogout = () => {
-      setCredentials(null);
-      void Promise.resolve(logoutCurrent());
+      // Remove the live UI first, then let the durable logout run.
+      clearPublishedCredentials();
+      void logoutCurrent();
     };
     return (
       <ProxyStatusPanel

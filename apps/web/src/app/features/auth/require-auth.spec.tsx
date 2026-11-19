@@ -58,7 +58,7 @@ beforeAll(() => {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  useAuthStore.setState({ credentials: null });
+  useAuthStore.setState({ credentials: null, status: 'ready', error: null });
   mockedLogout.mockResolvedValue(undefined);
 });
 
@@ -70,7 +70,7 @@ describe('RequireAuth', () => {
   });
 
   it('resumes the client and renders children after the first sync', async () => {
-    useAuthStore.setState({ credentials: CREDENTIALS });
+    useAuthStore.setState({ credentials: CREDENTIALS, status: 'ready' });
     mockedResume.mockImplementation(
       async (_c, onFirstSync) => {
         onFirstSync?.();
@@ -88,7 +88,7 @@ describe('RequireAuth', () => {
   });
 
   it('shows an error with retry and logout when resume fails', async () => {
-    useAuthStore.setState({ credentials: CREDENTIALS });
+    useAuthStore.setState({ credentials: CREDENTIALS, status: 'ready' });
     mockedResume.mockRejectedValue(new Error('sync failed'));
 
     renderGate();
@@ -105,7 +105,7 @@ describe('RequireAuth', () => {
   });
 
   it('logs out from the error screen and lands on welcome', async () => {
-    useAuthStore.setState({ credentials: CREDENTIALS });
+    useAuthStore.setState({ credentials: CREDENTIALS, status: 'ready' });
     mockedResume.mockRejectedValue(new Error('sync failed'));
 
     renderGate();

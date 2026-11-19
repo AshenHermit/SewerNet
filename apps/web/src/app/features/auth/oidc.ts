@@ -7,7 +7,7 @@ import {
   type OidcRegistrationClientMetadata,
 } from 'matrix-js-sdk/lib/oidc';
 import type { MatrixCredentials, OidcSession } from '../../../client/account-types';
-import { setActiveAccount, upsertAccount } from '../../../client/accounts';
+import { commitLogin } from '../../../client/session';
 
 export type OidcAction = 'login' | 'register';
 export type OidcResponseMode = 'query' | 'fragment';
@@ -274,8 +274,7 @@ export async function completeOidcLogin(code: string, state: string): Promise<Ma
       idTokenClaims: idTokenClaims ?? {},
     },
   };
-  await upsertAccount(credentials);
-  await setActiveAccount(credentials.userId);
+  await commitLogin(credentials);
   return credentials;
 }
 

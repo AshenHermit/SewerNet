@@ -21,7 +21,15 @@ export async function initializeAccounts(storage: AccountPersistence): Promise<v
     throw new Error('Accounts already initialized');
   }
   _persistence = storage;
-  _snapshot = await storage.load();
+  try {
+    _snapshot = await storage.load();
+  } catch (e) {
+    // A failed load must stay retryable: the bootstrap retry re-reads storage
+    // instead of falling back to an empty account.
+    _persistence = null;
+    _snapshot = null;
+    throw e;
+  }
 
   // Active account can only reference committed accounts
   if (_snapshot.activeUserId && !_snapshot.accounts[_snapshot.activeUserId]) {
@@ -88,6 +96,16 @@ export function getActiveAccount(): MatrixCredentials | null {
   return id ? getAccount(id) : null;
 }
 
+/** Non-secret barrier metadata: which account has an unfinished operation. */
+export function getBlockedAccounts(): Record<string, { deviceId: string; reason: 'refresh' | 'delete' }> {
+  ensureInitialized();
+  const snapshot = _snapshot;
+  if (!snapshot) {
+    throw new Error('Accounts not initialized');
+  }
+  return { ...snapshot.blockedAccounts };
+}
+
 export async function upsertAccount(c: MatrixCredentials): Promise<void> {
   return queued(async () => {
     ensureInitialized();
@@ -98,6 +116,8 @@ export async function upsertAccount(c: MatrixCredentials): Promise<void> {
     }
     await persistence.upsertAccount(c);
     snapshot.accounts[c.userId] = c;
+    // A committed credential write completes the operation: barrier is gone.
+    delete snapshot.blockedAccounts[c.userId];
     notifyListeners();
   });
 }
@@ -112,6 +132,7 @@ export async function removeAccount(userId: string): Promise<void> {
     }
     await persistence.removeAccount(userId);
     delete snapshot.accounts[userId];
+    delete snapshot.blockedAccounts[userId];
     if (snapshot.activeUserId === userId) {
       snapshot.activeUserId = null;
       await persistence.setActiveAccount(null);
@@ -176,6 +197,7 @@ export async function saveAndActivateAccount(c: MatrixCredentials): Promise<void
     await persistence.setActiveAccount(c.userId);
     snapshot.accounts[c.userId] = c;
     snapshot.activeUserId = c.userId;
+    delete snapshot.blockedAccounts[c.userId];
     notifyListeners();
   });
 }
@@ -192,8 +214,10 @@ export async function beginAccountOperation(
     if (!persistence || !snapshot) {
       throw new Error('Accounts not initialized');
     }
-    snapshot.blockedAccounts[userId] = { deviceId, reason };
+    // The durable barrier must exist before the network call: persist first,
+    // and only mirror it into memory once the write resolved.
     await persistence.beginOperation(userId, deviceId, reason);
+    snapshot.blockedAccounts[userId] = { deviceId, reason };
   });
 }
 

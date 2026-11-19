@@ -7,11 +7,10 @@ import { i18n } from '@lingui/core';
 import { IconSetProvider } from '@sewer-net/icons';
 import { UiKitProvider } from '@sewer-net/ui';
 import App from './app/app';
-import { cleanupLegacyStorage } from './client/accounts';
+import { BootstrapStatus } from './app/components/bootstrap-status';
 import { registerServiceWorker } from './lib/sw-session';
 import { activateLocale, detectLocale } from './i18n';
-import { initializePlatform, getPersistence } from './platform/runtime';
-import { initializeAccounts } from './client/accounts';
+import { bootstrapSession } from './platform/bootstrap';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -24,20 +23,11 @@ const queryClient = new QueryClient({
   },
 });
 
-async function bootstrap() {
-  cleanupLegacyStorage();
-  void registerServiceWorker();
-  await activateLocale(detectLocale());
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement,
+);
 
-  // Initialize platform and accounts
-  await initializePlatform();
-  const persistence = getPersistence();
-  await initializeAccounts(persistence);
-
-  const root = ReactDOM.createRoot(
-    document.getElementById('root') as HTMLElement,
-  );
-
+function renderApp() {
   root.render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
@@ -55,4 +45,36 @@ async function bootstrap() {
   );
 }
 
-void bootstrap();
+function renderBootstrapFailure(onRetry: () => void) {
+  root.render(
+    <StrictMode>
+      <I18nProvider i18n={i18n}>
+        <UiKitProvider>
+          <IconSetProvider>
+            <BootstrapStatus onRetry={onRetry} />
+          </IconSetProvider>
+        </UiKitProvider>
+      </I18nProvider>
+    </StrictMode>,
+  );
+}
+
+let started = false;
+
+async function start() {
+  if (!started) {
+    started = true;
+    void registerServiceWorker();
+    await activateLocale(detectLocale());
+  }
+  try {
+    await bootstrapSession();
+    renderApp();
+  } catch {
+    // The snapshot/UI already reports the failure; retry is explicit, never a
+    // silent fallback to an empty account.
+    renderBootstrapFailure(() => void start());
+  }
+}
+
+void start();

@@ -145,6 +145,11 @@ const CREDENTIALS: MatrixCredentials = {
 
 const syncHandlers = new Set<(...args: unknown[]) => void>();
 
+async function seedSession(): Promise<void> {
+  const { saveAndActivateAccount } = await import('./accounts');
+  await saveAndActivateAccount(CREDENTIALS);
+}
+
 function lastSyncHandler(): (state: string) => void {
   const handler = [...syncHandlers].at(-1);
   if (!handler) throw new Error('no sync handler registered');
@@ -182,27 +187,21 @@ describe('loginWithPassword', () => {
     expect(localStorage.getItem('sewernet_active_account')).toBe(USER);
   });
 
-  it('updates useAuthStore credentials on successful login', async () => {
+  it('publishes the committed login through the auth store', async () => {
     const loginRequest = vi.fn().mockResolvedValue(loginResponse());
     createClientMock.mockReturnValueOnce({ loginRequest });
-    const setCredentials = vi.fn();
-    vi.doMock('../app/stores/auth-store', () => ({
-      useAuthStore: { getState: vi.fn(() => ({ setCredentials })) },
-    }));
-    vi.resetModules();
-    // Re-initialize accounts after module reset
-    const { _resetForTesting, initializeAccounts } = await import('./accounts');
-    const { BrowserPersistence } = await import('../platform/browser');
-    _resetForTesting();
-    await initializeAccounts(new BrowserPersistence());
-    const fresh = await import('./init-matrix');
+    const { hydrateAuthStore, useAuthStore } = await import('../app/stores/auth-store');
+    hydrateAuthStore();
 
-    await fresh.loginWithPassword('bob', 'pwd', HS);
-    expect(setCredentials).toHaveBeenCalledTimes(1);
-    expect(setCredentials.mock.calls[0][0]).toMatchObject({
+    await matrix.loginWithPassword('bob', 'pwd', HS);
+
+    // The store is hydrated from the durable snapshot, never written directly.
+    expect(useAuthStore.getState().credentials).toMatchObject({
       userId: USER,
       accessToken: 'at1',
     });
+    expect(useAuthStore.getState().status).toBe('ready');
+    expect(readAccounts()[USER]).toMatchObject({ accessToken: 'at1' });
   });
 
   it('falls back to the input url when the response has no well_known', async () => {
@@ -264,6 +263,7 @@ describe('createAuthenticatedClient', () => {
       responseMode: 'query',
       idTokenClaims: { sub: USER },
     };
+    await seedSession();
     matrix.createAuthenticatedClient({ ...base, refreshToken: 'rt1', oidc });
     const opts = lastCreateOpts();
     expect(refresherCtorArgs[0]).toEqual([
@@ -287,6 +287,7 @@ describe('createAuthenticatedClient', () => {
   });
 
   it('refreshes natively with v3 prefix and persists the result', async () => {
+    await seedSession();
     matrix.createAuthenticatedClient({ ...base, refreshToken: 'rt1' });
     const opts = lastCreateOpts();
     httpMock.mockResolvedValue({ access_token: 'at3', refresh_token: 'rt3', expires_in_ms: 7_200_000 });
@@ -303,6 +304,7 @@ describe('createAuthenticatedClient', () => {
   });
 
   it('retries native refresh with v1 prefix on M_UNRECOGNIZED', async () => {
+    await seedSession();
     matrix.createAuthenticatedClient({ ...base, refreshToken: 'rt1' });
     const opts = lastCreateOpts();
     httpMock
@@ -314,6 +316,25 @@ describe('createAuthenticatedClient', () => {
     expect(httpMock).toHaveBeenCalledTimes(2);
     expect(httpMock).toHaveBeenLastCalledWith('POST', '/refresh', undefined, { refresh_token: 'rt1' }, { prefix: '/_matrix/client/v1' });
     expect(tokens.accessToken).toBe('at4');
+  });
+
+  it('token_update_does_not_restart_crypto_sync', async () => {
+    await seedSession();
+    await matrix.resume(CREDENTIALS);
+    const opts = lastCreateOpts();
+    httpMock.mockResolvedValue({ access_token: 'at9', refresh_token: 'rt9', expires_in_ms: 7_200_000 });
+
+    const tokens = await (opts.tokenRefreshFunction as (t: string) => Promise<{ accessToken: string }>)('rt1');
+
+    expect(tokens.accessToken).toBe('at9');
+    expect(readAccounts()[USER]).toMatchObject({ accessToken: 'at9', refreshToken: 'rt9' });
+    // The rotated token is a data update: the running client keeps its
+    // crypto database and sync, nothing is rebuilt or restarted.
+    expect(createClientMock).toHaveBeenCalledTimes(1);
+    expect(startClientMock).toHaveBeenCalledTimes(1);
+    expect(initRustCryptoMock).toHaveBeenCalledTimes(1);
+    expect(stopClientMock).not.toHaveBeenCalled();
+    expect(matrix.getMatrixClient().getUserId()).toBe(USER);
   });
 });
 

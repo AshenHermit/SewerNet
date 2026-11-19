@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  beginAccountOperation,
   getAccount,
   getActiveAccount,
-  setActiveAccount,
+  initializeAccounts,
+  saveAndActivateAccount,
   upsertAccount,
   _resetForTesting,
-  initializeAccounts,
   type MatrixCredentials,
 } from '../../client/accounts';
 import { BrowserPersistence } from '../../platform/browser';
+import {
+  hydrateAuthStore,
+  useAuthStore,
+  _resetAuthStoreForTesting,
+} from './auth-store';
 
 const alice: MatrixCredentials = {
   userId: '@alice:example.org',
@@ -35,57 +41,73 @@ const bob: MatrixCredentials = {
 beforeEach(async () => {
   localStorage.clear();
   _resetForTesting();
+  _resetAuthStoreForTesting();
   await initializeAccounts(new BrowserPersistence());
 });
 
-describe('auth-store on accounts map', () => {
-  it('setCredentials does not write to accounts map (accounts are source of truth)', async () => {
-    const { useAuthStore } = await import('./auth-store');
-
-    useAuthStore.getState().setCredentials(alice);
-
-    expect(useAuthStore.getState().credentials).toEqual(alice);
-    // Accounts map is not written by setCredentials anymore
-    expect(getActiveAccount()).toBeNull();
-  });
-
-  it('setCredentials(null) does not remove from accounts map', async () => {
-    const { useAuthStore } = await import('./auth-store');
-
-    useAuthStore.getState().setCredentials(alice);
-    useAuthStore.getState().setCredentials(null);
-
-    expect(useAuthStore.getState().credentials).toBeNull();
-    // Accounts map is not managed by auth-store anymore
-    expect(getAccount(alice.userId)).toBeNull();
-  });
-
-  it('does not expose the removed legacy session surface', async () => {
-    const { useAuthStore } = await import('./auth-store');
-
-    useAuthStore.getState().setCredentials(alice);
+describe('auth-store on the durable account snapshot', () => {
+  it('does not expose a credential write path', () => {
     const state = useAuthStore.getState();
 
+    expect(state).not.toHaveProperty('setCredentials');
     expect(state).not.toHaveProperty('session');
     expect(state).not.toHaveProperty('setSession');
     expect(state).not.toHaveProperty('clearSession');
   });
 
-  it('setCredentials(null) keeps the other stored accounts', async () => {
-    const { useAuthStore } = await import('./auth-store');
+  it('starts loading with no credentials before hydration', () => {
+    expect(useAuthStore.getState().credentials).toBeNull();
+    expect(useAuthStore.getState().status).toBe('loading');
+    expect(useAuthStore.getState().error).toBeNull();
+  });
+
+  it('hydrateAuthStore publishes the committed active account only', async () => {
+    await saveAndActivateAccount(alice);
     await upsertAccount(bob);
 
-    useAuthStore.getState().setCredentials(alice);
-    useAuthStore.getState().setCredentials(null);
+    hydrateAuthStore();
 
+    expect(useAuthStore.getState().credentials).toEqual(alice);
+    expect(useAuthStore.getState().status).toBe('ready');
+    // Hydration never writes to the account repository.
+    expect(getActiveAccount()).toEqual(alice);
     expect(getAccount(bob.userId)).toEqual(bob);
   });
 
-  it('hydrates credentials from the accounts map when the store loads', async () => {
-    await upsertAccount(alice);
-    await setActiveAccount(alice.userId);
+  it('hydrateAuthStore follows account changes without a direct write path', async () => {
+    await saveAndActivateAccount(alice);
+    hydrateAuthStore();
+    expect(useAuthStore.getState().credentials).toEqual(alice);
 
-    const active = getActiveAccount();
-    expect(active).toEqual(alice);
+    await saveAndActivateAccount({ ...bob });
+    expect(useAuthStore.getState().credentials).toEqual(bob);
+
+    await upsertAccount({ ...bob, accessToken: 'tok-b2' });
+    expect(useAuthStore.getState().credentials?.accessToken).toBe('tok-b2');
+  });
+
+  it('does not publish a blocked active account after restart', async () => {
+    await saveAndActivateAccount(alice);
+    await beginAccountOperation(alice.userId, alice.deviceId, 'refresh');
+
+    // Restart: the barrier is part of the durable snapshot.
+    _resetForTesting();
+    _resetAuthStoreForTesting();
+    await initializeAccounts(new BrowserPersistence());
+
+    hydrateAuthStore();
+
+    expect(useAuthStore.getState().credentials).toBeNull();
+    expect(useAuthStore.getState().status).toBe('storage-error');
+    expect(useAuthStore.getState().error).toBeTruthy();
+  });
+
+  it('reports a storage error instead of throwing when accounts are not initialized', () => {
+    _resetForTesting();
+    _resetAuthStoreForTesting();
+
+    expect(() => hydrateAuthStore()).not.toThrow();
+    expect(useAuthStore.getState().credentials).toBeNull();
+    expect(useAuthStore.getState().status).toBe('storage-error');
   });
 });

@@ -7,7 +7,6 @@ import {
   completeOidcLogin,
   getPendingOidcFlow,
 } from '../features/auth/oidc';
-import { useAuthStore } from '../stores/auth-store';
 
 type FailureKind = 'denied' | 'expired' | 'failed';
 
@@ -28,7 +27,6 @@ class CallbackFailure extends Error {
 export function OidcCallbackScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const setCredentials = useAuthStore((state) => state.setCredentials);
   const [failure, setFailure] = useState<{
     kind: FailureKind;
     detail?: string;
@@ -59,9 +57,8 @@ export function OidcCallbackScreen() {
           throw new CallbackFailure('failed', 'missing_code_or_state');
         }
 
-        const credentials = await completeOidcLogin(code, state);
+        await completeOidcLogin(code, state);
         clearPendingOidcFlow();
-        setCredentials(credentials);
         setDone(true);
       } catch (thrown) {
         clearPendingOidcFlow();
@@ -75,7 +72,7 @@ export function OidcCallbackScreen() {
         }
       }
     })();
-  }, [searchParams, setCredentials]);
+  }, [searchParams]);
 
   if (done) return <Navigate to="/" replace />;
 

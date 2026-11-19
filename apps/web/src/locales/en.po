@@ -20,21 +20,21 @@ msgstr "Accent color"
 msgid "Appearance"
 msgstr "Appearance"
 
-#: apps/web/src/app/components/chat-view.tsx:173
+#: apps/web/src/app/components/chat-view.tsx:182
 msgid "Attach"
 msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:148
+#: apps/web/src/app/components/chat-view.tsx:157
 msgid "Back"
 msgstr "Back"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:95
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:92
 msgid "Back to sign in"
 msgstr "Back to sign in"
 
 #: apps/web/src/app/components/rail.tsx:33
 #: apps/web/src/app/components/room-list.tsx:48
-#: apps/web/src/app/screens/chat-screen.tsx:87
+#: apps/web/src/app/screens/chat-screen.tsx:96
 msgid "Chats"
 msgstr "Chats"
 
@@ -55,8 +55,13 @@ msgid "Corner radius"
 msgstr "Corner radius"
 
 #: apps/web/src/app/features/auth/require-auth.tsx:63
+#: apps/web/src/app/features/auth/require-auth.tsx:90
 msgid "Could not restore the session"
 msgstr "Could not restore the session"
+
+#: apps/web/src/app/components/bootstrap-status.tsx:12
+msgid "Could not start SewerNet"
+msgstr "Could not start SewerNet"
 
 #: apps/web/src/app/screens/welcome-screen.tsx:112
 msgid "Create account"
@@ -66,11 +71,11 @@ msgstr "Create account"
 msgid "Dark"
 msgstr "Dark"
 
-#: apps/web/src/app/components/chat-view.tsx:153
+#: apps/web/src/app/components/chat-view.tsx:162
 msgid "Encrypted"
 msgstr "Encrypted"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:101
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:98
 msgid "Finishing sign-in…"
 msgstr "Finishing sign-in…"
 
@@ -90,7 +95,7 @@ msgstr "Interface"
 msgid "Light"
 msgstr "Light"
 
-#: apps/web/src/app/components/chat-view.tsx:164
+#: apps/web/src/app/components/chat-view.tsx:173
 msgid "Load older messages"
 msgstr "Load older messages"
 
@@ -98,7 +103,7 @@ msgstr "Load older messages"
 #~ msgid "Loading chats…"
 #~ msgstr "Loading chats…"
 
-#: apps/web/src/app/components/chat-view.tsx:162
+#: apps/web/src/app/components/chat-view.tsx:171
 msgid "Loading messages"
 msgstr "Loading messages"
 
@@ -106,18 +111,22 @@ msgstr "Loading messages"
 #~ msgid "Loading messages…"
 #~ msgstr "Loading messages…"
 
+#: apps/web/src/app/components/bootstrap-status.tsx:14
+msgid "Local session storage is unavailable. Your saved accounts were not changed."
+msgstr "Local session storage is unavailable. Your saved accounts were not changed."
+
 #: apps/web/src/app/components/rail.tsx:37
 #: apps/web/src/app/components/settings-panel.tsx:62
-#: apps/web/src/app/features/auth/require-auth.tsx:69
+#: apps/web/src/app/features/auth/require-auth.tsx:96
 msgid "Log out"
 msgstr "Log out"
 
 #: apps/web/src/app/components/rail.tsx:32
-#: apps/web/src/app/screens/chat-screen.tsx:89
+#: apps/web/src/app/screens/chat-screen.tsx:98
 msgid "Main navigation"
 msgstr "Main navigation"
 
-#: apps/web/src/app/components/chat-view.tsx:174
+#: apps/web/src/app/components/chat-view.tsx:183
 msgid "Message"
 msgstr "Message"
 
@@ -125,7 +134,7 @@ msgstr "Message"
 msgid "No chats yet"
 msgstr "No chats yet"
 
-#: apps/web/src/app/components/chat-view.tsx:163
+#: apps/web/src/app/components/chat-view.tsx:172
 msgid "No messages yet"
 msgstr "No messages yet"
 
@@ -137,7 +146,8 @@ msgstr "Password"
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:76
+#: apps/web/src/app/features/auth/require-auth.tsx:55
+#: apps/web/src/app/features/auth/require-auth.tsx:103
 msgid "Restoring session…"
 msgstr "Restoring session…"
 
@@ -149,17 +159,17 @@ msgstr "Search"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:141
+#: apps/web/src/app/components/chat-view.tsx:150
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 
-#: apps/web/src/app/components/chat-view.tsx:175
+#: apps/web/src/app/components/chat-view.tsx:184
 msgid "Send"
 msgstr "Send"
 
 #: apps/web/src/app/components/rail.tsx:35
 #: apps/web/src/app/components/settings-panel.tsx:61
-#: apps/web/src/app/screens/chat-screen.tsx:88
+#: apps/web/src/app/screens/chat-screen.tsx:97
 msgid "Settings"
 msgstr "Settings"
 
@@ -168,9 +178,14 @@ msgstr "Settings"
 msgid "SewerNet"
 msgstr "SewerNet"
 
+#: apps/web/src/app/features/auth/require-auth.tsx:71
 #: apps/web/src/app/screens/welcome-screen.tsx:103
 msgid "Sign in"
 msgstr "Sign in"
+
+#: apps/web/src/app/features/auth/require-auth.tsx:66
+msgid "Sign in again to continue."
+msgstr "Sign in again to continue."
 
 #: apps/web/src/app/screens/welcome-screen.tsx:98
 msgid "Sign in to your Matrix account"
@@ -180,15 +195,15 @@ msgstr "Sign in to your Matrix account"
 msgid "Sign in with password"
 msgstr "Sign in with password"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:91
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:88
 msgid "Sign-in failed"
 msgstr "Sign-in failed"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:89
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:86
 msgid "Sign-in session expired. Please try again."
 msgstr "Sign-in session expired. Please try again."
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:87
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:84
 msgid "Sign-in was cancelled"
 msgstr "Sign-in was cancelled"
 
@@ -204,11 +219,13 @@ msgstr "Switch to light theme"
 msgid "System"
 msgstr "System"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:64
+#: apps/web/src/app/features/auth/require-auth.tsx:68
+#: apps/web/src/app/features/auth/require-auth.tsx:91
 msgid "The homeserver is unreachable or the session expired."
 msgstr "The homeserver is unreachable or the session expired."
 
-#: apps/web/src/app/features/auth/require-auth.tsx:65
+#: apps/web/src/app/components/bootstrap-status.tsx:18
+#: apps/web/src/app/features/auth/require-auth.tsx:92
 msgid "Try again"
 msgstr "Try again"
 
