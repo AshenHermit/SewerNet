@@ -27,4 +27,12 @@ The bundle target creates an unsigned NSIS package. It does not configure produc
 
 ## Security boundary
 
-The privileged `main` webview only loads the bundled local frontend. Its sole capability is `core:default`; no remote origins, remote IPC, broad filesystem scope, HTTP plugin, or shell plugin are enabled. External navigation and protocol handling are not implemented in this bootstrap shell. The CSP permits only local scripts plus narrowly needed Matrix HTTPS/WSS connections, WebAssembly, media blobs, and hosted fonts. Asset protocol is disabled. No remote page should be loaded in the privileged window.
+The privileged `main` webview only loads the bundled local frontend. Its sole capability is `core:default`; no remote origins, remote IPC, broad filesystem scope, HTTP plugin, or shell plugin are enabled. External `http(s)` links use the system opener; remote popups and blob/data/javascript/file navigation stay out of the privileged webview. Blob downloads remain non-executable and are not granted privileged navigation or filesystem scope.
+
+## Media/WASM evidence
+
+Desktop media uses the shared `MediaTransport.fetchBlob` with a same-origin, no-redirect, no-store authenticated WebView fetch. The optional Rust fallback accepts only Matrix MXC metadata plus `user_id`; Rust loads active account credentials from account storage, derives the SDK-style homeserver URL, rejects redirects/traversal/deleted or inactive accounts, caps thumbnail dimensions at 4096 px, and applies a fetch timeout. It never receives caller bearer or arbitrary URL. Desktop never registers `/sw.js`; service-worker behavior is browser-only evidence.
+
+CSP keeps `script-src 'self' 'wasm-unsafe-eval'` for verified WebAssembly, IndexedDB-compatible local storage, blob/data media only for rendering, and Matrix HTTPS/WSS connections. CSP was not broadened beyond existing packaged needs.
+
+Packaged NSIS and manual evidence are separate from Vite/mock tests: successful Vitest, Cargo, and policy gates prove code/config only. WASM initialization, IndexedDB restart, E2EE avatars/files/images, tampered-media rejection, account-switch/logout cleanup, and manual SewerNet↔Element smoke remain blocked until an installed Windows build and account/home-server environment are available. Do not read this README as proof of those manual smoke results.

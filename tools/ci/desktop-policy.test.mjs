@@ -53,6 +53,30 @@ test('task2_desktop_account_storage_ipc_is_explicit', async () => {
   assert.match(lib, /invoke_handler/);
 });
 
+test('task5_native_media_navigation_and_csp_policy', async () => {
+  const [desktop, mediaSpec, sw, config, capability, readme, lib] = await Promise.all([
+    read('apps/web/src/platform/desktop.ts'),
+    read('apps/web/src/platform/desktop.spec.ts'),
+    read('apps/web/src/lib/sw-session.ts'),
+    readJson('apps/desktop/src-tauri/tauri.conf.json'),
+    readJson('apps/desktop/src-tauri/capabilities/main.json'),
+    read('apps/desktop/README.md'),
+    read('apps/desktop/src-tauri/src/lib.rs'),
+  ]);
+  const serialized = JSON.stringify({ desktop, mediaSpec, sw, config, capability, lib });
+  assert.match(serialized, /DesktopMediaTransport/);
+  assert.match(serialized, /redirect:\s*['"]error['"]/);
+  assert.match(serialized, /cache:\s*['"]no-store['"]/);
+  assert.match(sw, /getPlatformKind\(\) !== 'browser'/);
+  assert.doesNotMatch(desktop, /register\(['"]\/sw\.js['"]/);
+  assert.doesNotMatch(JSON.stringify({ config, capability, lib }), /dangerousRemoteDomainIpcAccess/);
+  assert.doesNotMatch(capability.permissions.join(','), /shell|http|opener/);
+  assert.match(config.app.security.csp, /wasm-unsafe-eval/);
+  assert.match(config.app.security.csp, /blob:/);
+  assert.equal(config.app.security.assetProtocol.enable, false);
+  assert.doesNotMatch(readme, /manual smoke passed|encrypted.*passed|SewerNet.*Element.*passed/i);
+});
+
 test('desktop_frontend_is_shared_and_separate', async () => {
   const [project, packageJson, cargo, rustToolchain, config, vite] = await Promise.all([
     readJson('apps/desktop/project.json'),

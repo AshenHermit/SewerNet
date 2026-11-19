@@ -1,4 +1,6 @@
 pub mod deep_links;
+pub mod media;
+pub mod navigation;
 pub mod oidc;
 pub mod storage;
 
@@ -25,6 +27,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(navigation::plugin())
         .setup(|app| {
             use tauri_plugin_deep_link::DeepLinkExt;
             if let Some(urls) = app.deep_link().get_current().ok().flatten() {
@@ -77,6 +80,8 @@ pub fn run() {
             storage::account_set_active,
             storage::accounts_clear,
             storage::storage_flush,
+            media::media_download,
+            navigation::open_external_url,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run SewerNet desktop application");

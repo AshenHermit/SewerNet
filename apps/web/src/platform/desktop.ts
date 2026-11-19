@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { AccountPersistence, OidcPlatform } from './contracts';
 import type { AccountSnapshot, MatrixCredentials } from '../client/account-types';
+import type { MediaSession, MediaTransport } from './contracts';
+import { getMediaSession } from './runtime';
 import type { PlatformAdapter } from './contracts';
 import { registerPlatformAdapter } from './runtime';
 import type { ClaimedOidcCallback, StoredOidcFlow } from './oidc-contract';
@@ -68,12 +70,71 @@ export class DesktopPersistence implements AccountPersistence {
   }
 }
 
+export class DesktopMediaTransport implements MediaTransport {
+  async fetchBlob(url: string, session: MediaSession, signal: AbortSignal): Promise<Blob> {
+    const current = getMediaSession();
+    if (!current || current.userId !== session.userId || current.deviceId !== session.deviceId || current.epoch !== session.epoch || current.accessToken !== session.accessToken) {
+      throw new Error('Media account session changed');
+    }
+    const base = new URL(session.baseUrl);
+    const parsed = new URL(url);
+    if (base.protocol !== 'https:' || parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.hash || parsed.searchParams.has('allow_redirect')) {
+      throw new Error('Invalid Matrix media URL');
+    }
+    if (parsed.origin !== base.origin) throw new Error('Matrix media URL crosses homeserver origin');
+    const basePath = base.pathname.replace(/\/+$/, '') || '';
+    if (basePath && (!parsed.pathname.startsWith(`${basePath}/`) && parsed.pathname !== basePath)) throw new Error('Matrix media URL crosses homeserver base path');
+    const relative = basePath ? parsed.pathname.slice(basePath.length) : parsed.pathname;
+    if (!/^\/_matrix\/client\/v1\/media\/(?:download|thumbnail)\/[^/]+\/[^/]+$/u.test(relative)) throw new Error('Invalid Matrix media path');
+    for (const segment of parsed.pathname.split('/')) {
+      let decoded: string;
+      try { decoded = decodeURIComponent(segment); } catch { throw new Error('Invalid Matrix media traversal'); }
+      if (decoded === '..' || decoded === '.' || decoded.includes('/') || decoded.includes('\\')) throw new Error('Invalid Matrix media traversal');
+    }
+    for (const key of ['width', 'height']) {
+      const value = parsed.searchParams.get(key);
+      if (value !== null && (!/^\d{1,4}$/u.test(value) || Number(value) < 1 || Number(value) > 4096)) throw new Error('Invalid media dimensions');
+    }
+    try {
+      const response = await fetch(parsed.href, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        redirect: 'error',
+        cache: 'no-store',
+        signal,
+      });
+      if (!response.ok) throw new Error(`Media fetch failed (${response.status})`);
+      return await response.blob();
+    } catch (error) {
+      if (signal.aborted) throw error;
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const mediaIndex = segments.indexOf('media');
+      if (mediaIndex < 0 || segments[mediaIndex - 1] !== 'v1') throw error;
+      const kindSegment = segments[mediaIndex + 1];
+      const mxcServer = segments[mediaIndex + 2];
+      const mxcId = segments[mediaIndex + 3];
+      if (!mxcServer || !mxcId || segments.length !== mediaIndex + 4) throw error;
+      const kind = kindSegment === 'thumbnail' ? 'thumbnail' : 'download';
+      const size = kind === 'thumbnail' ? parsed.searchParams.get('width') : null;
+      const bytes = await invoke<number[]>('media_download', {
+        mxc: `mxc://${mxcServer}/${mxcId}`,
+        kind,
+        size: size ? Number(size) : undefined,
+        userId: session.userId,
+      });
+      return new Blob([new Uint8Array(bytes)]);
+    }
+  }
+}
+
+export const desktopMediaTransport = new DesktopMediaTransport();
 export const desktopOidcPlatform = new DesktopOidcPlatform();
 export const desktopPersistence = new DesktopPersistence();
 export const desktopAdapter: PlatformAdapter = {
   kind: 'desktop',
   persistence: desktopPersistence,
   oidc: desktopOidcPlatform,
+  mediaTransport: desktopMediaTransport,
 };
 
 // Register before bootstrap's platform detection so desktop never falls back to browser storage.
