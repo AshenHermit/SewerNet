@@ -90,6 +90,48 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Run desktop configuration policy tests
+        run: npm run desktop:test --workspace=@sewer-net/desktop
+
+  desktop-native:
+    name: Desktop native (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.11.0
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install pinned Rust MSVC toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy --target x86_64-pc-windows-msvc
+          rustup default stable-x86_64-pc-windows-msvc
+          rustc --version
+          cargo --version
+          rustup target list --installed
+
+      - name: Check native formatting
+        run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
+
+      - name: Lint native targets
+        run: cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
+
+      - name: Test native targets
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+
+      - name: Build unsigned NSIS bundle
+        run: npx nx run desktop:bundle --skip-nx-cache
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

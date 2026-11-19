@@ -44,8 +44,9 @@ function rawCssInclude(): RegExp {
   return new RegExp(RAW_CSS_TARGET.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 }
 
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => ({
   root: import.meta.dirname,
+  base: mode === 'desktop' ? './' : '/',
   cacheDir: '../../node_modules/.vite/apps/web',
   server: {
     port: 4200,
@@ -74,7 +75,7 @@ export default defineConfig(() => ({
   //  plugins: [],
   // },
   build: {
-    outDir: './dist',
+    outDir: mode === 'desktop' ? '../desktop/dist' : './dist',
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

@@ -16,5 +16,5 @@ concurrency:
 
 jobs:
   javascript:
-    name: JavaScript workspace gate
+    name: JavaScript and desktop gates
     uses: ./.github/workflows/checks.yml
