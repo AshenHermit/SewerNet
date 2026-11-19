@@ -88,6 +88,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@tailwindcss/vite": "^4.3.5",
+    "@tauri-apps/plugin-opener": "^2.7.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.73.0",

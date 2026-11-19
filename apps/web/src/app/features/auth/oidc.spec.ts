@@ -17,7 +17,8 @@ import {
   getActiveAccount,
   getAccount,
 } from '../../../client/accounts';
-import { BrowserPersistence } from '../../../platform/browser';
+import { BrowserOidcPlatform, BrowserPersistence } from '../../../platform/browser';
+import { registerPlatformAdapter, _resetRuntimeForTesting } from '../../../platform/runtime';
 
 const { findClientConfigMock, createClientMock, registerClientMock, generateUrlMock, completeGrantMock, fetchMock } =
   vi.hoisted(() => ({
@@ -60,6 +61,8 @@ beforeEach(async () => {
   localStorage.clear();
   sessionStorage.clear();
   _resetForTesting();
+  _resetRuntimeForTesting();
+  registerPlatformAdapter({ kind: 'browser', persistence: new BrowserPersistence(), oidc: new BrowserOidcPlatform() });
   await initializeAccounts(new BrowserPersistence());
   findClientConfigMock.mockReset();
   createClientMock.mockReset();

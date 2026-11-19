@@ -27,6 +27,18 @@ pub async fn accounts_load(state: State<'_, StorageState>) -> Result<AccountSnap
 }
 
 #[tauri::command]
+pub async fn accounts_migrate_legacy(
+    state: State<'_, StorageState>,
+    snapshot: AccountSnapshot,
+) -> Result<(), IpcError> {
+    let store = state.0.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        store.migrate_legacy(snapshot.accounts.into_values().collect(), snapshot.active_user_id)
+            .map_err(|e| IpcError::from_storage(&e))
+    }).await.map_err(|_| IpcError { message: "secure storage operation failed" })?
+}
+
+#[tauri::command]
 pub async fn account_upsert(
     state: State<'_, StorageState>,
     credentials: MatrixCredentials,

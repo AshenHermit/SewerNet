@@ -24,6 +24,7 @@ pub fn run() {
                 .map(|window| window.set_focus());
         }))
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             use tauri_plugin_deep_link::DeepLinkExt;
             if let Some(urls) = app.deep_link().get_current().ok().flatten() {
@@ -69,6 +70,7 @@ pub fn run() {
             oidc::oidc_pending_clear,
             oidc::oidc_callback_claim,
             storage::accounts_load,
+            storage::accounts_migrate_legacy,
             storage::account_upsert,
             storage::account_begin_operation,
             storage::account_remove,

@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProxyStatusPanel } from '@sewer-net/ui';
+import { getPlatformKind } from '../../platform/runtime';
+import { handleDesktopOidcCallback } from '../features/auth/desktop-oidc';
+import { takeLatestCallbackUrl } from '../../platform/desktop-oidc';
 import {
   clearPendingOidcFlow,
   completeOidcLogin,
@@ -40,6 +43,15 @@ export function OidcCallbackScreen() {
 
     void (async () => {
       try {
+        let isDesktop = false;
+        try { isDesktop = getPlatformKind() === 'desktop'; } catch { /* callback tests render before bootstrap */ }
+        if (isDesktop) {
+          const claimedUrl = takeLatestCallbackUrl();
+          if (!claimedUrl) throw new CallbackFailure('failed', 'desktop_callback_not_claimed');
+          await handleDesktopOidcCallback(claimedUrl);
+          setDone(true);
+          return;
+        }
         const error = searchParams.get('error');
         if (error) {
           throw new CallbackFailure(

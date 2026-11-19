@@ -8,6 +8,8 @@ import {
 } from 'matrix-js-sdk/lib/oidc';
 import type { MatrixCredentials, OidcSession } from '../../../client/account-types';
 import { commitLogin } from '../../../client/session';
+import { getOidcPlatform } from '../../../platform/runtime';
+import type { StoredOidcFlow } from '../../../platform/oidc-contract';
 
 export type OidcAction = 'login' | 'register';
 export type OidcResponseMode = 'query' | 'fragment';
@@ -17,6 +19,12 @@ const PENDING_KEY = 'sewernet:oidc_pending';
 const CLIENT_ID_KEY_PREFIX = 'sewernet_oidc_client_id_';
 const REVOKE_TIMEOUT_MS = 10_000;
 const DEVICE_SCOPE_RE = /urn:matrix:org\.matrix\.msc2967\.client:device:([^\s]+)/;
+
+function stateFromAuthorizationUrl(url: string): string {
+  const state = new URL(url).searchParams.get('state');
+  if (!state) throw new Error('oidc_missing_state');
+  return state;
+}
 
 export interface PendingOidcFlow {
   homeserverUrl: string;
@@ -36,7 +44,11 @@ export interface AuthCapabilities {
 }
 
 export function getOidcRedirectUri(): string {
-  return new URL('/oidc/callback', window.location.origin).toString();
+  try {
+    return getOidcPlatform().redirectUri();
+  } catch {
+    return new URL('/oidc/callback', window.location.origin).toString();
+  }
 }
 
 /** Resolves a homeserver input (domain or URL) via .well-known discovery. */
@@ -126,6 +138,10 @@ export interface OidcClientRegistration {
   redirectUri: string;
 }
 
+function getAuthOidcPlatform() {
+  try { return getOidcPlatform(); } catch { return null; }
+}
+
 export async function getOrRegisterClientId(
   metadata: OidcClientConfig,
   redirectUri: string,
@@ -136,10 +152,13 @@ export async function getOrRegisterClientId(
     return { clientId: cached, redirectUri };
   }
 
-  const applicationType = isSecureContext() ? 'web' : 'native';
+  const platform = getAuthOidcPlatform();
+  const applicationType = platform
+    ? platform.applicationType()
+    : (isSecureContext() ? 'web' : 'native');
   const clientMetadata: OidcRegistrationClientMetadata = {
     clientName: 'SewerNet',
-    clientUri: resolveClientUri(),
+    clientUri: platform?.clientUri() ?? resolveClientUri(),
     applicationType,
     redirectUris: [redirectUri],
     contacts: [],
@@ -152,6 +171,7 @@ export async function getOrRegisterClientId(
   try {
     clientId = await registerOidcClient(metadata, clientMetadata);
   } catch (err) {
+    if (platform && platform.applicationType() === 'native' && redirectUri.startsWith('sewernet://')) throw err;
     const portless = loopbackWithoutPort(redirectUri);
     if (!portless) throw err;
     clientId = await registerOidcClient(metadata, { ...clientMetadata, redirectUris: [portless] });
@@ -210,8 +230,27 @@ export async function startOidcLogin(
     action,
     revocationEndpoint: metadata.revocation_endpoint,
   };
+  const platform = getAuthOidcPlatform();
+  if (redirectUri === 'sewernet://oidc/callback' && platform?.applicationType() === 'native') {
+    const sdkKey = `mx_oidc_${stateFromAuthorizationUrl(url)}`;
+    const sdkState = sessionStorage.getItem(sdkKey);
+    if (!sdkState) throw new Error('oidc_missing_sdk_state');
+    const stored: StoredOidcFlow = {
+      schema: 1,
+      state: stateFromAuthorizationUrl(url),
+      issuer: metadata.issuer,
+      redirectUri: redirectUri,
+      sdkStateKey: sdkKey,
+      sdkState,
+      createdAt: Date.now(),
+      context: { ...pending, action: pending.action === 'register' ? 'register' : undefined, redirectUri },
+      status: 'processing',
+    };
+    await platform.savePending(stored);
+    await platform.openAuthorization(url);
+    return;
+  }
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
-
   window.location.href = url;
 }
 

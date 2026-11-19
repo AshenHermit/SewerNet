@@ -1,13 +1,24 @@
-import type { AccountPersistence } from './contracts';
-import { BrowserPersistence } from './browser';
+import type { AccountPersistence, PlatformAdapter } from './contracts';
+import { BrowserOidcPlatform, BrowserPersistence } from './browser';
 import type { MediaSession, MediaTransport } from './contracts';
 import { getActiveAccount } from '../client/accounts';
 import { getSessionEpoch } from '../client/session';
 
 let _mediaTransport: MediaTransport | null = null;
 
+let _oidc: import('./contracts').OidcPlatform | null = null;
+let _adapter: PlatformAdapter | null = null;
 let _platformKind: 'browser' | 'desktop' | null = null;
 let _persistence: AccountPersistence | null = null;
+
+export function registerPlatformAdapter(adapter: PlatformAdapter): void {
+  _adapter = adapter;
+  _persistence = adapter.persistence;
+  _oidc = adapter.oidc;
+  _mediaTransport = adapter.mediaTransport ?? null;
+}
+
+export function getPlatformAdapter(): PlatformAdapter | null { return _adapter; }
 
 export async function initializePlatform(): Promise<void> {
   let isNative = false;
@@ -21,16 +32,24 @@ export async function initializePlatform(): Promise<void> {
     isNative = false;
   }
 
-  _platformKind = isNative ? 'desktop' : 'browser';
-
-  if (_platformKind === 'desktop') {
-    if (!_persistence) {
-      throw new Error('desktop adapter unavailable');
-    }
-    // Desktop adapter will be installed via setAccountPersistence before initialization
-  } else {
-    _persistence = new BrowserPersistence();
-    _mediaTransport = {
+  if (isNative) {
+    _platformKind = 'desktop';
+    if (!_adapter || _adapter.kind !== 'desktop') throw new Error('desktop adapter unavailable');
+    _oidc = _adapter.oidc;
+    return;
+  }
+  if (!_adapter) {
+    const persistence = new BrowserPersistence();
+    const oidc = new BrowserOidcPlatform();
+    _adapter = { kind: 'browser', persistence, oidc };
+    _persistence = persistence;
+    _oidc = oidc;
+  }
+  _platformKind = _adapter.kind;
+  if (_platformKind === 'browser') {
+    _persistence = _adapter.persistence;
+    _oidc = _adapter.oidc;
+    _mediaTransport = _adapter.mediaTransport ?? {
       async fetchBlob(url, session, signal) {
         const validated = new URL(url);
         if (validated.origin !== new URL(session.baseUrl).origin) throw new Error('Media origin changed');
@@ -57,6 +76,15 @@ export function getPlatformKind(): 'browser' | 'desktop' {
 
 export function setAccountPersistence(storage: AccountPersistence): void {
   _persistence = storage;
+}
+
+export function setOidcPlatform(oidc: import('./contracts').OidcPlatform): void {
+  _oidc = oidc;
+}
+
+export function getOidcPlatform(): import('./contracts').OidcPlatform {
+  if (!_oidc) throw new Error('OIDC platform not initialized');
+  return _oidc;
 }
 
 export function setMediaTransport(transport: MediaTransport): void {
@@ -94,4 +122,6 @@ export function _resetRuntimeForTesting(): void {
   _platformKind = null;
   _persistence = null;
   _mediaTransport = null;
+  _oidc = null;
+  _adapter = null;
 }

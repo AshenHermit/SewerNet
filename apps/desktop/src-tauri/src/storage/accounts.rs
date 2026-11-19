@@ -83,6 +83,27 @@ impl AccountStore {
         })
     }
 
+    pub fn migrate_legacy(&self, credentials: Vec<MatrixCredentials>, active_user_id: Option<String>) -> Result<(), StorageError> {
+        let _guard = self.mutex.lock().unwrap();
+        let mut index = match self.records.read("account:index")? {
+            Some(bytes) => serde_json::from_slice::<AccountIndex>(&bytes).map_err(|_| StorageError::Corrupt("index"))?,
+            None => AccountIndex::default(),
+        };
+        for account in credentials {
+            let key = format!("account:{}", lower_key(&account.user_id));
+            let account_bytes = serde_json::to_vec(&account).map_err(|_| StorageError::Transaction)?;
+            self.records.write(&key, &account_bytes)?;
+            if !index.user_ids.iter().any(|id| id.eq_ignore_ascii_case(&account.user_id)) {
+                index.user_ids.push(account.user_id);
+            }
+        }
+        if let Some(active) = active_user_id.filter(|id| index.user_ids.iter().any(|known| known.eq_ignore_ascii_case(id))) {
+            index.active_user_id = Some(active);
+        }
+        let index_bytes = serde_json::to_vec(&index).map_err(|_| StorageError::Transaction)?;
+        self.records.write("account:index", &index_bytes)
+    }
+
     pub fn upsert(&self, credentials: MatrixCredentials) -> Result<(), StorageError> {
         let _guard = self.mutex.lock().unwrap();
         let mut index = self.load_index()?;

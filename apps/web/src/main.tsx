@@ -11,6 +11,7 @@ import { BootstrapStatus } from './app/components/bootstrap-status';
 import { registerServiceWorker } from './lib/sw-session';
 import { activateLocale, detectLocale } from './i18n';
 import { bootstrapSession } from './platform/bootstrap';
+import './platform/desktop';
 import './styles.css';
 
 const queryClient = new QueryClient({

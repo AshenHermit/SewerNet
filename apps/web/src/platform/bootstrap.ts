@@ -11,7 +11,7 @@ import {
   hydrateAuthStore,
   setAuthStorageError,
 } from '../app/stores/auth-store';
-import { getPersistence, getPlatformKind, initializePlatform } from './runtime';
+import { getPersistence, getPlatformAdapter, getPlatformKind, initializePlatform } from './runtime';
 import { installDesktopOidcCallbacks } from './desktop-oidc';
 
 export type BootstrapStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -66,9 +66,10 @@ async function runBootstrap(): Promise<void> {
       await initializeAccounts(getPersistence());
       _accountsReady = true;
     }
-    // The legacy key is browser-only and removed only after the platform was
-    // selected and the durable snapshot loaded.
     if (getPlatformKind() === 'browser') {
+      cleanupLegacyStorage();
+    } else {
+      await getPlatformAdapter()?.migrateLegacyStorage?.();
       cleanupLegacyStorage();
     }
     hydrateAuthStore();

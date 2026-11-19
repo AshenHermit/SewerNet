@@ -1,4 +1,5 @@
-import type { AccountPersistence } from './contracts';
+import type { AccountPersistence, OidcPlatform } from './contracts';
+import type { ClaimedOidcCallback, StoredOidcFlow } from './oidc-contract';
 import type { AccountSnapshot, MatrixCredentials, OidcSession } from '../client/account-types';
 
 const ACCOUNTS_KEY = 'sewernet_accounts';
@@ -178,6 +179,39 @@ function removeBlockedEntry(userId: string): void {
   if (userId in blocked) {
     delete blocked[userId];
     writeBlocked(blocked);
+  }
+}
+
+export class BrowserOidcPlatform implements OidcPlatform {
+  redirectUri(): string { return new URL('/oidc/callback', window.location.origin).toString(); }
+  applicationType(): 'web' | 'native' { return window.location.protocol === 'https:' ? 'web' : 'native'; }
+  clientUri(): string { return window.location.protocol === 'https:' ? window.location.origin : `${window.location.origin}/`; }
+  async savePending(flow: StoredOidcFlow): Promise<void> {
+    sessionStorage.setItem('sewernet:desktop_oidc_pending', JSON.stringify(flow));
+  }
+  async claimCallback(url: string): Promise<ClaimedOidcCallback> {
+    const parsed = new URL(url);
+    const state = parsed.searchParams.get('state');
+    const code = parsed.searchParams.get('code');
+    const error = parsed.searchParams.get('error');
+    const flow = await this.loadPending();
+    if (!flow || flow.state !== state) throw new Error('oidc_invalid_state');
+    await this.clearPending(state ?? undefined);
+    return { flow, callback: { state: state!, code: code ?? undefined, error: error ?? undefined } };
+  }
+  async clearPending(state?: string): Promise<void> {
+    const flow = await this.loadPending();
+    if (!state || flow?.state === state) sessionStorage.removeItem('sewernet:desktop_oidc_pending');
+  }
+  async openAuthorization(url: string): Promise<void> { window.location.assign(url); }
+  async listenCallbacks(handler: (url: string) => void): Promise<() => void> {
+    const callback = () => handler(window.location.href);
+    window.addEventListener('popstate', callback);
+    return () => window.removeEventListener('popstate', callback);
+  }
+  private async loadPending(): Promise<StoredOidcFlow | null> {
+    try { return JSON.parse(sessionStorage.getItem('sewernet:desktop_oidc_pending') ?? 'null') as StoredOidcFlow | null; }
+    catch { return null; }
   }
 }
 

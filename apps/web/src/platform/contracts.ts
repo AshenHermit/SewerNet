@@ -19,6 +19,25 @@ export interface MediaTransport {
   fetchBlob(url: string, session: MediaSession, signal: AbortSignal): Promise<Blob>;
 }
 
+export interface OidcPlatform {
+  redirectUri(): string;
+  applicationType(): 'web' | 'native';
+  clientUri(): string;
+  savePending(flow: import('./oidc-contract').StoredOidcFlow): Promise<void>;
+  claimCallback(url: string): Promise<import('./oidc-contract').ClaimedOidcCallback>;
+  clearPending(state?: string): Promise<void>;
+  openAuthorization(url: string): Promise<void>;
+  listenCallbacks(handler: (url: string) => void): Promise<() => void>;
+}
+
+export interface PlatformAdapter {
+  readonly kind: 'browser' | 'desktop';
+  readonly persistence: AccountPersistence;
+  readonly oidc: OidcPlatform;
+  readonly mediaTransport?: MediaTransport;
+  migrateLegacyStorage?(): Promise<void>;
+}
+
 export interface AccountPersistence {
   load(): Promise<AccountSnapshot>;
   upsertAccount(c: MatrixCredentials): Promise<void>;
