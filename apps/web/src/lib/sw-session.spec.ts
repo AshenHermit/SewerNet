@@ -130,7 +130,7 @@ describe('registerServiceWorker', () => {
 
     await registerServiceWorker();
 
-    expect(register).toHaveBeenCalledWith('/sw.js');
+    expect(register).toHaveBeenCalledWith('/sw.js', { scope: '/' });
   });
 
   it('swallows registration errors', async () => {

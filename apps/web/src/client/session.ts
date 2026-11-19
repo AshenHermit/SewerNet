@@ -18,6 +18,7 @@ import {
 import { clearPublishedCredentials, setAuthStorageError } from '../app/stores/auth-store';
 import { getPlatformKind } from '../platform/runtime';
 import { clearSessionFromSw, postSessionToSw } from '../lib/sw-session';
+import { clearMediaCache } from '../lib/media-resolver';
 
 const NETWORK_LOGOUT_TIMEOUT_MS = 10_000;
 
@@ -150,6 +151,7 @@ async function clearBrowserSwSession(): Promise<void> {
  */
 export async function commitLogin(c: MatrixCredentials): Promise<void> {
   bumpSessionEpoch(c.userId);
+  clearMediaCache();
   await saveAndActivateAccount(c);
 }
 
@@ -313,6 +315,7 @@ async function bestEffortNetworkLogout(client: SessionClient | null): Promise<vo
  */
 export async function logoutAccount(userId: string): Promise<void> {
   bumpSessionEpoch(userId);
+  clearMediaCache();
   const account = safeGetAccount(userId);
   const client = _liveOps?.getClient(userId) ?? null;
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReceiptType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import type { MatrixEncryptedFile } from '../../lib/attachment-crypto';
 import { getMatrixClient } from '../../client/init-matrix';
 import { encryptAttachment } from '../../lib/attachment-crypto';
 import { useMatrixEvent } from './use-matrix-event';
@@ -18,7 +19,7 @@ export interface TimelineItem {
   event: MatrixEvent;
   ts: number;
   sender: string;
-  content: { body: string; formattedBody?: string; msgtype?: string };
+  content: { body: string; formattedBody?: string; msgtype?: string; url?: string; file?: MatrixEncryptedFile; info?: { size?: number } };
   own: boolean;
   pending?: 'sending' | 'queued' | 'encrypting' | 'not_sent';
   redacted?: boolean;
@@ -86,6 +87,9 @@ function buildItems(
       body?: string;
       formatted_body?: string;
       msgtype?: string;
+      url?: string;
+      file?: MatrixEncryptedFile;
+      info?: { size?: number };
     };
     const item: TimelineItem = {
       eventId: event.getId() ?? '',
@@ -96,6 +100,9 @@ function buildItems(
         body: content.body ?? '',
         formattedBody: content.formatted_body,
         msgtype: content.msgtype,
+        url: content.url,
+        file: content.file,
+        info: content.info,
       },
       own: event.getSender() === myId,
       redacted: event.isRedacted() || undefined,
@@ -124,7 +131,10 @@ function mergePreservingIdentity(
       prev.redacted === item.redacted &&
       prev.content.body === item.content.body &&
       prev.content.formattedBody === item.content.formattedBody &&
-      prev.content.msgtype === item.content.msgtype;
+      prev.content.msgtype === item.content.msgtype &&
+      prev.content.url === item.content.url &&
+      prev.content.file === item.content.file &&
+      prev.content.info === item.content.info;
     return sameShape ? prev : item;
   });
 }

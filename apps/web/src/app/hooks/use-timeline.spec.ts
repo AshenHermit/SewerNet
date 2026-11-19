@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import { getMatrixClient } from '../../client/init-matrix';
 import * as attachmentCrypto from '../../lib/attachment-crypto';
+import type { MatrixEncryptedFile } from '../../lib/attachment-crypto';
 import { markRoomRead, sendMessageFile, sendMessageText, useTimeline } from './use-timeline';
 
 vi.mock('../../client/init-matrix', () => ({
@@ -29,6 +30,9 @@ interface FakeEventInit {
   body?: string;
   formatted?: string;
   msgtype?: string;
+  url?: string;
+  file?: MatrixEncryptedFile;
+  info?: { size?: number };
   status?: string | null;
   redacted?: boolean;
 }
@@ -43,6 +47,9 @@ function fakeEvent(init: FakeEventInit): MatrixEvent {
       body: init.body ?? init.id,
       formatted_body: init.formatted,
       msgtype: init.msgtype ?? 'm.text',
+      url: init.url,
+      file: init.file,
+      info: init.info,
     }),
     isRedacted: () => init.redacted ?? false,
     status: init.status ?? null,
@@ -143,6 +150,19 @@ beforeEach(() => {
 });
 
 describe('useTimeline', () => {
+  it('preserves media URL and encrypted descriptor in timeline item', () => {
+    const descriptor = {
+      v: 'v2' as const, url: 'mxc://hs.example/cipher',
+      key: { alg: 'A256CTR', ext: true, k: 'x', key_ops: ['decrypt'], kty: 'oct' }, iv: 'iv', hashes: { sha256: 'hash' },
+    };
+    setupRoom([fakeEvent({ id: '$media', body: 'photo.png', msgtype: 'm.image', url: descriptor.url, file: descriptor, info: { size: 12 } })]);
+
+    const { result } = renderHook(() => useTimeline(ROOM_ID));
+    expect(result.current.items[0]?.content).toMatchObject({
+      url: descriptor.url, msgtype: 'm.image', info: { size: 12 }, file: { v: 'v2' },
+    });
+  });
+
   it('derives items from the live timeline with own/pending flags', () => {
     const { result } = renderHook(() => useTimeline(ROOM_ID));
 
@@ -316,6 +336,20 @@ describe('sendMessageFile', () => {
 
     await expect(sendMessageFile(ROOM_ID, new File(['secret'], 'secret.txt', { type: 'text/plain' }))).rejects.toThrow('crypto failed');
     expect(client.uploadContent).not.toHaveBeenCalled();
+  });
+
+  it('preserves media URL and encrypted descriptor in timeline item', async () => {
+    setupRoom([fakeEvent({
+      id: '$media', body: 'photo.png', msgtype: 'm.image', url: 'mxc://hs.example/cipher',
+      file: { v: 'v2', url: 'mxc://hs.example/cipher', key: { alg: 'A256CTR', ext: true, k: 'x', key_ops: ['decrypt'], kty: 'oct' }, iv: 'iv', hashes: { sha256: 'hash' } },
+      info: { size: 12 },
+    })]);
+
+    const { result } = renderHook(() => useTimeline(ROOM_ID));
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.items[0].content).toMatchObject({
+      url: 'mxc://hs.example/cipher', msgtype: 'm.image', info: { size: 12 }, file: { v: 'v2' },
+    });
   });
 
   it('does not send a plaintext reference if room becomes encrypted during upload', async () => {

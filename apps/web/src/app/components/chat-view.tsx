@@ -12,7 +12,8 @@ import type { MatrixRoomEvent } from '@sewer-net/types';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
 import { useRooms } from '../hooks/use-rooms';
-import { roomAvatarUrl } from '../../lib/media-url';
+import { roomAvatarSource } from '../../lib/media-url';
+import { useMedia } from '../hooks/use-media';
 import {
   markRoomRead,
   prepareToEncryptThrottled,
@@ -64,6 +65,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   const events = useMemo(() => items.map(toRoomEvent), [items]);
 
   const [draft, setDraft] = useState('');
+  const roomAvatar = useMedia(roomAvatarSource(activeRoom?.avatarMxc, 64));
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
@@ -157,7 +159,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         backLabel={t`Back`}
         title={roomName}
         subtitle={activeRoom?.roomId}
-        avatarUrl={roomAvatarUrl(activeRoom?.avatarMxc, 64)}
+        avatarUrl={roomAvatar.url}
         encrypted={encrypted}
         encryptedLabel={t`Encrypted`}
       />

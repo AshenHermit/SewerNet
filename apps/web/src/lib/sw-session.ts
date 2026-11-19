@@ -76,7 +76,13 @@ export async function registerServiceWorker(): Promise<void> {
     return;
   }
   try {
-    await navigator.serviceWorker.register('/sw.js');
+    const { getPlatformKind } = await import('../platform/runtime');
+    if (getPlatformKind() !== 'browser') return;
+  } catch {
+    // Platform may not be initialized yet; main.tsx also has no reason to await it.
+  }
+  try {
+    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
   } catch {
     // media proxying is optional
   }

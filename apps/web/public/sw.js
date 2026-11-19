@@ -29,7 +29,13 @@ function mediaPath(url) {
 
 function validMediaRequest(url, baseUrl) {
   try {
-    return MEDIA_PATHS.some((p) => url.startsWith(new URL(p, baseUrl).href));
+    const target = new URL(url);
+    const base = new URL(baseUrl);
+    if (target.protocol !== 'https:' || target.origin !== base.origin || target.username || target.password || target.hash) return false;
+    const prefix = base.pathname.replace(/\/+$/, '') || '';
+    if (prefix && !target.pathname.startsWith(`${prefix}/`)) return false;
+    const relative = prefix ? target.pathname.slice(prefix.length) : target.pathname;
+    return MEDIA_PATHS.some((p) => relative.startsWith(`${p}/`) && !relative.includes('/../'));
   } catch {
     return false;
   }
@@ -103,7 +109,8 @@ self.addEventListener('fetch', (event) => {
         try {
           const res = await fetch(target, {
             headers: { Authorization: 'Bearer ' + session.accessToken },
-            cache: 'default',
+            cache: 'no-store',
+            redirect: 'error',
           });
           if (res.ok) {
             return res;
@@ -114,7 +121,7 @@ self.addEventListener('fetch', (event) => {
       }
 
       try {
-        const res = await fetch(target, { cache: 'no-store' });
+        const res = await fetch(target, { cache: 'no-store', redirect: 'error' });
         return res.ok ? res : uncacheable(res);
       } catch {
         return new Response('Service unavailable', {

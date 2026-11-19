@@ -1,4 +1,23 @@
 import type { AccountSnapshot, MatrixCredentials } from '../client/account-types';
+import type { MatrixEncryptedFile } from '../lib/attachment-crypto';
+
+export interface MediaSession {
+  userId: string;
+  deviceId: string;
+  baseUrl: string;
+  accessToken: string;
+  epoch: number;
+}
+
+export interface MediaSource {
+  mxc: string;
+  size?: number;
+  encryptedFile?: MatrixEncryptedFile;
+}
+
+export interface MediaTransport {
+  fetchBlob(url: string, session: MediaSession, signal: AbortSignal): Promise<Blob>;
+}
 
 export interface AccountPersistence {
   load(): Promise<AccountSnapshot>;

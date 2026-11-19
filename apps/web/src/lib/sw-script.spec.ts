@@ -129,7 +129,7 @@ describe('media proxy service worker', () => {
     expect(respondWith).toHaveBeenCalledTimes(1);
     expect(env.fetchMock).toHaveBeenCalledWith(
       'https://hs.example/_matrix/client/v1/media/thumbnail/hs.example/abc?width=48&height=48',
-      { headers: { Authorization: 'Bearer token-1' }, cache: 'default' },
+      { headers: { Authorization: 'Bearer token-1' }, cache: 'no-store', redirect: 'error' },
     );
     expect(response?.status).toBe(200);
   });
@@ -154,7 +154,7 @@ describe('media proxy service worker', () => {
     );
 
     expect(respondWith).toHaveBeenCalledTimes(1);
-    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store' });
+    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store', redirect: 'error' });
   });
 
   it('passes media through untouched when no session is known', async () => {
@@ -163,7 +163,7 @@ describe('media proxy service worker', () => {
     const { respondWith } = await dispatchFetch(env, request(THUMBNAIL_URI));
 
     expect(respondWith).toHaveBeenCalledTimes(1);
-    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store' });
+    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store', redirect: 'error' });
   });
 
   it('leaves requests that already carry an authorization header alone', async () => {
@@ -184,7 +184,7 @@ describe('media proxy service worker', () => {
     const { respondWith } = await dispatchFetch(env, request(THUMBNAIL_URI));
 
     expect(respondWith).toHaveBeenCalledTimes(1);
-    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store' });
+    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store', redirect: 'error' });
   });
 
   // Blocker #3: the session is stored under the *message sender's* client id
@@ -232,7 +232,7 @@ describe('media proxy service worker', () => {
 
     const { response } = await dispatchFetch(env, request(THUMBNAIL_URI), 'frame-client');
 
-    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store' });
+    expect(env.fetchMock).toHaveBeenCalledWith(expect.any(String), { cache: 'no-store', redirect: 'error' });
     expect(response?.status).toBe(200);
   });
 });
