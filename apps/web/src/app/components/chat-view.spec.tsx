@@ -113,6 +113,7 @@ beforeEach(() => {
     getUserId: () => '@alice:matrix.org',
     getRooms: () => [ROOM],
     getRoom: (roomId: string) => (roomId === ROOM.roomId ? ROOM : null),
+    getCrypto: () => ({ isEncryptionEnabledInRoom: vi.fn().mockResolvedValue(false) }),
     on: vi.fn(),
     off: vi.fn(),
     sendMessage: mocks.sendMessage,

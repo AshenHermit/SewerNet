@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import { getMatrixClient } from '../../client/init-matrix';
+import * as attachmentCrypto from '../../lib/attachment-crypto';
 import { markRoomRead, sendMessageFile, sendMessageText, useTimeline } from './use-timeline';
 
 vi.mock('../../client/init-matrix', () => ({
@@ -10,6 +11,15 @@ vi.mock('../../client/init-matrix', () => ({
 
 const ROOM_ID = '!r:h.example';
 const ME = '@me:h.example';
+
+function blobBytes(blob: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.readAsArrayBuffer(blob);
+  });
+}
 
 interface FakeEventInit {
   id: string;
@@ -74,6 +84,7 @@ let client: {
   sendMessage: ReturnType<typeof vi.fn>;
   sendReadReceipt: ReturnType<typeof vi.fn>;
   uploadContent: ReturnType<typeof vi.fn>;
+  getCrypto: ReturnType<typeof vi.fn>;
   paginateEventTimeline: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
@@ -93,6 +104,7 @@ function setupRoom(events: MatrixEvent[]) {
     sendMessage: vi.fn().mockResolvedValue(undefined),
     sendReadReceipt: vi.fn().mockResolvedValue(undefined),
     uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://hs.example/uploaded' }),
+    getCrypto: vi.fn().mockReturnValue({ isEncryptionEnabledInRoom: vi.fn().mockResolvedValue(false) }),
     paginateEventTimeline: vi.fn(async (timeline: FakeEventTimeline, opts: { backwards: boolean; limit: number }) => {
       if (!opts.backwards) return;
       const older = new FakeEventTimeline(
@@ -259,11 +271,95 @@ describe('sendMessageFile', () => {
     });
   });
 
+  it('encrypted_room_uploads_ciphertext_without_original_metadata', async () => {
+    setupRoom([]);
+    client.getCrypto.mockReturnValue({ isEncryptionEnabledInRoom: vi.fn().mockResolvedValue(true) });
+    const ciphertext = new Uint8Array([9, 8, 7]).buffer;
+    vi.spyOn(attachmentCrypto, 'encryptAttachment').mockResolvedValue({
+      ciphertext,
+      descriptor: {
+        v: 'v2',
+        key: { kty: 'oct', alg: 'A256CTR', ext: true, key_ops: ['encrypt', 'decrypt'], k: 'AA' },
+        iv: 'AAAAAAAAAAAAAAAAAAAAAA==',
+        hashes: { sha256: 'hash' },
+      },
+    });
+    const file = new File(['secret contents'], 'secret-photo.png', { type: 'image/png' });
+
+    await sendMessageFile(ROOM_ID, file);
+
+    const [uploaded, options] = client.uploadContent.mock.calls[0] as [Blob, { type: string; onlyContentUri?: boolean }];
+    expect(await blobBytes(uploaded)).toEqual(ciphertext);
+    expect(uploaded).not.toBe(file);
+    expect(uploaded.type).toBe('application/octet-stream');
+    expect(uploaded).not.toHaveProperty('name');
+    expect(options.type).toBe('application/octet-stream');
+    expect(options).not.toHaveProperty('name');
+    const [, content] = client.sendMessage.mock.calls[0] as [string, Record<string, unknown>];
+    expect(content).toMatchObject({
+      msgtype: 'm.image', body: 'secret-photo.png', filename: 'secret-photo.png',
+      file: {
+        v: 'v2', url: 'mxc://hs.example/uploaded',
+        key: { kty: 'oct', alg: 'A256CTR', ext: true, key_ops: ['encrypt', 'decrypt'] },
+        iv: expect.any(String), hashes: { sha256: expect.any(String) },
+      },
+      info: { size: file.size, mimetype: 'image/png' },
+    });
+    expect(content).not.toHaveProperty('url');
+    expect(content).toHaveProperty('file');
+  });
+
+  it('crypto_failure_never_uploads_plaintext', async () => {
+    setupRoom([]);
+    client.getCrypto.mockReturnValue({ isEncryptionEnabledInRoom: vi.fn().mockResolvedValue(true) });
+    vi.spyOn(attachmentCrypto, 'encryptAttachment').mockRejectedValue(new Error('crypto failed'));
+
+    await expect(sendMessageFile(ROOM_ID, new File(['secret'], 'secret.txt', { type: 'text/plain' }))).rejects.toThrow('crypto failed');
+    expect(client.uploadContent).not.toHaveBeenCalled();
+  });
+
+  it('does not send a plaintext reference if room becomes encrypted during upload', async () => {
+    setupRoom([]);
+    const crypto = { isEncryptionEnabledInRoom: vi.fn().mockResolvedValue(false) };
+    client.getCrypto.mockReturnValue(crypto);
+    client.uploadContent.mockImplementation(async () => {
+      crypto.isEncryptionEnabledInRoom.mockResolvedValueOnce(true);
+      return { content_uri: 'mxc://hs.example/uploaded' };
+    });
+
+    await expect(sendMessageFile(ROOM_ID, new File(['secret'], 'secret.txt'))).rejects.toThrow();
+    expect(client.uploadContent).toHaveBeenCalledTimes(1);
+    expect(client.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('encrypted_room_without_crypto_fails', async () => {
+    setupRoom([]);
+    client.getCrypto.mockReturnValue(null);
+
+    await expect(sendMessageFile(ROOM_ID, new File(['secret'], 'secret.txt'))).rejects.toThrow();
+    expect(client.uploadContent).not.toHaveBeenCalled();
+  });
+
+  it('unencrypted_file_is_unchanged', async () => {
+    setupRoom([]);
+    const file = new File(['%PDF'], 'notes.pdf', { type: 'application/pdf' });
+
+    await sendMessageFile(ROOM_ID, file);
+
+    expect(client.uploadContent).toHaveBeenCalledWith(file, expect.objectContaining({ type: 'application/pdf' }));
+    expect(client.sendMessage).toHaveBeenCalledWith(ROOM_ID, {
+      msgtype: 'm.file', body: 'notes.pdf', filename: 'notes.pdf',
+      url: 'mxc://hs.example/uploaded', info: { size: file.size, mimetype: 'application/pdf' },
+    });
+  });
+
   it('reports upload progress as a zero-to-one fraction', async () => {
     setupRoom([]);
     client.uploadContent.mockImplementation(
       async (_file: File, opts: { progressHandler?: (p: { loaded: number; total: number }) => void }) => {
         opts.progressHandler?.({ loaded: 5, total: 10 });
+        opts.progressHandler?.({ loaded: -1, total: 10 });
+        opts.progressHandler?.({ loaded: 20, total: 10 });
         return { content_uri: 'mxc://hs.example/uploaded' };
       },
     );
@@ -272,7 +368,10 @@ describe('sendMessageFile', () => {
 
     await sendMessageFile(ROOM_ID, file, onProgress);
 
-    expect(onProgress).toHaveBeenCalledWith(0.5);
+    expect(onProgress).toHaveBeenNthCalledWith(1, 0.5);
+    expect(onProgress).toHaveBeenNthCalledWith(2, 0);
+    expect(onProgress).toHaveBeenNthCalledWith(3, 1);
+    expect(onProgress.mock.calls.every(([progress]) => progress >= 0 && progress <= 1)).toBe(true);
   });
 });
 

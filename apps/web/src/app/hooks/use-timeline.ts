@@ -3,6 +3,7 @@ import { ReceiptType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import { getMatrixClient } from '../../client/init-matrix';
+import { encryptAttachment } from '../../lib/attachment-crypto';
 import { useMatrixEvent } from './use-matrix-event';
 
 const PAGINATION_LIMIT = 80;
@@ -311,21 +312,67 @@ export async function sendMessageText(
  * Uploads a file and sends it as `m.image` (images) or `m.file`.
  * `onProgress` receives a 0..1 fraction while the upload runs.
  */
+async function readFileBytes(file: File): Promise<ArrayBuffer> {
+  if (typeof file.arrayBuffer === 'function') return file.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read attachment'));
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) resolve(reader.result);
+      else reject(new Error('Unable to read attachment'));
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 export async function sendMessageFile(
   roomId: string,
   file: File,
   onProgress?: (progress: number) => void,
 ): Promise<void> {
   const client = getMatrixClient();
+  const getEncryptionState = async (): Promise<boolean> => {
+    const currentRoom = client.getRoom(roomId);
+    const currentCrypto = client.getCrypto();
+    if (!currentRoom || !currentCrypto) throw new Error('Cannot determine room encryption state');
+    return currentCrypto.isEncryptionEnabledInRoom(roomId);
+  };
+  const encrypted = await getEncryptionState();
   const mimetype = file.type || 'application/octet-stream';
-  const uploaded = await client.uploadContent(file, {
-    type: mimetype,
+  const upload = async (payload: Blob, type: string) => client.uploadContent(payload, {
+    type,
     progressHandler: (progress: { loaded: number; total: number }) => {
       if (onProgress) {
-        onProgress(progress.total > 0 ? progress.loaded / progress.total : 0);
+        const fraction = progress.total > 0 ? progress.loaded / progress.total : 0;
+        onProgress(Math.min(1, Math.max(0, fraction)));
       }
     },
   });
+
+  if (encrypted) {
+    const { ciphertext, descriptor } = await encryptAttachment(await readFileBytes(file));
+    const encryptedBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
+    const uploaded = await upload(encryptedBlob, 'application/octet-stream');
+    // Re-check at send time: never publish a plaintext MXC reference if room changed state.
+    if (!(await getEncryptionState())) {
+      throw new Error('Room encryption state changed during attachment upload');
+    }
+    const content = {
+      msgtype: mimetype.startsWith('image/') ? 'm.image' : 'm.file',
+      body: file.name,
+      filename: file.name,
+      file: { ...descriptor, url: uploaded.content_uri },
+      info: { size: file.size, mimetype },
+    };
+    await client.sendMessage(roomId, content as unknown as RoomMessageEventContent);
+    return;
+  }
+
+  const uploaded = await upload(file, mimetype);
+  // Re-check immediately before publishing plaintext MXC reference.
+  if (await getEncryptionState()) {
+    throw new Error('Room encryption state changed during attachment upload');
+  }
   const isImage = mimetype.startsWith('image/');
   const content: {
     msgtype: string;

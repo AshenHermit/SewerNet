@@ -1,0 +1,8 @@
+{
+  "description": "Synthetic Matrix v2 AES-256-CTR known-answer vector, independently generated with Node.js crypto.createCipheriv('aes-256-ctr')",
+  "plaintext": "TWF0cml4IHYyIHN5bnRoZXRpYyBmaXh0dXJl",
+  "ciphertext": "oF/FYFXEmNszRJW6hXmtW739TBBWDvyknJji",
+  "key": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "iv": "ABEiM0RVZncAAAAAAAAAAA",
+  "sha256": "P7+/UPbVoyozP6Uvwx2ohFh6Qw7hUsZZnGywqYwdLj0="
+}
