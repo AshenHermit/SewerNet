@@ -23,6 +23,7 @@ export interface UpdateControllerOptions {
   isDesktop: () => boolean;
   loadUpdater: () => Promise<NativeUpdater | null>;
   flush: () => Promise<void>;
+  beginUpdateExit?: () => Promise<void>;
   confirmInstall: (draftWarning: boolean) => boolean;
   requestExit: () => Promise<void>;
   isDraftPresent: () => boolean;
@@ -41,6 +42,7 @@ export function createUpdateController(options: UpdateControllerOptions): Update
   let state: UpdateState = { phase: 'idle' };
   let updater: NativeUpdater | null = null;
   let available: NativeUpdate | null = null;
+  let checkSequence = 0;
   const listeners = new Set<(state: UpdateState) => void>();
 
   function set(next: UpdateState): void {
@@ -61,16 +63,21 @@ export function createUpdateController(options: UpdateControllerOptions): Update
 
   async function checkForUpdates(_manual: boolean): Promise<void> {
     if (!options.isDesktop()) { set({ phase: 'unavailable' }); return; }
+    const sequence = ++checkSequence;
     set({ phase: 'checking' });
     const native = await ensureUpdater();
-    if (!native) { set({ phase: 'unavailable' }); return; }
+    if (!native) {
+      if (sequence === checkSequence) set({ phase: 'unavailable' });
+      return;
+    }
     try {
       const update = await native.check();
+      if (sequence !== checkSequence) return;
       if (!update) { available = null; set({ phase: 'up-to-date' }); return; }
       available = update;
       set({ phase: 'available', version: update.version });
     } catch (error) {
-      set({ phase: 'error', error: error instanceof Error ? error.message : String(error) });
+      if (sequence === checkSequence) set({ phase: 'error', error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -83,6 +90,12 @@ export function createUpdateController(options: UpdateControllerOptions): Update
       await options.flush();
     } catch (error) {
       set({ phase: 'error', version: update.version, error: error instanceof Error ? error.message : 'Credential flush failed' });
+      return;
+    }
+    try {
+      if (options.beginUpdateExit) await options.beginUpdateExit();
+    } catch (error) {
+      set({ phase: 'error', version: update.version, error: error instanceof Error ? error.message : 'Failed to prepare updater restart' });
       return;
     }
     set({ phase: 'installing', version: update.version, progress: 0 });
@@ -131,8 +144,10 @@ export function getUpdateController(): UpdateController {
       catch { return false; }
     },
     loadUpdater: async () => {
-      // No fake key, no unsigned install. Plugin is loaded only in desktop builds.
+      // Empty pubkey is explicitly unavailable: no unsigned install/check UI action.
       try {
+        const available = await invoke<boolean>('updater_available');
+        if (!available) return null;
         const plugin = await import('@tauri-apps/plugin-updater');
         return {
           check: async () => {
@@ -157,6 +172,7 @@ export function getUpdateController(): UpdateController {
       }
     },
     flush: () => flushAccounts(),
+    beginUpdateExit: async () => { await invoke('begin_update_exit'); },
     confirmInstall: (draftWarning) => {
       if (draftWarning) return window.confirm('You have an unsaved message draft. It may be lost. Continue?');
       return true;

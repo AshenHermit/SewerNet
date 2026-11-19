@@ -27,6 +27,20 @@ pub fn update_shutdown_bypasses_close_hide() -> bool {
     true
 }
 
+#[tauri::command]
+pub fn updater_available() -> bool {
+    let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap_or_default();
+    config
+        .pointer("/plugins/updater/pubkey")
+        .and_then(serde_json::Value::as_str)
+        .is_some_and(|pubkey| !pubkey.trim().is_empty())
+}
+
+#[tauri::command]
+pub fn begin_update_exit() {
+    UPDATE_EXIT_IN_PROGRESS.store(true, Ordering::SeqCst);
+}
+
 pub fn setup_tray<R: Runtime>(app: &mut tauri::App<R>) -> tauri::Result<()> {
     let app_handle = app.handle().clone();
     let open = MenuItem::with_id(&app_handle, "open", "Open", true, None::<&str>)?;

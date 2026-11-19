@@ -28,6 +28,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(navigation::plugin())
         .on_window_event(|window, event| lifecycle::hide_on_close(window, event))
         .setup(|app| {
@@ -87,6 +88,8 @@ pub fn run() {
             navigation::open_external_url,
             lifecycle::show_main_window,
             lifecycle::request_app_exit,
+            lifecycle::updater_available,
+            lifecycle::begin_update_exit,
             lifecycle::exit_desktop,
         ])
         .run(tauri::generate_context!())
