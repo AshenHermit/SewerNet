@@ -45,6 +45,7 @@ export interface SessionClient {
 }
 
 const _epochs = new Map<string, number>();
+const _inflightRefreshes = new Map<string, Promise<RefreshedTokens>>();
 let _liveOps: LiveSessionOps | null = null;
 
 /** Registers the Matrix client lifecycle owned by `init-matrix`. */
@@ -114,7 +115,8 @@ function isBrowserRuntime(): boolean {
 
 /**
  * Posts the rotated token to the media-proxy worker. Browser only: a desktop
- * runtime has no supported worker, and waiting for it would stall refreshes.
+ * runtime has no supported worker. The lookup itself is bounded in
+ * `sw-session`, so a missing/blocked worker is a no-op and never rejects.
  */
 export async function publishSessionToSw(
   accessToken: string,
@@ -161,11 +163,40 @@ export interface RefreshFallback {
  * Durable refresh: barrier -> network -> epoch re-check -> awaited commit.
  * Tokens are returned only after the commit resolved, so SDK callers never act
  * on a token that could not be stored.
+ *
+ * Concurrent callers for the same capture share one in-flight attempt: a
+ * rotating refresh token can only be redeemed once. The memo is keyed by the
+ * capture epoch, so a caller holding a stale epoch never joins a newer capture.
  */
-export async function refreshSessionTokens(
+export function refreshSessionTokens(
   capture: SessionCapture,
   requestTokens: () => Promise<RefreshedTokens>,
   fallback: RefreshFallback = {},
+): Promise<RefreshedTokens> {
+  const key = refreshKey(capture);
+  const inFlight = _inflightRefreshes.get(key);
+  if (inFlight) {
+    return inFlight;
+  }
+  const attempt = runRefresh(capture, requestTokens, fallback);
+  _inflightRefreshes.set(key, attempt);
+  const forget = (): void => {
+    if (_inflightRefreshes.get(key) === attempt) {
+      _inflightRefreshes.delete(key);
+    }
+  };
+  void attempt.then(forget, forget);
+  return attempt;
+}
+
+function refreshKey(capture: SessionCapture): string {
+  return `${capture.userId}\u0000${capture.deviceId}\u0000${capture.epoch}`;
+}
+
+async function runRefresh(
+  capture: SessionCapture,
+  requestTokens: () => Promise<RefreshedTokens>,
+  fallback: RefreshFallback,
 ): Promise<RefreshedTokens> {
   // A live session that was already tombstoned must not even start a barrier.
   assertCurrent(capture);
@@ -291,7 +322,6 @@ export async function logoutAccount(userId: string): Promise<void> {
     // the client is excluded from every map even if stop() throws
   }
   clearPublishedCredentials(userId);
-  await clearBrowserSwSession();
 
   try {
     if (account) {
@@ -303,8 +333,9 @@ export async function logoutAccount(userId: string): Promise<void> {
     quarantineAccount(userId, 'delete-failed');
     throw err;
   } finally {
-    // Local credentials are authoritative; token revocation is best-effort and
-    // must never delay or mask the local deletion above.
+    // Best-effort and never awaited: neither the browser media proxy nor token
+    // revocation may hold up (or precede) the durable deletion above.
+    void clearBrowserSwSession();
     void bestEffortNetworkLogout(client);
   }
 }
@@ -318,8 +349,9 @@ export async function logoutCurrent(): Promise<void> {
   await logoutAccount(userId);
 }
 
-/** Test-only reset of epochs and registered live-session operations. */
+/** Test-only reset of epochs, in-flight refreshes and registered live-session operations. */
 export function _resetSessionForTesting(): void {
   _epochs.clear();
+  _inflightRefreshes.clear();
   _liveOps = null;
 }
