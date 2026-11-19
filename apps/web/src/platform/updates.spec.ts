@@ -44,6 +44,39 @@ describe('desktop update lifecycle', () => {
     expect(controller.getState().phase).toBe('up-to-date');
   });
 
+  it('new_check_clears_stale_update_before_check_finishes', async () => {
+    let resolveNextCheck!: (value: { version: string; downloadAndInstall: () => Promise<void> } | null) => void;
+    const download = vi.fn(async () => undefined);
+    let checkCount = 0;
+    const controller = createUpdateController({
+      isDesktop: () => true,
+      loadUpdater: async () => ({
+        check: () => {
+          checkCount += 1;
+          if (checkCount === 1) return Promise.resolve({ version: '2.0.0', downloadAndInstall: download });
+          return new Promise((resolve) => { resolveNextCheck = resolve; });
+        },
+      }),
+      flush: async () => undefined,
+      confirmInstall: () => true,
+      requestExit: async () => undefined,
+      isDraftPresent: () => false,
+    });
+
+    await controller.checkForUpdates(true);
+    const nextCheck = controller.checkForUpdates(true);
+    await Promise.resolve();
+    controller.dismissUpdate();
+    expect(controller.getState().phase).toBe('checking');
+    await controller.installAvailableUpdate();
+
+    expect(controller.getState().phase).toBe('checking');
+    expect(download).not.toHaveBeenCalled();
+    resolveNextCheck(null);
+    await nextCheck;
+    expect(controller.getState().phase).toBe('up-to-date');
+  });
+
   it('manual_check_shows_no_update', async () => {
     const controller = createUpdateController({
       isDesktop: () => true,
@@ -189,6 +222,30 @@ describe('desktop update lifecycle', () => {
     await controller.checkForUpdates(true);
     await controller.installAvailableUpdate();
     expect(controller.getState().phase).toBe('available');
+  });
+
+  it('failed_install_resets_update_exit_guard_and_restores_close_behavior', async () => {
+    let updateExitInProgress = false;
+    const beginUpdateExit = vi.fn(async () => { updateExitInProgress = true; });
+    const resetUpdateExit = vi.fn(async () => { updateExitInProgress = false; });
+    const controller = createUpdateController({
+      isDesktop: () => true,
+      loadUpdater: async () => ({ check: async () => ({ version: '2.0.0', downloadAndInstall: async () => { throw new Error('download failed'); } }) }),
+      flush: async () => undefined,
+      beginUpdateExit,
+      resetUpdateExit,
+      confirmInstall: () => true,
+      requestExit: async () => undefined,
+      isDraftPresent: () => false,
+    });
+
+    await controller.checkForUpdates(true);
+    await controller.installAvailableUpdate();
+
+    expect(beginUpdateExit).toHaveBeenCalledOnce();
+    expect(resetUpdateExit).toHaveBeenCalledOnce();
+    expect(updateExitInProgress).toBe(false);
+    expect(controller.getState().phase).toBe('error');
   });
 
   it('invalid_signature_install_fails', async () => {

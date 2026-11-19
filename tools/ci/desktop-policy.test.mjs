@@ -158,7 +158,7 @@ test('csp_and_links_do_not_grant_remote_ipc', async () => {
   assert.equal(config.app.windows[0].url.startsWith('http'), false);
 });
 
-test('ci_package_has_no_prod_updater_or_signing_key', async () => {
+test('ci_package_has_no_prod_signing_key_and_allows_empty_updater_config', async () => {
   const [config, packageJson, cargo, workflow, project] = await Promise.all([
     readJson('apps/desktop/src-tauri/tauri.conf.json'),
     readJson('apps/desktop/package.json'),
@@ -167,8 +167,13 @@ test('ci_package_has_no_prod_updater_or_signing_key', async () => {
     readJson('apps/desktop/project.json'),
   ]);
   const serialized = JSON.stringify({ config, packageJson, cargo, workflow, project });
+  assert.doesNotMatch(serialized, /TAURI_[A-Z0]*SIGNING[A-Z0_]*/);
   assert.doesNotMatch(serialized, /TAURI_SIGNING_PRIVATE_KEY|TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
-  assert.doesNotMatch(serialized, /plugins\.updater|tauri-plugin-updater|production.*updat/i);
+  assert.doesNotMatch(serialized, /BEGIN (RSA |EC |)PRIVATE KEY|dW50cnVzdGVk/);
+  assert.equal(config.plugins.updater.pubkey, '');
+  assert.match(cargo, /tauri-plugin-updater/);
+  assert.doesNotMatch(workflow, /TAURI_[A-Z0]*SIGNING[A-Z0_]*/);
+  assert.doesNotMatch(JSON.stringify(project), /TAURI_[A-Z0]*SIGNING[A-Z0_]*/);
   assert.deepEqual(config.bundle.targets, ['nsis']);
   assert.doesNotMatch(JSON.stringify(project), /run-many[^\n]*desktop:(?:native-test|bundle)/);
 });

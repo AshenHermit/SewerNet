@@ -24,6 +24,7 @@ export interface UpdateControllerOptions {
   loadUpdater: () => Promise<NativeUpdater | null>;
   flush: () => Promise<void>;
   beginUpdateExit?: () => Promise<void>;
+  resetUpdateExit?: () => Promise<void>;
   confirmInstall: (draftWarning: boolean) => boolean;
   requestExit: () => Promise<void>;
   isDraftPresent: () => boolean;
@@ -62,8 +63,9 @@ export function createUpdateController(options: UpdateControllerOptions): Update
   }
 
   async function checkForUpdates(_manual: boolean): Promise<void> {
-    if (!options.isDesktop()) { set({ phase: 'unavailable' }); return; }
     const sequence = ++checkSequence;
+    available = null;
+    if (!options.isDesktop()) { set({ phase: 'unavailable' }); return; }
     set({ phase: 'checking' });
     const native = await ensureUpdater();
     if (!native) {
@@ -82,7 +84,7 @@ export function createUpdateController(options: UpdateControllerOptions): Update
   }
 
   async function installAvailableUpdate(): Promise<void> {
-    if (!available) return;
+    if (state.phase !== 'available' || !available) return;
     const draftWarning = options.isDraftPresent();
     if (!options.confirmInstall(draftWarning)) return;
     const update = available;
@@ -94,12 +96,7 @@ export function createUpdateController(options: UpdateControllerOptions): Update
     }
     try {
       if (options.beginUpdateExit) await options.beginUpdateExit();
-    } catch (error) {
-      set({ phase: 'error', version: update.version, error: error instanceof Error ? error.message : 'Failed to prepare updater restart' });
-      return;
-    }
-    set({ phase: 'installing', version: update.version, progress: 0 });
-    try {
+      set({ phase: 'installing', version: update.version, progress: 0 });
       await update.downloadAndInstall((progress) => set({ phase: 'downloading', version: update.version, progress }));
       set({ phase: 'installing', version: update.version, progress: 100 });
     } catch (error) {
@@ -173,6 +170,7 @@ export function getUpdateController(): UpdateController {
     },
     flush: () => flushAccounts(),
     beginUpdateExit: async () => { await invoke('begin_update_exit'); },
+    resetUpdateExit: async () => { await invoke('reset_update_exit'); },
     confirmInstall: (draftWarning) => {
       if (draftWarning) return window.confirm('You have an unsaved message draft. It may be lost. Continue?');
       return true;

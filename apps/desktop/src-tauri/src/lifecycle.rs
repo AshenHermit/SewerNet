@@ -41,6 +41,16 @@ pub fn begin_update_exit() {
     UPDATE_EXIT_IN_PROGRESS.store(true, Ordering::SeqCst);
 }
 
+#[tauri::command]
+pub fn reset_update_exit() {
+    UPDATE_EXIT_IN_PROGRESS.store(false, Ordering::SeqCst);
+}
+
+#[cfg(test)]
+pub fn is_update_exit_in_progress() -> bool {
+    UPDATE_EXIT_IN_PROGRESS.load(Ordering::SeqCst)
+}
+
 pub fn setup_tray<R: Runtime>(app: &mut tauri::App<R>) -> tauri::Result<()> {
     let app_handle = app.handle().clone();
     let open = MenuItem::with_id(&app_handle, "open", "Open", true, None::<&str>)?;

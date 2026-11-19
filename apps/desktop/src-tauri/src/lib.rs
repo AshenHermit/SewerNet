@@ -90,6 +90,7 @@ pub fn run() {
             lifecycle::request_app_exit,
             lifecycle::updater_available,
             lifecycle::begin_update_exit,
+            lifecycle::reset_update_exit,
             lifecycle::exit_desktop,
         ])
         .run(tauri::generate_context!())

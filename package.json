@@ -1,6 +1,6 @@
 {
   "name": "@sewer-net/source",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "scripts": {
     "dev": "nx run-many -t serve -p backend web --parallel=2",
@@ -8,7 +8,8 @@
     "desktop:dev": "nx run desktop:dev",
     "desktop:bundle": "nx run desktop:bundle --skip-nx-cache",
     "desktop:native-test": "nx run desktop:native-test",
-    "desktop:test": "nx run desktop:test"
+    "desktop:test": "nx run desktop:test",
+    "desktop:validate-version": "node tools/release/desktop-release.mjs validate-version"
   },
   "private": true,
   "devDependencies": {

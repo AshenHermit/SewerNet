@@ -62,7 +62,7 @@ jobs:
         run: npm ci
 
       - name: Check CI policy
-        run: node --test "tools/ci/*.test.mjs"
+        run: node --test "tools/ci/*.test.mjs" "tools/release/*.test.mjs"
 
       - name: Run full workspace gate
         run: npx nx run-many -t typecheck,lint,test,build
