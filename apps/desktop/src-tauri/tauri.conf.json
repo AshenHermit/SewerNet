@@ -31,6 +31,13 @@
       "freezePrototype": true
     }
   },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["sewernet"]
+      }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis"],

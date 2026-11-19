@@ -12,6 +12,7 @@ import {
   setAuthStorageError,
 } from '../app/stores/auth-store';
 import { getPersistence, getPlatformKind, initializePlatform } from './runtime';
+import { installDesktopOidcCallbacks } from './desktop-oidc';
 
 export type BootstrapStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -57,8 +58,9 @@ async function runBootstrap(): Promise<void> {
       await initializePlatform();
       _platformReady = true;
     }
-    if (getPlatformKind() === 'desktop' && _desktopInstaller) {
-      await _desktopInstaller();
+    if (getPlatformKind() === 'desktop') {
+      await installDesktopOidcCallbacks();
+      if (_desktopInstaller) await _desktopInstaller();
     }
     if (!_accountsReady) {
       await initializeAccounts(getPersistence());

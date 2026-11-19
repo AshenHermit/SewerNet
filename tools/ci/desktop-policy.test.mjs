@@ -6,6 +6,30 @@ const read = (path) => readFile(new URL(`../../${path}`, import.meta.url), 'utf8
 
 const readJson = async (path) => JSON.parse(await read(path));
 
+test('task3_oidc_callback_and_deep_link_policy', async () => {
+  const [lib, cargo, config, capability, oidcMod, oidcPending, oidcCallback, deepLinks] = await Promise.all([
+    read('apps/desktop/src-tauri/src/lib.rs'),
+    read('apps/desktop/src-tauri/Cargo.toml'),
+    readJson('apps/desktop/src-tauri/tauri.conf.json'),
+    readJson('apps/desktop/src-tauri/capabilities/main.json'),
+    read('apps/desktop/src-tauri/src/oidc/mod.rs'),
+    read('apps/desktop/src-tauri/src/oidc/pending.rs'),
+    read('apps/desktop/src-tauri/src/oidc/callback.rs'),
+    read('apps/desktop/src-tauri/src/deep_links.rs'),
+  ]);
+  const serialized = JSON.stringify({ lib, cargo, config, capability, oidcMod, oidcPending, oidcCallback, deepLinks });
+  assert.match(serialized, /oidc_pending_save/);
+  assert.match(serialized, /oidc_pending_clear/);
+  assert.match(serialized, /oidc_callback_claim/);
+  assert.match(serialized, /tauri-plugin-deep-link/);
+  assert.match(serialized, /tauri-plugin-single-instance/);
+  assert.match(serialized, /SEWERNET_OIDC_DEV_REGISTER/);
+  assert.match(serialized, /sewernet:\/\/oidc\/callback/);
+  assert.doesNotMatch(serialized, /callback_url|raw_url|raw_callback|TAURI_SIGNING_PRIVATE_KEY/);
+  assert.deepEqual(config.plugins?.['deep-link']?.desktop?.schemes, ['sewernet']);
+  assert.doesNotMatch(capability.permissions.join(','), /shell|http/);
+});
+
 test('task2_desktop_account_storage_ipc_is_explicit', async () => {
   const [lib, mod, records, desktop] = await Promise.all([
     read('apps/desktop/src-tauri/src/lib.rs'),
