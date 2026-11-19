@@ -14,6 +14,7 @@ import { useChatStore } from '../stores/chat-store';
 import { useRooms } from '../hooks/use-rooms';
 import { roomAvatarSource } from '../../lib/media-url';
 import { useMedia } from '../hooks/use-media';
+import { MessageAttachment } from './message-attachment';
 import {
   markRoomRead,
   prepareToEncryptThrottled,
@@ -33,12 +34,15 @@ function toRoomEvent(item: (ReturnType<typeof useTimeline>['items'])[number]): M
     msgtype: item.content.msgtype ?? 'm.text',
     body: item.content.body,
   };
+  if (item.content.url !== undefined) content['url'] = item.content.url;
+  if (item.content.file !== undefined) content['file'] = item.content.file;
+  if (item.content.info !== undefined) content['info'] = item.content.info;
   if (item.content.formattedBody !== undefined) {
     content['formatted_body'] = item.content.formattedBody;
   }
   return {
     event_id: item.eventId,
-    type: item.event.getType(),
+    type: 'm.room.message',
     sender: item.sender,
     origin_server_ts: item.ts,
     content: content as MatrixRoomEvent['content'],
@@ -173,6 +177,11 @@ export function ChatView({ onAuthError }: ChatViewProps) {
         loadingLabel={t`Loading messages`}
         emptyLabel={t`No messages yet`}
         loadMoreLabel={t`Load older messages`}
+        renderAttachment={(event) => {
+          const msgtype = event.content['msgtype'];
+          if (msgtype !== 'm.image' && msgtype !== 'm.file' && msgtype !== 'm.video' && msgtype !== 'm.audio') return null;
+          return <MessageAttachment event={event} downloadLabel={t`Download`} loadingLabel={t`Loading attachment`} retryLabel={t`Retry`} />;
+        }}
       />
       {error ? <ProxyChatViewError error={error} /> : null}
       <ProxyChatViewInputForm

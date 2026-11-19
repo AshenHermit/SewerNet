@@ -73,6 +73,8 @@ export interface ChatViewMessageListProps extends HTMLAttributes<HTMLDivElement>
   hasMore?: boolean;
   /** Обработчик кнопки «загрузить ещё» при скролле вверх или клике по кнопке. */
   onLoadMore?: () => void;
+  /** Render attachment content for a validated decrypted event. */
+  renderAttachment?: (event: MatrixRoomEvent) => ReactNode;
   /** Готовая подпись состояния загрузки (перевод — в apps/web). */
   loadingLabel?: ReactNode;
   /** Готовая подпись пустого таймлайна. */
@@ -85,6 +87,19 @@ export interface ChatViewMessageListProps extends HTMLAttributes<HTMLDivElement>
 export interface ChatViewMessageProps extends HTMLAttributes<HTMLLIElement> {
   event: MatrixRoomEvent;
   own?: boolean;
+  attachment?: ReactNode;
+}
+
+export interface MessageAttachmentProps {
+  name: string;
+  url?: string;
+  previewUrl?: string;
+  loading: boolean;
+  error?: string;
+  downloadLabel: string;
+  loadingLabel: string;
+  retryLabel: string;
+  onRetry: () => void;
 }
 
 /** Блок ошибки чата. */
@@ -391,6 +406,7 @@ export interface UiKit {
   ChatViewHeader: ComponentType<ChatViewHeaderProps>;
   ChatViewMessageList: ComponentType<ChatViewMessageListProps>;
   ChatViewMessage: ComponentType<ChatViewMessageProps>;
+  MessageAttachment: ComponentType<MessageAttachmentProps>;
   ChatViewError: ComponentType<ChatViewErrorProps>;
   ChatViewInputForm: ComponentType<ChatViewInputFormProps>;
   RoomListSearch: ComponentType<RoomListSearchProps>;

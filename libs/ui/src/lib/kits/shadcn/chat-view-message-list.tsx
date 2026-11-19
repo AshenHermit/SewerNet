@@ -18,6 +18,7 @@ export function ShadcnChatViewMessageList({
   loadingLabel = 'Loading messages',
   emptyLabel = 'No messages yet',
   loadMoreLabel = 'Load older messages',
+  renderAttachment,
   className,
   ...props
 }: ChatViewMessageListProps) {
@@ -55,6 +56,7 @@ export function ShadcnChatViewMessageList({
               key={event.event_id}
               event={event}
               own={event.sender === currentUserId}
+              attachment={event.type === 'm.room.message' ? renderAttachment?.(event) : undefined}
             />
           ))}
         </ul>

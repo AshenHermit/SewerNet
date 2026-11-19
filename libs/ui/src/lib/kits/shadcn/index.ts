@@ -9,6 +9,7 @@ import { ShadcnMessageBubble } from './message-bubble';
 import { ShadcnChatViewHeader } from './chat-view-header';
 import { ShadcnChatViewMessageList } from './chat-view-message-list';
 import { ShadcnChatViewMessage } from './chat-view-message';
+import { ShadcnMessageAttachment } from './message-attachment';
 import { ShadcnChatViewError } from './chat-view-error';
 import { ShadcnChatViewInputForm } from './chat-view-input-form';
 import { ShadcnRoomListSearch } from './room-list-search';
@@ -42,6 +43,7 @@ export const shadcnKit: UiKit = {
   ChatViewHeader: ShadcnChatViewHeader,
   ChatViewMessageList: ShadcnChatViewMessageList,
   ChatViewMessage: ShadcnChatViewMessage,
+  MessageAttachment: ShadcnMessageAttachment,
   ChatViewError: ShadcnChatViewError,
   ChatViewInputForm: ShadcnChatViewInputForm,
   RoomListSearch: ShadcnRoomListSearch,

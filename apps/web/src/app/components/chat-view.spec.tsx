@@ -297,6 +297,37 @@ describe('ChatView (e2ee)', () => {
     return renderView();
   }
 
+  it('existing_text_and_scroll_behavior_unchanged', () => {
+    renderView();
+    expect(screen.getByText('hello')).toBeTruthy();
+    expect(screen.getByText('room')).toBeTruthy();
+    const scrollRegion = document.querySelector('[data-sn-scroll="messages"]');
+    expect(scrollRegion).toBeTruthy();
+  });
+
+  it('renders only the SDK clear message for decrypted encrypted events', async () => {
+    const encrypted = encryptedEvent('$attachment:matrix.org');
+    encrypted.getType = () => 'm.room.message';
+    encrypted.getContent = () => ({ msgtype: 'm.image', body: 'photo.png', file: { v: 'v2', url: 'mxc://matrix.org/cipher', key: {}, iv: 'iv', hashes: { sha256: 'hash' } }, info: { mimetype: 'image/png' } });
+    (encrypted as unknown as { getWireType: () => string }).getWireType = () => 'm.room.encrypted';
+    (encrypted as unknown as { isDecryptionFailure: () => boolean }).isDecryptionFailure = () => false;
+    (encrypted as unknown as { getClearContent: () => Record<string, unknown> }).getClearContent = () => ({ msgtype: 'm.image', body: 'photo.png', file: { v: 'v2', url: 'mxc://matrix.org/cipher', key: {}, iv: 'iv', hashes: { sha256: 'hash' } }, info: { mimetype: 'image/png' } });
+    const room = makeEncryptedRoom('!enc:matrix.org', [encrypted]);
+    renderEncrypted(room);
+    expect(await screen.findByText('photo.png')).toBeTruthy();
+    expect(screen.queryByText('ciphertext')).toBeNull();
+  });
+
+  it('does not render a raw encrypted event when SDK has no clear event', async () => {
+    const encrypted = encryptedEvent('$undecrypted:matrix.org');
+    (encrypted as unknown as { getWireType: () => string }).getWireType = () => 'm.room.encrypted';
+    (encrypted as unknown as { isDecryptionFailure: () => boolean }).isDecryptionFailure = () => false;
+    (encrypted as unknown as { getClearContent: () => null }).getClearContent = () => null;
+    const room = makeEncryptedRoom('!enc:matrix.org', [encrypted]);
+    renderEncrypted(room);
+    await waitFor(() => expect(screen.queryByText('dec $undecrypted:matrix.org')).toBeNull());
+  });
+
   it('retries decryption for undecrypted events while paginating', async () => {
     const events = [
       encryptedEvent('$e0:matrix.org', { shouldAttempt: false }),

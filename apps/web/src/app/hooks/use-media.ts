@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MediaSource } from '../../platform/contracts';
 import { acquireMedia } from '../../lib/media-resolver';
 import { subscribeAccounts } from '../../client/accounts';
@@ -7,10 +7,13 @@ export interface MediaState {
   url?: string;
   loading: boolean;
   error?: string;
+  retry: () => void;
 }
 
 export function useMedia(source: MediaSource | null): MediaState {
-  const [state, setState] = useState<MediaState>({ loading: Boolean(source), });
+  const [state, setState] = useState<Omit<MediaState, 'retry'>>({ loading: Boolean(source) });
+  const [retryGeneration, setRetryGeneration] = useState(0);
+  const retry = useCallback(() => setRetryGeneration((value) => value + 1), []);
   const generation = useRef(0);
   const latestSourceKey = useRef<string | null>(null);
   const key = source
@@ -56,7 +59,7 @@ export function useMedia(source: MediaSource | null): MediaState {
       controller.abort();
       released?.release();
     };
-  }, [source?.mxc, source?.size, source?.encryptedFile]);
+  }, [source?.mxc, source?.size, source?.encryptedFile, retryGeneration]);
 
-  return state;
+  return { ...state, retry };
 }

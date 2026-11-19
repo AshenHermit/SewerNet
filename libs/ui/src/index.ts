@@ -10,6 +10,7 @@ export * from './lib/proxy/proxy-chat-view-panel';
 export * from './lib/proxy/proxy-chat-view-header';
 export * from './lib/proxy/proxy-chat-view-message-list';
 export * from './lib/proxy/proxy-chat-view-message';
+export * from './lib/proxy/proxy-message-attachment';
 export * from './lib/proxy/proxy-chat-view-error';
 export * from './lib/proxy/proxy-chat-view-input-form';
 export * from './lib/proxy/proxy-message-bubble';

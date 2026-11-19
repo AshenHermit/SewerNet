@@ -27,6 +27,17 @@ describe('useMedia', () => {
     expect(result.current.url).not.toBe('blob:a');
   });
 
+  it('retries failed media resolution on demand', async () => {
+    vi.mocked(resolver.acquireMedia)
+      .mockRejectedValueOnce(new Error('verification failed'))
+      .mockResolvedValueOnce({ url: 'blob:retry', release: vi.fn() });
+    const { result } = renderHook(() => useMedia({ mxc: 'mxc://home/a' }));
+    await waitFor(() => expect(result.current.error).toBe('verification failed'));
+    await act(async () => result.current.retry());
+    await waitFor(() => expect(result.current.url).toBe('blob:retry'));
+    expect(resolver.acquireMedia).toHaveBeenCalledTimes(2);
+  });
+
   it('revokes object URL on unmount', async () => {
     const release = vi.fn();
     vi.mocked(resolver.acquireMedia).mockResolvedValue({ url: 'blob:active', release });

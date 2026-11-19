@@ -43,6 +43,9 @@ function fakeEvent(init: FakeEventInit): MatrixEvent {
     getType: () => init.type ?? 'm.room.message',
     getSender: () => init.sender ?? '@other:h.example',
     getTs: () => init.ts ?? 1_000,
+    getWireType: () => init.type ?? 'm.room.message',
+    isDecryptionFailure: () => false,
+    getClearContent: () => init.type === 'm.room.encrypted' ? ({ body: init.body ?? init.id, msgtype: init.msgtype, url: init.url, file: init.file, info: init.info }) : null,
     getContent: () => ({
       body: init.body ?? init.id,
       formatted_body: init.formatted,
@@ -161,6 +164,34 @@ describe('useTimeline', () => {
     expect(result.current.items[0]?.content).toMatchObject({
       url: descriptor.url, msgtype: 'm.image', info: { size: 12 }, file: { v: 'v2' },
     });
+  });
+
+  it('decrypted_attachment_descriptor_survives_projection', () => {
+    const descriptor = {
+      v: 'v2' as const, url: 'mxc://hs.example/cipher',
+      key: { alg: 'A256CTR', ext: true, k: 'x', key_ops: ['decrypt'], kty: 'oct' }, iv: 'iv', hashes: { sha256: 'hash' },
+    };
+    setupRoom([fakeEvent({ id: '$media', body: 'photo.png', msgtype: 'm.image', url: descriptor.url, file: descriptor, info: { size: 12 } })]);
+
+    const { result } = renderHook(() => useTimeline(ROOM_ID));
+    expect(result.current.items[0]?.content.file).toEqual(descriptor);
+  });
+
+  it('descriptor_change_invalidates_item_identity', () => {
+    let descriptor = { v: 'v2' as const, url: 'mxc://hs.example/one', key: {} as JsonWebKey, iv: 'iv', hashes: { sha256: 'one' } };
+    const message = fakeEvent({ id: '$media', msgtype: 'm.image', url: descriptor.url, file: descriptor });
+    vi.spyOn(message, 'getContent').mockImplementation(() => ({ body: '$media', msgtype: 'm.image', url: descriptor.url, file: descriptor }));
+    vi.spyOn(message, 'getClearContent').mockImplementation(() => null);
+    setupRoom([message]);
+    const { result } = renderHook(() => useTimeline(ROOM_ID));
+    const original = result.current.items[0];
+    descriptor = { ...descriptor, url: 'mxc://hs.example/two', hashes: { sha256: 'two' } };
+    act(() => {
+      const handlers = (client as unknown as { __handlers: Map<string, Array<(...a: unknown[]) => void>> }).__handlers;
+      handlers.get('sync')?.forEach((handler) => handler('SYNCING'));
+    });
+    expect(result.current.items[0]).not.toBe(original);
+    expect(result.current.items[0]?.content.file).toEqual(descriptor);
   });
 
   it('derives items from the live timeline with own/pending flags', () => {

@@ -15,11 +15,11 @@ msgstr "Акцентный цвет"
 msgid "Appearance"
 msgstr "Внешний вид"
 
-#: apps/web/src/app/components/chat-view.tsx:182
+#: apps/web/src/app/components/chat-view.tsx:193
 msgid "Attach"
 msgstr "Прикрепить"
 
-#: apps/web/src/app/components/chat-view.tsx:157
+#: apps/web/src/app/components/chat-view.tsx:163
 msgid "Back"
 msgstr "Назад"
 
@@ -28,7 +28,7 @@ msgid "Back to sign in"
 msgstr "Вернуться ко входу"
 
 #: apps/web/src/app/components/rail.tsx:33
-#: apps/web/src/app/components/room-list.tsx:48
+#: apps/web/src/app/components/room-list.tsx:70
 #: apps/web/src/app/screens/chat-screen.tsx:96
 msgid "Chats"
 msgstr "Чаты"
@@ -66,7 +66,11 @@ msgstr "Создать аккаунт"
 msgid "Dark"
 msgstr "Тёмная"
 
-#: apps/web/src/app/components/chat-view.tsx:162
+#: apps/web/src/app/components/chat-view.tsx:183
+msgid "Download"
+msgstr "Скачать"
+
+#: apps/web/src/app/components/chat-view.tsx:168
 msgid "Encrypted"
 msgstr "Зашифровано"
 
@@ -90,15 +94,19 @@ msgstr "Интерфейс"
 msgid "Light"
 msgstr "Светлая"
 
-#: apps/web/src/app/components/chat-view.tsx:173
+#: apps/web/src/app/components/chat-view.tsx:179
 msgid "Load older messages"
 msgstr "Загрузить более старые"
+
+#: apps/web/src/app/components/chat-view.tsx:183
+msgid "Loading attachment"
+msgstr "Загрузка вложения"
 
 #: apps/web/src/app/components/room-list.tsx:38
 #~ msgid "Loading chats…"
 #~ msgstr "Загрузка чатов…"
 
-#: apps/web/src/app/components/chat-view.tsx:171
+#: apps/web/src/app/components/chat-view.tsx:177
 msgid "Loading messages"
 msgstr "Загрузка сообщений"
 
@@ -121,15 +129,15 @@ msgstr "Выйти"
 msgid "Main navigation"
 msgstr "Основная навигация"
 
-#: apps/web/src/app/components/chat-view.tsx:183
+#: apps/web/src/app/components/chat-view.tsx:194
 msgid "Message"
 msgstr "Сообщение"
 
-#: apps/web/src/app/components/room-list.tsx:46
+#: apps/web/src/app/components/room-list.tsx:68
 msgid "No chats yet"
 msgstr "Пока нет чатов"
 
-#: apps/web/src/app/components/chat-view.tsx:172
+#: apps/web/src/app/components/chat-view.tsx:178
 msgid "No messages yet"
 msgstr "Пока нет сообщений"
 
@@ -146,7 +154,11 @@ msgstr "Сбросить настройки"
 msgid "Restoring session…"
 msgstr "Восстановление сессии…"
 
-#: apps/web/src/app/components/room-list.tsx:43
+#: apps/web/src/app/components/chat-view.tsx:183
+msgid "Retry"
+msgstr "Повторить"
+
+#: apps/web/src/app/components/room-list.tsx:65
 msgid "Search"
 msgstr "Поиск"
 
@@ -154,11 +166,11 @@ msgstr "Поиск"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
 
-#: apps/web/src/app/components/chat-view.tsx:150
+#: apps/web/src/app/components/chat-view.tsx:156
 msgid "Select a chat to start messaging"
 msgstr "Выберите чат, чтобы начать переписку"
 
-#: apps/web/src/app/components/chat-view.tsx:184
+#: apps/web/src/app/components/chat-view.tsx:195
 msgid "Send"
 msgstr "Отправить"
 
@@ -168,7 +180,7 @@ msgstr "Отправить"
 msgid "Settings"
 msgstr "Настройки"
 
-#: apps/web/src/app/components/room-list.tsx:39
+#: apps/web/src/app/components/room-list.tsx:61
 #: apps/web/src/app/screens/welcome-screen.tsx:97
 msgid "SewerNet"
 msgstr "SewerNet"

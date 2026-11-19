@@ -19,7 +19,7 @@ export interface TimelineItem {
   event: MatrixEvent;
   ts: number;
   sender: string;
-  content: { body: string; formattedBody?: string; msgtype?: string; url?: string; file?: MatrixEncryptedFile; info?: { size?: number } };
+  content: { body: string; formattedBody?: string; msgtype?: string; url?: string; file?: MatrixEncryptedFile; info?: { size?: number; mimetype?: string } };
   own: boolean;
   pending?: 'sending' | 'queued' | 'encrypting' | 'not_sent';
   redacted?: boolean;
@@ -65,13 +65,21 @@ function collectLinkedTimelines(
   return chain as Array<Parameters<MatrixClient['paginateEventTimeline']>[0]>;
 }
 
+function isMatrixEncryptedFile(value: unknown): value is MatrixEncryptedFile {
+  if (!value || typeof value !== 'object') return false;
+  const file = value as Partial<MatrixEncryptedFile>;
+  return file.v === 'v2' && typeof file.url === 'string' && file.url.startsWith('mxc://')
+    && !!file.key && typeof file.key === 'object' && typeof file.iv === 'string'
+    && !!file.hashes && typeof file.hashes.sha256 === 'string';
+}
+
 function buildItems(
   events: MatrixEvent[],
   client: MatrixClient | null,
 ): TimelineItem[] {
   if (!client) return [];
   const myId = client.getUserId() ?? '';
-  return events.map((event) => {
+  return events.map((event): TimelineItem | null => {
     const status = event.status;
     const pending =
       status === 'sending'
@@ -83,14 +91,22 @@ function buildItems(
             : status === 'not_sent'
               ? 'not_sent'
               : undefined;
-    const content = event.getContent() as {
+    const eventType = event.getType();
+    const wireType = event.getWireType?.() ?? eventType;
+    const decryptionFailure = event.isDecryptionFailure?.() ?? false;
+    const clearContent = event.getClearContent?.();
+    if (wireType === 'm.room.encrypted' && (!clearContent || eventType !== 'm.room.message' || decryptionFailure)) {
+      return null;
+    }
+    const rawContent = (wireType === 'm.room.encrypted' ? clearContent : event.getContent()) as {
       body?: string;
       formatted_body?: string;
       msgtype?: string;
       url?: string;
       file?: MatrixEncryptedFile;
-      info?: { size?: number };
+      info?: { size?: number; mimetype?: string };
     };
+    const content = { ...rawContent, file: isMatrixEncryptedFile(rawContent?.file) ? rawContent.file : undefined };
     const item: TimelineItem = {
       eventId: event.getId() ?? '',
       event,
@@ -109,7 +125,7 @@ function buildItems(
     };
     if (pending) item.pending = pending;
     return item;
-  });
+  }).filter((item): item is TimelineItem => item !== null);
 }
 
 /** Возвращает предыдущие item-объекты для неизменённых событий (стабильный identity). */
@@ -133,8 +149,8 @@ function mergePreservingIdentity(
       prev.content.formattedBody === item.content.formattedBody &&
       prev.content.msgtype === item.content.msgtype &&
       prev.content.url === item.content.url &&
-      prev.content.file === item.content.file &&
-      prev.content.info === item.content.info;
+      JSON.stringify(prev.content.file) === JSON.stringify(item.content.file) &&
+      JSON.stringify(prev.content.info) === JSON.stringify(item.content.info);
     return sameShape ? prev : item;
   });
 }
