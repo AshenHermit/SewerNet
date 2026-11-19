@@ -1,5 +1,5 @@
 import type { AccountPersistence } from './contracts';
-import type { AccountSnapshot, MatrixCredentials } from '../client/account-types';
+import type { AccountSnapshot, MatrixCredentials, OidcSession } from '../client/account-types';
 
 const ACCOUNTS_KEY = 'sewernet_accounts';
 const ACTIVE_KEY = 'sewernet_active_account';
@@ -7,6 +7,136 @@ const BLOCKED_KEY = 'sewernet_blocked_accounts_v1';
 
 type BlockedReason = 'refresh' | 'delete';
 type BlockedMap = Record<string, { deviceId: string; reason: BlockedReason }>;
+
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function assertValidHomeserverUrl(homeserverUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(homeserverUrl);
+  } catch {
+    throw new Error('invalid homeserverUrl');
+  }
+  if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+    throw new Error('homeserverUrl must not include credentials, query, or fragment');
+  }
+  if (parsed.protocol === 'https:') {
+    return;
+  }
+  if (parsed.protocol === 'http:' && LOOPBACK_HOSTS.has(parsed.hostname)) {
+    return;
+  }
+  throw new Error('homeserverUrl must be https (http only for loopback)');
+}
+
+function assertValidOidc(oidc: unknown): OidcSession {
+  if (!oidc || typeof oidc !== 'object' || Array.isArray(oidc)) {
+    throw new Error('invalid oidc session');
+  }
+  const value = oidc as Record<string, unknown>;
+  if (
+    !isNonEmptyString(value['issuer']) ||
+    !isNonEmptyString(value['clientId']) ||
+    !isNonEmptyString(value['redirectUri']) ||
+    (value['responseMode'] !== 'query' && value['responseMode'] !== 'fragment') ||
+    !value['idTokenClaims'] ||
+    typeof value['idTokenClaims'] !== 'object' ||
+    Array.isArray(value['idTokenClaims'])
+  ) {
+    throw new Error('invalid oidc session fields');
+  }
+  if (value['revocationEndpoint'] !== undefined && !isNonEmptyString(value['revocationEndpoint'])) {
+    throw new Error('invalid oidc revocationEndpoint');
+  }
+  return {
+    issuer: value['issuer'],
+    clientId: value['clientId'],
+    redirectUri: value['redirectUri'],
+    responseMode: value['responseMode'],
+    ...(value['revocationEndpoint'] !== undefined
+      ? { revocationEndpoint: value['revocationEndpoint'] }
+      : {}),
+    idTokenClaims: value['idTokenClaims'] as Record<string, unknown>,
+  };
+}
+
+function parseAccounts(rawAccounts: string): Record<string, MatrixCredentials> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawAccounts);
+  } catch (e) {
+    throw new Error(`Malformed accounts data: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Malformed accounts data: not an object');
+  }
+
+  const accounts: Record<string, MatrixCredentials> = {};
+  for (const [key, entry] of Object.entries(parsed as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`Malformed accounts data: invalid entry for ${key}`);
+    }
+    const value = entry as Record<string, unknown>;
+    if (
+      !isNonEmptyString(value['userId']) ||
+      !isNonEmptyString(value['accessToken']) ||
+      !isNonEmptyString(value['deviceId']) ||
+      !isNonEmptyString(value['homeserverUrl'])
+    ) {
+      throw new Error(`Malformed accounts data: missing required fields for ${key}`);
+    }
+    if (value['userId'] !== key) {
+      throw new Error(`Malformed accounts data: map key/userId mismatch for ${key}`);
+    }
+    try {
+      assertValidHomeserverUrl(value['homeserverUrl']);
+    } catch (e) {
+      throw new Error(
+        `Malformed accounts data: ${e instanceof Error ? e.message : String(e)} for ${key}`,
+      );
+    }
+
+    const credentials: MatrixCredentials = {
+      userId: value['userId'],
+      accessToken: value['accessToken'],
+      deviceId: value['deviceId'],
+      homeserverUrl: value['homeserverUrl'],
+    };
+
+    if (value['refreshToken'] !== undefined) {
+      if (!isNonEmptyString(value['refreshToken'])) {
+        throw new Error(`Malformed accounts data: invalid refreshToken for ${key}`);
+      }
+      credentials.refreshToken = value['refreshToken'];
+    }
+    if (value['expiresInMs'] !== undefined) {
+      if (
+        typeof value['expiresInMs'] !== 'number' ||
+        !Number.isFinite(value['expiresInMs']) ||
+        value['expiresInMs'] < 0
+      ) {
+        throw new Error(`Malformed accounts data: invalid expiresInMs for ${key}`);
+      }
+      credentials.expiresInMs = value['expiresInMs'];
+    }
+    if (value['oidc'] !== undefined) {
+      try {
+        credentials.oidc = assertValidOidc(value['oidc']);
+      } catch (e) {
+        throw new Error(
+          `Malformed accounts data: ${e instanceof Error ? e.message : String(e)} for ${key}`,
+        );
+      }
+    }
+
+    accounts[key] = credentials;
+  }
+  return accounts;
+}
 
 function readBlocked(): BlockedMap {
   const raw = localStorage.getItem(BLOCKED_KEY);
@@ -56,14 +186,7 @@ export class BrowserPersistence implements AccountPersistence {
     const rawAccounts = localStorage.getItem(ACCOUNTS_KEY);
     const activeUserId = localStorage.getItem(ACTIVE_KEY);
 
-    let accounts: Record<string, MatrixCredentials> = {};
-    if (rawAccounts) {
-      try {
-        accounts = JSON.parse(rawAccounts) as Record<string, MatrixCredentials>;
-      } catch (e) {
-        throw new Error(`Malformed accounts data: ${e instanceof Error ? e.message : String(e)}`);
-      }
-    }
+    const accounts = rawAccounts ? parseAccounts(rawAccounts) : {};
 
     // Legacy snapshots without blockedAccounts default to {}
     return { accounts, activeUserId, blockedAccounts: readBlocked() };

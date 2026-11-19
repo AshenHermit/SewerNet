@@ -115,4 +115,20 @@ describe('RequireAuth', () => {
     expect(await screen.findByText('welcome-home')).toBeTruthy();
     expect(useAuthStore.getState().credentials).toBeNull();
   });
+
+  it('surfaces storage error when logout from the error screen fails', async () => {
+    useAuthStore.setState({ credentials: CREDENTIALS, status: 'ready' });
+    mockedResume.mockRejectedValue(new Error('sync failed'));
+    mockedLogout.mockRejectedValue(new Error('delete failed'));
+
+    renderGate();
+    fireEvent.click(await screen.findByRole('button', { name: 'Log out' }));
+
+    await waitFor(() => expect(mockedLogout).toHaveBeenCalled());
+    expect(useAuthStore.getState().credentials).toBeNull();
+    expect(useAuthStore.getState().status).toBe('storage-error');
+    expect(useAuthStore.getState().error).toContain('delete');
+    expect(await screen.findByText('Could not restore the session')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+  });
 });

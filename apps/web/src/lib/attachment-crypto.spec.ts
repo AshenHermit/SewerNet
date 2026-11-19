@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fixture from '../../tests/fixtures/encrypted-attachment-v2.json';
 import { decryptAttachment, encryptAttachment } from './attachment-crypto';
 import type { MatrixEncryptedFile } from './attachment-crypto';
@@ -73,8 +73,11 @@ describe('attachment crypto', () => {
     const encrypted = await encryptAttachment(plaintext);
     const tampered = new Uint8Array(encrypted.ciphertext.slice(0));
     tampered[0] = (tampered[0] ?? 0) ^ 1;
+    const decryptSpy = vi.spyOn(globalThis.crypto.subtle, 'decrypt');
 
     await expect(decryptAttachment(tampered.buffer, { ...encrypted.descriptor, url: 'mxc://example.test/file' })).rejects.toThrow('hash mismatch');
+    expect(decryptSpy).not.toHaveBeenCalled();
+    decryptSpy.mockRestore();
   });
 
   it('invalid_v_key_iv_hash_rejected', async () => {

@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ProxyButton, ProxyStatusPanel } from '@sewer-net/ui';
 import { logoutCurrent, prewarmCrypto, resume } from '../../../client/init-matrix';
-import { clearPublishedCredentials, useAuthStore } from '../../stores/auth-store';
+import { clearPublishedCredentials, setAuthStorageError, useAuthStore } from '../../stores/auth-store';
 
 type AuthGateState = 'pending' | 'ready' | 'unauthenticated' | 'error';
 
@@ -16,15 +16,24 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const status = useAuthStore((state) => state.status);
   const error = useAuthStore((state) => state.error);
   const navigate = useNavigate();
+
   const [state, setState] = useState<AuthGateState>('pending');
   const [attempt, setAttempt] = useState(0);
+  const [logoutPending, setLogoutPending] = useState(false);
 
   // Credential identity changed: reset the gate. Losing credentials
   // (logout, token revoke) must always navigate away from the client UI,
   // even when the gate was already 'ready'.
   useEffect(() => {
-    setState(credentials ? 'pending' : 'unauthenticated');
-  }, [credentials]);
+    if (logoutPending && credentials) {
+      setLogoutPending(false);
+      setState('pending');
+      return;
+    }
+    if (!logoutPending) {
+      setState(credentials ? 'pending' : 'unauthenticated');
+    }
+  }, [credentials, logoutPending]);
 
   // Await the first sync. Depends only on credentials/attempt — not on
   // state — so error transitions cannot restart the sync by themselves
@@ -82,8 +91,18 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     const onRetry = () => setAttempt((n) => n + 1);
     const onLogout = () => {
       // Remove the live UI first, then let the durable logout run.
+      setLogoutPending(true);
       clearPublishedCredentials();
-      void logoutCurrent();
+      void logoutCurrent()
+        .then(() => setLogoutPending(false))
+        .catch((err) => {
+          setAuthStorageError(
+            err instanceof Error
+              ? err.message
+              : 'delete-failed: local session data could not be removed',
+          );
+          setState('error');
+        });
     };
     return (
       <ProxyStatusPanel
