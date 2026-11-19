@@ -295,3 +295,55 @@ describe('async account persistence', () => {
     expect(localStorage.getItem('sewernet_active_account')).toBeTruthy();
   });
 });
+
+describe('browser blocked-accounts barrier', () => {
+  const BLOCKED_KEY = 'sewernet_blocked_accounts_v1';
+
+  it('browser_persists_blocked_barrier', async () => {
+    const browser = new BrowserPersistence();
+    await browser.beginOperation('@alice:example.org', 'DEV-A', 'refresh');
+
+    const persisted = JSON.parse(localStorage.getItem(BLOCKED_KEY) ?? '{}');
+    expect(persisted).toEqual({
+      '@alice:example.org': { deviceId: 'DEV-A', reason: 'refresh' },
+    });
+    expect(JSON.stringify(persisted)).not.toContain('tok-');
+
+    const fresh = new BrowserPersistence();
+    const snapshot = await fresh.load();
+    expect(snapshot.blockedAccounts['@alice:example.org']).toEqual({
+      deviceId: 'DEV-A',
+      reason: 'refresh',
+    });
+  });
+
+  it('barrier_cleared_after_successful_commit', async () => {
+    const browser = new BrowserPersistence();
+    await browser.beginOperation('@alice:example.org', 'DEV-A', 'refresh');
+    await browser.upsertAccount(alice);
+
+    expect(JSON.parse(localStorage.getItem(BLOCKED_KEY) ?? '{}')).toEqual({});
+
+    await browser.beginOperation('@alice:example.org', 'DEV-A', 'refresh');
+    await browser.removeAccount('@alice:example.org');
+
+    expect(JSON.parse(localStorage.getItem(BLOCKED_KEY) ?? '{}')).toEqual({});
+  });
+
+  it('barrier_survives_rejected_credential_write', async () => {
+    const browser = new BrowserPersistence();
+    await browser.beginOperation('@alice:example.org', 'DEV-A', 'refresh');
+
+    const spy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementationOnce(() => {
+        throw new Error('quota');
+      });
+    await expect(browser.upsertAccount(alice)).rejects.toThrow('Failed to write accounts');
+    spy.mockRestore();
+
+    expect(JSON.parse(localStorage.getItem(BLOCKED_KEY) ?? '{}')).toEqual({
+      '@alice:example.org': { deviceId: 'DEV-A', reason: 'refresh' },
+    });
+  });
+});
