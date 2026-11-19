@@ -6,6 +6,29 @@ const read = (path) => readFile(new URL(`../../${path}`, import.meta.url), 'utf8
 
 const readJson = async (path) => JSON.parse(await read(path));
 
+test('task2_desktop_account_storage_ipc_is_explicit', async () => {
+  const [lib, mod, records, desktop] = await Promise.all([
+    read('apps/desktop/src-tauri/src/lib.rs'),
+    read('apps/desktop/src-tauri/src/storage/mod.rs'),
+    read('apps/desktop/src-tauri/src/storage/records.rs'),
+    read('apps/web/src/platform/desktop.ts'),
+  ]);
+  assert.match(mod, /accounts_load/);
+  assert.match(mod, /account_upsert/);
+  assert.match(mod, /account_begin_operation/);
+  assert.match(mod, /account_remove/);
+  assert.match(mod, /account_set_active/);
+  assert.match(mod, /accounts_clear/);
+  assert.match(mod, /storage_flush/);
+  assert.match(mod, /spawn_blocking/);
+  assert.doesNotMatch(mod, /localStorage|readTextFile|writeTextFile/);
+  assert.match(records, /2048/);
+  assert.match(records, /256 \* 1024|MAX_RECORD/);
+  assert.match(records, /root_target/);
+  assert.match(desktop, /@tauri-apps\/api\/core/);
+  assert.match(lib, /invoke_handler/);
+});
+
 test('desktop_frontend_is_shared_and_separate', async () => {
   const [project, packageJson, cargo, rustToolchain, config, vite] = await Promise.all([
     readJson('apps/desktop/project.json'),
