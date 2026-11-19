@@ -1,4 +1,5 @@
 pub mod deep_links;
+pub mod lifecycle;
 pub mod media;
 pub mod navigation;
 pub mod oidc;
@@ -21,15 +22,25 @@ pub fn run() {
                     let _ = app.emit("sewernet://oidc-callback", arg.clone());
                 }
             }
-            let _ = app
-                .get_webview_window("main")
-                .map(|window| window.set_focus());
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = crate::lifecycle::show_main_window_handle(window);
+            }
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(navigation::plugin())
+        .on_window_event(|window, event| lifecycle::hide_on_close(window, event))
         .setup(|app| {
+            lifecycle::setup_tray(app)?;
             use tauri_plugin_deep_link::DeepLinkExt;
+            let handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                for url in event.urls() {
+                    if crate::deep_links::is_trusted_callback(url.as_str()) {
+                        let _ = handle.emit("sewernet://oidc-callback", url.as_str());
+                    }
+                }
+            });
             if let Some(urls) = app.deep_link().get_current().ok().flatten() {
                 for url in urls {
                     let raw = url.as_str();
@@ -39,14 +50,6 @@ pub fn run() {
                     }
                 }
             }
-            let handle = app.handle().clone();
-            app.deep_link().on_open_url(move |event| {
-                for url in event.urls() {
-                    if crate::deep_links::is_trusted_callback(url.as_str()) {
-                        let _ = handle.emit("sewernet://oidc-callback", url.as_str());
-                    }
-                }
-            });
             Ok(())
         });
     #[cfg(debug_assertions)]
@@ -82,6 +85,9 @@ pub fn run() {
             storage::storage_flush,
             media::media_download,
             navigation::open_external_url,
+            lifecycle::show_main_window,
+            lifecycle::request_app_exit,
+            lifecycle::exit_desktop,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run SewerNet desktop application");

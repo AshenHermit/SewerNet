@@ -18,6 +18,7 @@ import { ShadcnRoomListItemContent } from './room-list-item-content';
 import { ShadcnRail } from './rail';
 import { ShadcnRailButton } from './rail-button';
 import { ShadcnSettingsPanel } from './settings-panel';
+import { ShadcnUpdatePanel } from './update-panel';
 import { ShadcnKitOption } from './kit-option';
 import { ShadcnLoginScreen } from './login-screen';
 import { ShadcnLoginForm } from './login-form';
@@ -52,6 +53,7 @@ export const shadcnKit: UiKit = {
   Rail: ShadcnRail,
   RailButton: ShadcnRailButton,
   SettingsPanel: ShadcnSettingsPanel,
+  UpdatePanel: ShadcnUpdatePanel,
   KitOption: ShadcnKitOption,
   LoginScreen: ShadcnLoginScreen,
   LoginForm: ShadcnLoginForm,

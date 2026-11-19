@@ -33,9 +33,17 @@ pub async fn accounts_migrate_legacy(
 ) -> Result<(), IpcError> {
     let store = state.0.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        store.migrate_legacy(snapshot.accounts.into_values().collect(), snapshot.active_user_id)
+        store
+            .migrate_legacy(
+                snapshot.accounts.into_values().collect(),
+                snapshot.active_user_id,
+            )
             .map_err(|e| IpcError::from_storage(&e))
-    }).await.map_err(|_| IpcError { message: "secure storage operation failed" })?
+    })
+    .await
+    .map_err(|_| IpcError {
+        message: "secure storage operation failed",
+    })?
 }
 
 #[tauri::command]

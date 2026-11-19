@@ -20,6 +20,7 @@ export * from './lib/proxy/proxy-room-list-item-content';
 export * from './lib/proxy/proxy-rail';
 export * from './lib/proxy/proxy-rail-button';
 export * from './lib/proxy/proxy-settings-panel';
+export * from './lib/proxy/proxy-update-panel';
 export * from './lib/proxy/proxy-kit-option';
 export * from './lib/proxy/proxy-login-screen';
 export * from './lib/proxy/proxy-login-form';

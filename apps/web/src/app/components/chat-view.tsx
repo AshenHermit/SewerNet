@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { registerDraft } from '../../platform/draft-registry';
 import { useLingui } from '@lingui/react/macro';
 import {
   ProxyChatViewEmpty,
@@ -70,6 +71,7 @@ export function ChatView({ onAuthError }: ChatViewProps) {
   const events = useMemo(() => items.map(toRoomEvent), [items]);
 
   const [draft, setDraft] = useState('');
+  useEffect(() => registerDraft(`chat:${activeRoomId ?? 'none'}`, () => draft.length > 0), [activeRoomId, draft]);
   const roomAvatar = useMedia(roomAvatarSource(activeRoom?.avatarMxc, 64));
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);

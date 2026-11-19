@@ -32,6 +32,10 @@
     }
   },
   "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/AshenHermit/SewerNet/releases/latest/download/latest.json"],
+      "pubkey": ""
+    },
     "deep-link": {
       "desktop": {
         "schemes": ["sewernet"]

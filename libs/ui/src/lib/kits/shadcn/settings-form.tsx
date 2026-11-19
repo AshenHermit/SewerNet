@@ -42,6 +42,7 @@ export function settingsFormProps(props: SettingsFormFields): SettingsFormProps 
     locale,
     onLocaleChange,
     localeOptions,
+    updates,
     onReset,
   } = props;
   return {
@@ -69,6 +70,7 @@ export function settingsFormProps(props: SettingsFormFields): SettingsFormProps 
     locale,
     onLocaleChange,
     localeOptions,
+    updates,
     onReset,
   };
 }
@@ -116,6 +118,7 @@ export function ShadcnSettingsForm({
   locale,
   onLocaleChange,
   localeOptions,
+  updates,
   onReset,
 }: SettingsFormProps) {
   const headingId = useId();
@@ -253,6 +256,8 @@ export function ShadcnSettingsForm({
             className="h-11 w-full accent-[var(--sn-accent)] sn-wide:h-8"
           />
         </section>
+
+        {updates}
 
         <button
           type="button"

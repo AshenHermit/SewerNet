@@ -222,6 +222,25 @@ export interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
  * панель занимает слот `settings`, в широком — открывается как модальный
  * `<dialog>`. Оба контейнера используют одну и ту же форму.
  */
+export type UpdatePhase = 'idle' | 'unavailable' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'installing' | 'error';
+
+export interface UpdatePanelProps extends HTMLAttributes<HTMLDivElement> {
+  phase: UpdatePhase;
+  version?: string;
+  progress?: number;
+  error?: string;
+  title: string;
+  statusLabel: string;
+  checkLabel: string;
+  installLabel: string;
+  dismissLabel: string;
+  draftWarningLabel: string;
+  draftWarning: boolean;
+  onCheck: () => void;
+  onInstall: () => void;
+  onDismiss: () => void;
+}
+
 export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
   open: boolean;
   onClose: () => void;
@@ -256,6 +275,7 @@ export interface SettingsPanelProps extends HTMLAttributes<HTMLDivElement> {
   onLocaleChange: (locale: AppLocale) => void;
   localeOptions: { value: AppLocale; label: string }[];
   onReset: () => void;
+  updates?: ReactNode;
 }
 
 /** Поля общей формы настроек: общие для экрана и диалога. */
@@ -286,6 +306,7 @@ export type SettingsFormProps = Pick<
   | 'onLocaleChange'
   | 'localeOptions'
   | 'onReset'
+  | 'updates'
 >;
 
 
@@ -415,6 +436,7 @@ export interface UiKit {
   Rail: ComponentType<RailProps>;
   RailButton: ComponentType<RailButtonProps>;
   SettingsPanel: ComponentType<SettingsPanelProps>;
+  UpdatePanel: ComponentType<UpdatePanelProps>;
   KitOption: ComponentType<KitOptionProps>;
   LoginScreen: ComponentType<LoginScreenProps>;
   LoginForm: ComponentType<LoginFormProps>;

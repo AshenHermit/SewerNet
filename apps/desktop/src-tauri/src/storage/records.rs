@@ -119,6 +119,17 @@ impl RecordStore {
         Ok(())
     }
 
+    pub fn flush(&self) -> Result<(), StorageError> {
+        let _guard = self.mutex.lock().unwrap();
+        let owned = self.backend.list_owned(NAMESPACE)?;
+        for target in owned {
+            if target.starts_with(NAMESPACE) {
+                let _ = self.backend.read(&target)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn delete(&self, id: &str) -> Result<(), StorageError> {
         let _guard = self.mutex.lock().unwrap();
         if let Some(root_bytes) = self.backend.read(&self.root_target(id))?

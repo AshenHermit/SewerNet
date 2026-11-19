@@ -7,23 +7,27 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ru\n"
 
-#: apps/web/src/app/components/settings-panel.tsx:67
+#: apps/web/src/app/components/update-controller.tsx:46
+msgid "A new version is available"
+msgstr ""
+
+#: apps/web/src/app/components/settings-panel.tsx:68
 msgid "Accent color"
 msgstr "Акцентный цвет"
 
-#: apps/web/src/app/components/settings-panel.tsx:64
+#: apps/web/src/app/components/settings-panel.tsx:65
 msgid "Appearance"
 msgstr "Внешний вид"
 
-#: apps/web/src/app/components/chat-view.tsx:193
+#: apps/web/src/app/components/chat-view.tsx:196
 msgid "Attach"
 msgstr "Прикрепить"
 
-#: apps/web/src/app/components/chat-view.tsx:163
+#: apps/web/src/app/components/chat-view.tsx:166
 msgid "Back"
 msgstr "Назад"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:92
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:104
 msgid "Back to sign in"
 msgstr "Вернуться ко входу"
 
@@ -33,11 +37,20 @@ msgstr "Вернуться ко входу"
 msgid "Chats"
 msgstr "Чаты"
 
-#: apps/web/src/app/components/settings-panel.tsx:63
+#: apps/web/src/app/components/update-controller.tsx:51
+#: apps/web/src/app/components/update-controller.tsx:60
+msgid "Check for updates"
+msgstr ""
+
+#: apps/web/src/app/components/update-controller.tsx:44
+msgid "Checking for updates"
+msgstr ""
+
+#: apps/web/src/app/components/settings-panel.tsx:64
 msgid "Close"
 msgstr "Закрыть"
 
-#: apps/web/src/app/components/settings-panel.tsx:66
+#: apps/web/src/app/components/settings-panel.tsx:67
 msgid "Color scheme"
 msgstr "Цветовая схема"
 
@@ -45,12 +58,12 @@ msgstr "Цветовая схема"
 msgid "Continue with Matrix"
 msgstr "Продолжить с Matrix"
 
-#: apps/web/src/app/components/settings-panel.tsx:69
+#: apps/web/src/app/components/settings-panel.tsx:70
 msgid "Corner radius"
 msgstr "Скругление углов"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:63
-#: apps/web/src/app/features/auth/require-auth.tsx:90
+#: apps/web/src/app/features/auth/require-auth.tsx:72
+#: apps/web/src/app/features/auth/require-auth.tsx:109
 msgid "Could not restore the session"
 msgstr "Не удалось восстановить сессию"
 
@@ -62,23 +75,27 @@ msgstr "Не удалось запустить SewerNet"
 msgid "Create account"
 msgstr "Создать аккаунт"
 
-#: apps/web/src/app/components/settings-panel.tsx:52
+#: apps/web/src/app/components/settings-panel.tsx:53
 msgid "Dark"
 msgstr "Тёмная"
 
-#: apps/web/src/app/components/chat-view.tsx:183
+#: apps/web/src/app/components/chat-view.tsx:186
 msgid "Download"
 msgstr "Скачать"
 
-#: apps/web/src/app/components/chat-view.tsx:168
+#: apps/web/src/app/components/update-controller.tsx:48
+msgid "Downloading update"
+msgstr ""
+
+#: apps/web/src/app/components/chat-view.tsx:171
 msgid "Encrypted"
 msgstr "Зашифровано"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:98
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:110
 msgid "Finishing sign-in…"
 msgstr "Завершаем вход…"
 
-#: apps/web/src/app/components/settings-panel.tsx:68
+#: apps/web/src/app/components/settings-panel.tsx:69
 msgid "Font"
 msgstr "Шрифт"
 
@@ -86,19 +103,31 @@ msgstr "Шрифт"
 msgid "Homeserver URL"
 msgstr "Адрес homeserver"
 
-#: apps/web/src/app/components/settings-panel.tsx:65
+#: apps/web/src/app/components/update-controller.tsx:61
+msgid "Install and restart"
+msgstr ""
+
+#: apps/web/src/app/components/update-controller.tsx:50
+msgid "Installing update"
+msgstr ""
+
+#: apps/web/src/app/components/settings-panel.tsx:66
 msgid "Interface"
 msgstr "Интерфейс"
 
-#: apps/web/src/app/components/settings-panel.tsx:51
+#: apps/web/src/app/components/update-controller.tsx:62
+msgid "Later"
+msgstr ""
+
+#: apps/web/src/app/components/settings-panel.tsx:52
 msgid "Light"
 msgstr "Светлая"
 
-#: apps/web/src/app/components/chat-view.tsx:179
+#: apps/web/src/app/components/chat-view.tsx:182
 msgid "Load older messages"
 msgstr "Загрузить более старые"
 
-#: apps/web/src/app/components/chat-view.tsx:183
+#: apps/web/src/app/components/chat-view.tsx:186
 msgid "Loading attachment"
 msgstr "Загрузка вложения"
 
@@ -106,7 +135,7 @@ msgstr "Загрузка вложения"
 #~ msgid "Loading chats…"
 #~ msgstr "Загрузка чатов…"
 
-#: apps/web/src/app/components/chat-view.tsx:177
+#: apps/web/src/app/components/chat-view.tsx:180
 msgid "Loading messages"
 msgstr "Загрузка сообщений"
 
@@ -119,8 +148,8 @@ msgid "Local session storage is unavailable. Your saved accounts were not change
 msgstr "Локальное хранилище сессии недоступно. Сохранённые аккаунты не изменены."
 
 #: apps/web/src/app/components/rail.tsx:37
-#: apps/web/src/app/components/settings-panel.tsx:62
-#: apps/web/src/app/features/auth/require-auth.tsx:96
+#: apps/web/src/app/components/settings-panel.tsx:63
+#: apps/web/src/app/features/auth/require-auth.tsx:115
 msgid "Log out"
 msgstr "Выйти"
 
@@ -129,7 +158,7 @@ msgstr "Выйти"
 msgid "Main navigation"
 msgstr "Основная навигация"
 
-#: apps/web/src/app/components/chat-view.tsx:194
+#: apps/web/src/app/components/chat-view.tsx:197
 msgid "Message"
 msgstr "Сообщение"
 
@@ -137,7 +166,7 @@ msgstr "Сообщение"
 msgid "No chats yet"
 msgstr "Пока нет чатов"
 
-#: apps/web/src/app/components/chat-view.tsx:178
+#: apps/web/src/app/components/chat-view.tsx:181
 msgid "No messages yet"
 msgstr "Пока нет сообщений"
 
@@ -145,16 +174,16 @@ msgstr "Пока нет сообщений"
 msgid "Password"
 msgstr "Пароль"
 
-#: apps/web/src/app/components/settings-panel.tsx:70
+#: apps/web/src/app/components/settings-panel.tsx:71
 msgid "Reset to defaults"
 msgstr "Сбросить настройки"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:55
-#: apps/web/src/app/features/auth/require-auth.tsx:103
+#: apps/web/src/app/features/auth/require-auth.tsx:64
+#: apps/web/src/app/features/auth/require-auth.tsx:122
 msgid "Restoring session…"
 msgstr "Восстановление сессии…"
 
-#: apps/web/src/app/components/chat-view.tsx:183
+#: apps/web/src/app/components/chat-view.tsx:186
 msgid "Retry"
 msgstr "Повторить"
 
@@ -166,16 +195,16 @@ msgstr "Поиск"
 #~ msgid "Security check failed. Please try signing in again."
 #~ msgstr "Проверка безопасности не пройдена. Попробуйте войти снова."
 
-#: apps/web/src/app/components/chat-view.tsx:156
+#: apps/web/src/app/components/chat-view.tsx:159
 msgid "Select a chat to start messaging"
 msgstr "Выберите чат, чтобы начать переписку"
 
-#: apps/web/src/app/components/chat-view.tsx:195
+#: apps/web/src/app/components/chat-view.tsx:198
 msgid "Send"
 msgstr "Отправить"
 
 #: apps/web/src/app/components/rail.tsx:35
-#: apps/web/src/app/components/settings-panel.tsx:61
+#: apps/web/src/app/components/settings-panel.tsx:62
 #: apps/web/src/app/screens/chat-screen.tsx:97
 msgid "Settings"
 msgstr "Настройки"
@@ -185,12 +214,12 @@ msgstr "Настройки"
 msgid "SewerNet"
 msgstr "SewerNet"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:71
+#: apps/web/src/app/features/auth/require-auth.tsx:80
 #: apps/web/src/app/screens/welcome-screen.tsx:103
 msgid "Sign in"
 msgstr "Войти"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:66
+#: apps/web/src/app/features/auth/require-auth.tsx:75
 msgid "Sign in again to continue."
 msgstr "Войдите снова, чтобы продолжить."
 
@@ -202,17 +231,21 @@ msgstr "Войдите в свой Matrix-аккаунт"
 msgid "Sign in with password"
 msgstr "Войти с паролем"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:88
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:100
 msgid "Sign-in failed"
 msgstr "Не удалось войти"
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:86
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:98
 msgid "Sign-in session expired. Please try again."
 msgstr "Сессия входа истекла. Попробуйте снова."
 
-#: apps/web/src/app/screens/oidc-callback-screen.tsx:84
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:96
 msgid "Sign-in was cancelled"
 msgstr "Вход отменён"
+
+#: apps/web/src/app/components/update-controller.tsx:58
+msgid "Software updates"
+msgstr ""
 
 #: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to dark theme"
@@ -222,24 +255,36 @@ msgstr "Переключить на тёмную тему"
 msgid "Switch to light theme"
 msgstr "Переключить на светлую тему"
 
-#: apps/web/src/app/components/settings-panel.tsx:53
+#: apps/web/src/app/components/settings-panel.tsx:54
 msgid "System"
 msgstr "Системная"
 
-#: apps/web/src/app/features/auth/require-auth.tsx:68
-#: apps/web/src/app/features/auth/require-auth.tsx:91
+#: apps/web/src/app/features/auth/require-auth.tsx:77
+#: apps/web/src/app/features/auth/require-auth.tsx:110
 msgid "The homeserver is unreachable or the session expired."
 msgstr "Homeserver недоступен или сессия истекла."
 
 #: apps/web/src/app/components/bootstrap-status.tsx:18
-#: apps/web/src/app/features/auth/require-auth.tsx:92
+#: apps/web/src/app/features/auth/require-auth.tsx:111
 msgid "Try again"
 msgstr "Попробовать снова"
 
-#: apps/web/src/app/components/settings-panel.tsx:72
+#: apps/web/src/app/components/settings-panel.tsx:73
 msgid "UI kit"
 msgstr "UI-комплект"
+
+#: apps/web/src/app/components/update-controller.tsx:63
+msgid "Unsaved message draft may be lost"
+msgstr ""
+
+#: apps/web/src/app/components/update-controller.tsx:42
+msgid "Updates unavailable"
+msgstr ""
 
 #: apps/web/src/app/screens/welcome-screen.tsx:101
 msgid "Username"
 msgstr "Имя пользователя"
+
+#: apps/web/src/app/components/update-controller.tsx:40
+msgid "You are up to date"
+msgstr ""

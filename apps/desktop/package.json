@@ -10,7 +10,8 @@
     "desktop:test": "node --test ../../tools/ci/desktop-policy.test.mjs"
   },
   "dependencies": {
-    "@tauri-apps/plugin-deep-link": "2.4.0"
+    "@tauri-apps/plugin-deep-link": "2.4.0",
+    "@tauri-apps/plugin-updater": "^2.9.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.6"

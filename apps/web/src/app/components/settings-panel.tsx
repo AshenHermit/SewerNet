@@ -9,6 +9,7 @@ import {
 import { ProxySettingsPanel } from '@sewer-net/ui';
 import { SUPPORTED_LOCALES, type AppLocale } from '@sewer-net/types';
 import { activateLocale } from '../../i18n';
+import { UpdateControls } from './update-controller';
 
 const MODES: { value: ThemeMode }[] = [
   { value: 'light' },
@@ -85,6 +86,7 @@ export function SettingsPanel({ open, onClose, onLogout }: SettingsPanelProps) {
       locale={i18n.locale as AppLocale}
       onLocaleChange={switchLocale}
       localeOptions={LOCALES}
+      updates={<UpdateControls />}
       onReset={reset}
     />
   );

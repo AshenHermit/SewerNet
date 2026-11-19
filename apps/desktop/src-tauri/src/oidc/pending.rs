@@ -261,8 +261,8 @@ mod tests {
 
     #[test]
     fn processing_commit_failure_leaves_no_claimed_result() {
-        use crate::storage::credential_backend::CredentialBackend;
         use crate::storage::StorageError;
+        use crate::storage::credential_backend::CredentialBackend;
 
         #[derive(Clone)]
         struct FailWriteBackend {
@@ -271,20 +271,36 @@ mod tests {
         }
 
         impl CredentialBackend for FailWriteBackend {
-            fn read(&self, target: &str) -> Result<Option<Vec<u8>>, StorageError> { self.inner.read(target) }
-            fn write(&self, _target: &str, _bytes: &[u8]) -> Result<(), StorageError> {
-                if self.fail.load(std::sync::atomic::Ordering::SeqCst) { Err(StorageError::Transaction) } else { self.inner.write(_target, _bytes) }
+            fn read(&self, target: &str) -> Result<Option<Vec<u8>>, StorageError> {
+                self.inner.read(target)
             }
-            fn delete(&self, target: &str) -> Result<(), StorageError> { self.inner.delete(target) }
-            fn list_owned(&self, prefix: &str) -> Result<Vec<String>, StorageError> { self.inner.list_owned(prefix) }
+            fn write(&self, _target: &str, _bytes: &[u8]) -> Result<(), StorageError> {
+                if self.fail.load(std::sync::atomic::Ordering::SeqCst) {
+                    Err(StorageError::Transaction)
+                } else {
+                    self.inner.write(_target, _bytes)
+                }
+            }
+            fn delete(&self, target: &str) -> Result<(), StorageError> {
+                self.inner.delete(target)
+            }
+            fn list_owned(&self, prefix: &str) -> Result<Vec<String>, StorageError> {
+                self.inner.list_owned(prefix)
+            }
         }
 
         let inner = Arc::new(MemoryBackend::new());
         let fail = Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let store = PendingStore::new(Arc::new(FailWriteBackend { inner: inner.clone(), fail: fail.clone() }));
+        let store = PendingStore::new(Arc::new(FailWriteBackend {
+            inner: inner.clone(),
+            fail: fail.clone(),
+        }));
         store.save(flow(1_000)).unwrap();
         fail.store(true, std::sync::atomic::Ordering::SeqCst);
-        assert!(matches!(store.claim("sewernet://oidc/callback?state=right-state&code=c", 1_001), Err("storage_error")));
+        assert!(matches!(
+            store.claim("sewernet://oidc/callback?state=right-state&code=c", 1_001),
+            Err("storage_error")
+        ));
     }
 
     #[test]
