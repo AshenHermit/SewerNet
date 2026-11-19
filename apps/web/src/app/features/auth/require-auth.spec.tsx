@@ -6,7 +6,7 @@ import { IconSetProvider } from '@sewer-net/icons';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logoutCurrent, prewarmCrypto, resume } from '../../../client/init-matrix';
-import type { MatrixCredentials } from '../../../client/accounts';
+import type { MatrixCredentials } from '../../../client/account-types';
 import { useAuthStore } from '../../stores/auth-store';
 import { RequireAuth } from './require-auth';
 

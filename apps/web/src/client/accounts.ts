@@ -1,76 +1,86 @@
 /**
- * Persisted Matrix account storage — the single write point for
- * localStorage credentials. Keys: `sewernet_accounts` (Record by userId)
- * and `sewernet_active_account` (active userId).
+ * Persisted Matrix account storage — async account repository with
+ * platform-agnostic persistence contract.
  */
 
-export interface OidcSession {
-  issuer: string;
-  clientId: string;
-  redirectUri: string;
-  responseMode: 'query' | 'fragment';
-  revocationEndpoint?: string;
-  idTokenClaims: Record<string, unknown>;
-}
+import type { AccountPersistence, AccountSnapshot } from '../platform/contracts';
+import type { MatrixCredentials } from './account-types';
 
-export interface MatrixCredentials {
-  userId: string;
-  accessToken: string;
-  deviceId: string;
-  homeserverUrl: string;
-  refreshToken?: string;
-  /** ms until the access token expires (relative). */
-  expiresInMs?: number;
-  oidc?: OidcSession;
-}
+// Re-export for backward compatibility
+export type { OidcSession, MatrixCredentials, AccountSnapshot } from './account-types';
 
-const ACCOUNTS_KEY = 'sewernet_accounts';
-const ACTIVE_KEY = 'sewernet_active_account';
+let _persistence: AccountPersistence | null = null;
+let _snapshot: AccountSnapshot | null = null;
+let _operationQueue: Promise<void> = Promise.resolve();
+const _listeners = new Set<() => void>();
+
 const LEGACY_AUTH_KEY = 'sewernet:auth';
 
-function readAccounts(): Record<string, MatrixCredentials> {
-  const raw = localStorage.getItem(ACCOUNTS_KEY);
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw) as Record<string, MatrixCredentials>;
-  } catch {
-    return {};
+export async function initializeAccounts(storage: AccountPersistence): Promise<void> {
+  if (_persistence) {
+    throw new Error('Accounts already initialized');
+  }
+  _persistence = storage;
+  _snapshot = await storage.load();
+
+  // Active account can only reference committed accounts
+  if (_snapshot.activeUserId && !_snapshot.accounts[_snapshot.activeUserId]) {
+    _snapshot.activeUserId = null;
   }
 }
 
-function writeAccounts(map: Record<string, MatrixCredentials>): void {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(map));
-}
-
-export function upsertAccount(c: MatrixCredentials): void {
-  const map = readAccounts();
-  map[c.userId] = c;
-  writeAccounts(map);
-}
-
-export function removeAccount(userId: string): void {
-  const map = readAccounts();
-  delete map[userId];
-  writeAccounts(map);
-  if (getActiveUserId() === userId) {
-    localStorage.removeItem(ACTIVE_KEY);
+function ensureInitialized(): void {
+  if (!_snapshot) {
+    throw new Error('Accounts not initialized. Call initializeAccounts() first.');
   }
+}
+
+function notifyListeners(): void {
+  for (const listener of _listeners) {
+    listener();
+  }
+}
+
+async function queued<T>(fn: () => Promise<T>): Promise<T> {
+  const result = _operationQueue.then(fn);
+  _operationQueue = result
+    .then(() => undefined)
+    .catch(() => {
+      // Prevent unhandled rejections while preserving the original error.
+    });
+  return result;
+}
+
+export function subscribeAccounts(listener: () => void): () => void {
+  _listeners.add(listener);
+  return () => _listeners.delete(listener);
 }
 
 export function getAccount(userId: string): MatrixCredentials | null {
-  return readAccounts()[userId] ?? null;
+  ensureInitialized();
+  const snapshot = _snapshot;
+  if (!snapshot) {
+    throw new Error('Accounts not initialized');
+  }
+  return snapshot.accounts[userId] ?? null;
 }
 
 export function listAccounts(): MatrixCredentials[] {
-  return Object.values(readAccounts());
-}
-
-export function setActiveAccount(userId: string): void {
-  localStorage.setItem(ACTIVE_KEY, userId);
+  ensureInitialized();
+  const snapshot = _snapshot;
+  if (!snapshot) {
+    throw new Error('Accounts not initialized');
+  }
+  return Object.values(snapshot.accounts);
 }
 
 export function getActiveUserId(): string | null {
-  return localStorage.getItem(ACTIVE_KEY);
+  ensureInitialized();
+  const snapshot = _snapshot;
+  if (!snapshot) {
+    throw new Error('Accounts not initialized');
+  }
+  return snapshot.activeUserId;
 }
 
 export function getActiveAccount(): MatrixCredentials | null {
@@ -78,12 +88,124 @@ export function getActiveAccount(): MatrixCredentials | null {
   return id ? getAccount(id) : null;
 }
 
-export function clearAllAccounts(): void {
-  localStorage.removeItem(ACCOUNTS_KEY);
-  localStorage.removeItem(ACTIVE_KEY);
+export async function upsertAccount(c: MatrixCredentials): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    const snapshot = _snapshot;
+    if (!persistence || !snapshot) {
+      throw new Error('Accounts not initialized');
+    }
+    await persistence.upsertAccount(c);
+    snapshot.accounts[c.userId] = c;
+    notifyListeners();
+  });
+}
+
+export async function removeAccount(userId: string): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    const snapshot = _snapshot;
+    if (!persistence || !snapshot) {
+      throw new Error('Accounts not initialized');
+    }
+    await persistence.removeAccount(userId);
+    delete snapshot.accounts[userId];
+    if (snapshot.activeUserId === userId) {
+      snapshot.activeUserId = null;
+      await persistence.setActiveAccount(null);
+    }
+    notifyListeners();
+  });
+}
+
+export async function setActiveAccount(userId: string | null): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    const snapshot = _snapshot;
+    if (!persistence || !snapshot) {
+      throw new Error('Accounts not initialized');
+    }
+    if (userId && !snapshot.accounts[userId]) {
+      throw new Error(`Cannot set active account for unknown user: ${userId}`);
+    }
+    await persistence.setActiveAccount(userId);
+    snapshot.activeUserId = userId;
+    notifyListeners();
+  });
+}
+
+export async function clearAllAccounts(): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    const snapshot = _snapshot;
+    if (!persistence || !snapshot) {
+      throw new Error('Accounts not initialized');
+    }
+    await persistence.clear();
+    snapshot.accounts = {};
+    snapshot.activeUserId = null;
+    snapshot.blockedAccounts = {};
+    notifyListeners();
+  });
+}
+
+export async function flushAccounts(): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    if (!persistence) {
+      throw new Error('Accounts not initialized');
+    }
+    await persistence.flush();
+  });
+}
+
+export async function saveAndActivateAccount(c: MatrixCredentials): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    const snapshot = _snapshot;
+    if (!persistence || !snapshot) {
+      throw new Error('Accounts not initialized');
+    }
+    await persistence.upsertAccount(c);
+    await persistence.setActiveAccount(c.userId);
+    snapshot.accounts[c.userId] = c;
+    snapshot.activeUserId = c.userId;
+    notifyListeners();
+  });
+}
+
+export async function beginAccountOperation(
+  userId: string,
+  deviceId: string,
+  reason: 'refresh' | 'delete',
+): Promise<void> {
+  return queued(async () => {
+    ensureInitialized();
+    const persistence = _persistence;
+    const snapshot = _snapshot;
+    if (!persistence || !snapshot) {
+      throw new Error('Accounts not initialized');
+    }
+    snapshot.blockedAccounts[userId] = { deviceId, reason };
+    await persistence.beginOperation(userId, deviceId, reason);
+  });
 }
 
 /** Removes the pre-migration `sewernet:auth` zustand-persist key. */
 export function cleanupLegacyStorage(): void {
   localStorage.removeItem(LEGACY_AUTH_KEY);
+}
+
+/** Reset internal state for testing only. */
+export function _resetForTesting(): void {
+  _persistence = null;
+  _snapshot = null;
+  _operationQueue = Promise.resolve();
+  _listeners.clear();
 }

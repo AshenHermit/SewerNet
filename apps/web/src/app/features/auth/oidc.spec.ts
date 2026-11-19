@@ -11,6 +11,13 @@ import {
   startOidcLogin,
 } from './oidc';
 import type { OidcClientConfig } from 'matrix-js-sdk/lib/oidc';
+import {
+  initializeAccounts,
+  _resetForTesting,
+  getActiveAccount,
+  getAccount,
+} from '../../../client/accounts';
+import { BrowserPersistence } from '../../../platform/browser';
 
 const { findClientConfigMock, createClientMock, registerClientMock, generateUrlMock, completeGrantMock, fetchMock } =
   vi.hoisted(() => ({
@@ -49,13 +56,11 @@ const metadata = {
   signingKeys: null,
 } as unknown as OidcClientConfig;
 
-function readAccounts(): Record<string, Record<string, unknown>> {
-  return JSON.parse(localStorage.getItem('sewernet_accounts') ?? '{}');
-}
-
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
   sessionStorage.clear();
+  _resetForTesting();
+  await initializeAccounts(new BrowserPersistence());
   findClientConfigMock.mockReset();
   createClientMock.mockReset();
   registerClientMock.mockReset();
@@ -275,8 +280,10 @@ describe('completeOidcLogin', () => {
       expiresInMs: 300_000,
     });
     expect(creds.oidc).toMatchObject({ issuer: ISSUER, clientId: 'cid', responseMode: 'query', revocationEndpoint: `${ISSUER}/revoke` });
-    expect(readAccounts()['@u:h.example']).toMatchObject({ accessToken: 'at-oidc' });
-    expect(localStorage.getItem('sewernet_active_account')).toBe('@u:h.example');
+    // Wait for async persistence to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(getAccount('@u:h.example')?.accessToken).toBe('at-oidc');
+    expect(getActiveAccount()?.userId).toBe('@u:h.example');
   });
 
   it('falls back to the device id from the token scope', async () => {

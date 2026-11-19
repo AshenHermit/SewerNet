@@ -92,6 +92,11 @@ beforeEach(async () => {
   localStorage.clear();
   vi.resetModules();
   matrix = await import('./init-matrix');
+  // Initialize accounts after module reset
+  const { _resetForTesting, initializeAccounts } = await import('./accounts');
+  const { BrowserPersistence } = await import('../platform/browser');
+  _resetForTesting();
+  await initializeAccounts(new BrowserPersistence());
   createClientMock.mockReset();
   httpMock.mockReset();
   refresherDoRefresh.mockReset();
@@ -185,6 +190,11 @@ describe('loginWithPassword', () => {
       useAuthStore: { getState: vi.fn(() => ({ setCredentials })) },
     }));
     vi.resetModules();
+    // Re-initialize accounts after module reset
+    const { _resetForTesting, initializeAccounts } = await import('./accounts');
+    const { BrowserPersistence } = await import('../platform/browser');
+    _resetForTesting();
+    await initializeAccounts(new BrowserPersistence());
     const fresh = await import('./init-matrix');
 
     await fresh.loginWithPassword('bob', 'pwd', HS);

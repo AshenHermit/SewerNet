@@ -10,6 +10,8 @@ import App from './app/app';
 import { cleanupLegacyStorage } from './client/accounts';
 import { registerServiceWorker } from './lib/sw-session';
 import { activateLocale, detectLocale } from './i18n';
+import { initializePlatform, getPersistence } from './platform/runtime';
+import { initializeAccounts } from './client/accounts';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -26,6 +28,11 @@ async function bootstrap() {
   cleanupLegacyStorage();
   void registerServiceWorker();
   await activateLocale(detectLocale());
+
+  // Initialize platform and accounts
+  await initializePlatform();
+  const persistence = getPersistence();
+  await initializeAccounts(persistence);
 
   const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement,

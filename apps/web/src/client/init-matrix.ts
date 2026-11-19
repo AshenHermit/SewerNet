@@ -8,7 +8,7 @@ import {
 } from 'matrix-js-sdk';
 import { OidcTokenRefresher } from 'matrix-js-sdk/lib/oidc';
 import type { AccessTokens, TokenRefreshFunction } from 'matrix-js-sdk/lib/http-api';
-import type { MatrixCredentials, OidcSession } from './accounts';
+import type { MatrixCredentials, OidcSession } from './account-types';
 import { getAccount, removeAccount, setActiveAccount, upsertAccount } from './accounts';
 import { clearSessionFromSw, postSessionToSw } from '../lib/sw-session';
 import { useAuthStore } from '../app/stores/auth-store';
@@ -119,8 +119,8 @@ export async function loginWithPassword(
     refreshToken: response.refresh_token,
     expiresInMs: typeof response.expires_in_ms === 'number' ? response.expires_in_ms : undefined,
   };
-  upsertAccount(credentials);
-  setActiveAccount(credentials.userId);
+  await upsertAccount(credentials);
+  await setActiveAccount(credentials.userId);
   useAuthStore.getState().setCredentials(credentials);
   await requestPersistentStorage();
   return credentials;
@@ -178,10 +178,10 @@ export function createAuthenticatedClient(opts: {
       )
     : null;
 
-  const persistRefreshed = (tokens: AccessTokens): void => {
+  const persistRefreshed = async (tokens: AccessTokens): Promise<void> => {
     const prev = getAccount(userId);
     const homeserverUrl = prev?.homeserverUrl ?? baseUrl;
-    upsertAccount({
+    await upsertAccount({
       userId,
       deviceId: prev?.deviceId ?? deviceId,
       homeserverUrl,
@@ -198,7 +198,7 @@ export function createAuthenticatedClient(opts: {
   if (oidcRefresher) {
     tokenRefreshFunction = async (refreshToken: string) => {
       const tokens = await oidcRefresher.doRefreshAccessToken(refreshToken);
-      persistRefreshed(tokens);
+      await persistRefreshed(tokens);
       return tokens;
     };
   } else if (refreshToken) {
@@ -212,7 +212,7 @@ export function createAuthenticatedClient(opts: {
             ? new Date(Date.now() + response.expires_in_ms)
             : undefined,
       };
-      persistRefreshed(tokens);
+      await persistRefreshed(tokens);
       return tokens;
     };
   }
@@ -397,6 +397,6 @@ export async function logoutCurrent(): Promise<void> {
   await clearSessionFromSw();
   if (userId) {
     await deletePersistedDatabases(userId);
-    removeAccount(userId);
+    await removeAccount(userId);
   }
 }

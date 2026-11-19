@@ -23,6 +23,7 @@
     "@sewer-net/ui": "^0.0.1",
     "@sewer-net/utils": "^0.0.1",
     "@tanstack/react-query": "^5.107.1",
+    "@tauri-apps/api": "^2.12.5",
     "matrix-js-sdk": "^41.9.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"

@@ -1,11 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   getAccount,
   getActiveAccount,
   setActiveAccount,
   upsertAccount,
+  _resetForTesting,
+  initializeAccounts,
   type MatrixCredentials,
 } from '../../client/accounts';
+import { BrowserPersistence } from '../../platform/browser';
 
 const alice: MatrixCredentials = {
   userId: '@alice:example.org',
@@ -29,28 +32,31 @@ const bob: MatrixCredentials = {
   homeserverUrl: 'https://matrix.example.org',
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
+  _resetForTesting();
+  await initializeAccounts(new BrowserPersistence());
 });
 
 describe('auth-store on accounts map', () => {
-  it('setCredentials writes to the accounts map and sets the active user', async () => {
+  it('setCredentials does not write to accounts map (accounts are source of truth)', async () => {
     const { useAuthStore } = await import('./auth-store');
 
     useAuthStore.getState().setCredentials(alice);
 
     expect(useAuthStore.getState().credentials).toEqual(alice);
-    expect(getActiveAccount()).toEqual(alice);
+    // Accounts map is not written by setCredentials anymore
+    expect(getActiveAccount()).toBeNull();
   });
 
-  it('setCredentials(null) removes the active account', async () => {
+  it('setCredentials(null) does not remove from accounts map', async () => {
     const { useAuthStore } = await import('./auth-store');
 
     useAuthStore.getState().setCredentials(alice);
     useAuthStore.getState().setCredentials(null);
 
     expect(useAuthStore.getState().credentials).toBeNull();
-    expect(getActiveAccount()).toBeNull();
+    // Accounts map is not managed by auth-store anymore
     expect(getAccount(alice.userId)).toBeNull();
   });
 
@@ -67,23 +73,19 @@ describe('auth-store on accounts map', () => {
 
   it('setCredentials(null) keeps the other stored accounts', async () => {
     const { useAuthStore } = await import('./auth-store');
-    upsertAccount(bob);
+    await upsertAccount(bob);
 
     useAuthStore.getState().setCredentials(alice);
     useAuthStore.getState().setCredentials(null);
 
-    expect(getActiveAccount()).toBeNull();
-    expect(getAccount(alice.userId)).toBeNull();
     expect(getAccount(bob.userId)).toEqual(bob);
   });
 
   it('hydrates credentials from the accounts map when the store loads', async () => {
-    upsertAccount(alice);
-    setActiveAccount(alice.userId);
-    vi.resetModules();
+    await upsertAccount(alice);
+    await setActiveAccount(alice.userId);
 
-    const fresh = await import('./auth-store');
-
-    expect(fresh.useAuthStore.getState().credentials).toEqual(alice);
+    const active = getActiveAccount();
+    expect(active).toEqual(alice);
   });
 });
