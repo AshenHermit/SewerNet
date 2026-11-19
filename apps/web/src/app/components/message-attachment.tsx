@@ -36,7 +36,7 @@ export function MessageAttachment({ event, downloadLabel, loadingLabel, retryLab
   const descriptorIsValid = validDescriptor(descriptor);
   const valid = descriptorPresent && descriptorIsValid;
   const mxc = valid ? descriptor.url : !descriptorPresent && typeof content['url'] === 'string' && content['url'].startsWith('mxc://') ? content['url'] : undefined;
-  const isRedacted = !!event.unsigned?.['redacted_because'] || !!event.unsigned?.['redacted_by'] || !content['body'];
+  const isRedacted = event.unsigned?.['redacted_because'] !== undefined || event.unsigned?.['redacted_by'] !== undefined || !content['body'];
   const info = content['info'] as Record<string, unknown> | undefined;
   const size = typeof info?.['size'] === 'number' ? info['size'] : undefined;
   const source = useMemo(() => !isRedacted && valid && mxc ? {

@@ -48,6 +48,22 @@ describe('MessageAttachment', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
+  it('redacted_event_does_not_download_retained_attachment', async () => {
+    vi.mocked(resolver.acquireMedia).mockResolvedValue({ url: 'blob:must-not-resolve', release: vi.fn() });
+    const redactedEvent = event({
+      msgtype: 'm.image',
+      body: 'retained-photo.png',
+      file: encryptedFile,
+      url: 'mxc://hs.example/retained',
+      info: { mimetype: 'image/png', size: 12 },
+    });
+    redactedEvent.unsigned = { redacted_because: { type: 'm.room.redaction' } };
+    render(<MessageAttachment event={redactedEvent} {...labels} />);
+    await waitFor(() => expect(resolver.acquireMedia).not.toHaveBeenCalled());
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
   it('encrypted descriptor errors never fall back to plaintext and redact means no download', async () => {
     vi.mocked(resolver.acquireMedia).mockResolvedValue({ url: 'blob:validated', release: vi.fn() });
     const { rerender } = render(<MessageAttachment event={event({ msgtype: 'm.image', body: 'tampered.png', file: { ...encryptedFile, hashes: {} }, url: 'mxc://hs.example/plain' })} {...labels} />);

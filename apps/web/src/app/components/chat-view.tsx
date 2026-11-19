@@ -29,7 +29,7 @@ interface ChatViewProps {
 }
 
 /** Projects a derived timeline item onto the message-list event shape. */
-function toRoomEvent(item: (ReturnType<typeof useTimeline>['items'])[number]): MatrixRoomEvent {
+export function toRoomEvent(item: (ReturnType<typeof useTimeline>['items'])[number]): MatrixRoomEvent {
   const content: Record<string, unknown> = {
     msgtype: item.content.msgtype ?? 'm.text',
     body: item.content.body,
@@ -46,6 +46,7 @@ function toRoomEvent(item: (ReturnType<typeof useTimeline>['items'])[number]): M
     sender: item.sender,
     origin_server_ts: item.ts,
     content: content as MatrixRoomEvent['content'],
+    ...(item.redacted ? { unsigned: { redacted_because: { type: 'm.room.redaction' } } } : {}),
   };
 }
 

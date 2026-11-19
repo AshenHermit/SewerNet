@@ -6,7 +6,11 @@ import { IconSetProvider } from '@sewer-net/icons';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../stores/auth-store';
 import { useChatStore } from '../stores/chat-store';
-import { ChatView } from './chat-view';
+import { ChatView, toRoomEvent } from './chat-view';
+import { MessageAttachment } from './message-attachment';
+import * as resolver from '../../lib/media-resolver';
+
+vi.mock('../../lib/media-resolver', () => ({ acquireMedia: vi.fn(), clearMediaCache: vi.fn() }));
 
 type Handler = (...args: unknown[]) => void;
 
@@ -296,6 +300,33 @@ describe('ChatView (e2ee)', () => {
     useChatStore.setState({ activeRoomId: room.roomId, section: 'chat', error: null });
     return renderView();
   }
+
+
+
+  it('timeline_redacted_attachment_has_no_resolver_or_download', async () => {
+    vi.mocked(resolver.acquireMedia).mockResolvedValue({ url: 'blob:must-not-resolve', release: vi.fn() });
+    const projected = toRoomEvent({
+      eventId: '$redacted', event: {} as never, ts: 1, sender: '@alice:matrix.org', own: true,
+      redacted: true,
+      content: {
+        body: 'retained-photo.png', msgtype: 'm.image',
+        url: 'mxc://matrix.org/retained',
+        file: { v: 'v2', url: 'mxc://matrix.org/cipher', key: {}, iv: 'iv', hashes: { sha256: 'hash' } },
+        info: { mimetype: 'image/png', size: 12 },
+      },
+    });
+    expect(projected.unsigned?.['redacted_because']).toBeTruthy();
+    render(
+      <I18nProvider i18n={i18n}>
+        <UiKitProvider>
+          <MessageAttachment event={projected} downloadLabel="Download" loadingLabel="Loading attachment" retryLabel="Retry" />
+        </UiKitProvider>
+      </I18nProvider>,
+    );
+    await waitFor(() => expect(resolver.acquireMedia).not.toHaveBeenCalled());
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
 
   it('existing_text_and_scroll_behavior_unchanged', () => {
     renderView();
