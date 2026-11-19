@@ -26,17 +26,16 @@ function base64ToBytes(value: string, urlSafe: boolean): Uint8Array {
   if (value.length > MAX_DESCRIPTOR_FIELD_LENGTH || !value || /\s/.test(value)) {
     throw new Error('Invalid encrypted attachment descriptor');
   }
+  const alphabet = urlSafe ? /^[A-Za-z0-9_-]+$/ : /^[A-Za-z0-9+/]+$/;
+  if (!alphabet.test(value) || value.length % 4 === 1) {
+    throw new Error('Invalid encrypted attachment encoding');
+  }
   const normalized = urlSafe ? value.replace(/-/g, '+').replace(/_/g, '/') : value;
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(normalized) || /=/.test(normalized.slice(0, -2))) {
-    throw new Error('Invalid encrypted attachment encoding');
-  }
-  const unpadded = normalized.replace(/=+$/, '');
-  if (unpadded.length % 4 === 1) throw new Error('Invalid encrypted attachment encoding');
-  const decoded = atob(unpadded + '='.repeat((4 - (unpadded.length % 4)) % 4));
+  const decoded = atob(normalized + '='.repeat((4 - (normalized.length % 4)) % 4));
   const bytes = Uint8Array.from(decoded, (char) => char.charCodeAt(0));
-  if (bytesToBase64(bytes).replace(/=+$/, '') !== unpadded) {
-    throw new Error('Invalid encrypted attachment encoding');
-  }
+  const canonical = bytesToBase64(bytes).replace(/=+$/, '');
+  const expected = urlSafe ? canonical.replace(/\+/g, '-').replace(/\//g, '_') : canonical;
+  if (expected !== value) throw new Error('Invalid encrypted attachment encoding');
   return bytes;
 }
 

@@ -23,6 +23,10 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
+function toBase64(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes));
+}
+
 function fileDescriptor(): MatrixEncryptedFile {
   return {
     v: 'v2',
@@ -80,6 +84,29 @@ describe('attachment crypto', () => {
     await expect(decryptAttachment(ciphertext, { ...descriptor, key: { ...descriptor.key, k: 'x' } })).rejects.toThrow();
     await expect(decryptAttachment(ciphertext, { ...descriptor, iv: 'bad' })).rejects.toThrow();
     await expect(decryptAttachment(ciphertext, { ...descriptor, hashes: { sha256: 'bad' } })).rejects.toThrow();
+  });
+
+  it('rejects non-Matrix base64 alphabets and padding', async () => {
+    const ciphertext = toArrayBuffer(fromBase64(knownVector.ciphertext));
+    const descriptor = fileDescriptor();
+    const standardAlphabetKey = toBase64(new Uint8Array(32).fill(0xfb)).replace(/=+$/, '');
+    const standardAlphabetHash = toBase64(new Uint8Array(32).fill(0xfb)).replace(/=+$/, '');
+    await expect(decryptAttachment(ciphertext, {
+      ...descriptor,
+      key: { ...descriptor.key, k: standardAlphabetKey },
+    })).rejects.toThrow();
+    await expect(decryptAttachment(ciphertext, {
+      ...descriptor,
+      hashes: { sha256: standardAlphabetHash },
+    })).rejects.toThrow();
+    await expect(decryptAttachment(ciphertext, {
+      ...descriptor,
+      iv: `${descriptor.iv}=`,
+    })).rejects.toThrow();
+    await expect(decryptAttachment(ciphertext, {
+      ...descriptor,
+      hashes: { sha256: `${descriptor.hashes.sha256}=` },
+    })).rejects.toThrow();
   });
 
   it('roundtrips empty and binary files', async () => {
