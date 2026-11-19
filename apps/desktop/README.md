@@ -25,6 +25,14 @@ npx nx run desktop:bundle --skip-nx-cache
 
 The bundle target creates an unsigned NSIS package. It does not configure production updater metadata, signing keys, or release secrets. Web typecheck and lint remain on the existing `web` project.
 
+## Signed Windows releases
+
+Stable `vX.Y.Z` tags must match root npm, Cargo, and Tauri versions and point to a commit reachable from `master`. Configure GitHub `desktop-release` environment with required release-owner approval and private signing secrets `TAURI_SIGNING_PRIVATE_KEY` plus `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Configure repository variable `TAURI_UPDATER_PUBLIC_KEY` with matching public key; missing key fails Windows build. Release tags must be created only by authorized release owners and protected by repository tag rulesets; workflow checks do not replace tag protection or environment approval. The workflow revalidates official repository, stable tag, version, and `master` ancestry in both preflight and publish jobs. `contents: write` stays limited to publish job. No PR/fork run receives signing secrets.
+
+Windows build creates updater config from public key, then generates manifest, notes, and installer SHA-256 metadata once in protected signed job. Publish transfers and checks exact notes and digest, allows only installer, `.sig`, and `latest.json` as GitHub release assets, rejects symlinks/non-files and foreign assets, and rechecks draft identity before publishing. Release identity, canonical URL, signature, manifest, and uploaded installer bytes must match. Existing public releases are never overwritten. Windows/landing/web archives are not included in release.
+
+Generate the updater key pair on a trusted offline machine using the Tauri CLI (`npx tauri signer generate -w <secure-private-key-path>`). Store private key and password in a separately secured backup; add private key/password only as protected GitHub environment secrets and public key only as repository variable. Never commit generated keys, generated release config, signed installers, or signatures. Rotate keys only with an explicit client migration plan. Triggering a tag/manual rerun is not proof of a real release: protected environment approval, owner-supplied keys, live GitHub publication, and installed A→B updater acceptance remain owner-operated gates. Tauri updater signing is not Windows Authenticode signing and does not prevent SmartScreen warnings.
+
 ## Security boundary
 
 The privileged `main` webview only loads the bundled local frontend. Its sole capability is `core:default`; no remote origins, remote IPC, broad filesystem scope, HTTP plugin, or shell plugin are enabled. External `http(s)` links use the system opener; remote popups and blob/data/javascript/file navigation stay out of the privileged webview. Blob downloads remain non-executable and are not granted privileged navigation or filesystem scope.

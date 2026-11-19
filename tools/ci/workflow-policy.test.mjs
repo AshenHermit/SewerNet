@@ -23,6 +23,7 @@ const ALLOWED_ACTIONS = new Set([
   'actions/setup-node',
   'actions/cache',
   'actions/upload-artifact',
+  'actions/download-artifact',
 ]);
 
 // Upload allowlist: web build, landing output and test reports only. Never the
@@ -405,8 +406,69 @@ test('no_job_caches_or_uploads_packaging_outputs', () => {
   }
 });
 
+test('release_requires_green_checks_and_master_ancestor', () => {
+  const { workflow, raw } = readWorkflow('release-desktop.yml');
+  assert.deepEqual(workflow.on.push?.tags, ['v*']);
+  assert.ok('workflow_dispatch' in workflow.on);
+  assert.equal(workflow.permissions.contents, 'read');
+  assert.equal(workflow.jobs.checks.uses, './.github/workflows/checks.yml');
+  assert.deepEqual(workflow.jobs.publish.needs, ['checks', 'preflight', 'signed_windows']);
+  assert.match(raw, /git merge-base --is-ancestor/);
+  assert.match(raw, /origin\/master/);
+  assert.match(raw, /validate-version --tag/);
+  assert.match(raw, /if:\s*startsWith\(github\.ref, 'refs\/tags\/v'\)/);
+});
+
+test('publish_job_revalidates_trusted_release_context_and_uses_signed_artifact_metadata', () => {
+  const { workflow, raw } = readWorkflow('release-desktop.yml');
+  const publish = workflow.jobs.publish;
+  assert.equal(publish.environment, 'desktop-release');
+  assert.match(JSON.stringify(publish), /git merge-base --is-ancestor/);
+  assert.match(JSON.stringify(publish), /AshenHermit\/SewerNet/);
+  assert.match(JSON.stringify(publish), /GITHUB_REPOSITORY/);
+  const signedJob = workflow.jobs.signed_windows;
+  assert.ok(jobSteps(signedJob).some((step) => /conventional-changelog-cli/.test(step.run ?? '')));
+  assert.ok(jobSteps(signedJob).some((step) => /installer\.sha256/.test(step.run ?? '')));
+  assert.ok(jobSteps(publish).some((step) => /release-notes\.md/.test(step.run ?? '')));
+  assert.match(raw, /TAURI_UPDATER_PUBLIC_KEY is required/);
+  assert.match(raw, /download-artifact/);
+});
+
+test('signing_secrets_only_in_protected_job', () => {
+  const { workflow, raw } = readWorkflow('release-desktop.yml');
+  const publish = workflow.jobs.publish;
+  const signed = workflow.jobs.signed_windows;
+  assert.equal(publish.environment, 'desktop-release');
+  assert.equal(publish.permissions.contents, 'write');
+  assert.equal(signed.environment, 'desktop-release');
+  assert.equal(signed['runs-on'], 'windows-latest');
+  assert.match(raw, /TAURI_SIGNING_PRIVATE_KEY/);
+  assert.match(raw, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
+  assert.match(raw, /TAURI_UPDATER_PUBLIC_KEY/);
+  assert.match(raw, /npx nx run desktop:bundle --skip-nx-cache/);
+  assert.ok(!/printenv|env\s*\|\s*sort|Write-Output\s+\$env:TAURI/.test(raw));
+  for (const [jobName, job] of workflowJobs(workflow)) {
+    if (jobName !== 'signed_windows') {
+      assert.ok(!JSON.stringify(job).includes('TAURI_SIGNING_PRIVATE_KEY'));
+    }
+  }
+  assert.ok(!raw.includes('pull_request_target'));
+});
+
+test('release_actions_are_pinned_to_official_shas', () => {
+  const { raw, workflow } = readWorkflow('release-desktop.yml');
+  for (const step of actionSteps(workflow)) {
+    const [ownerRepo, ref] = step.uses.split('@');
+    assert.ok(ALLOWED_ACTIONS.has(ownerRepo), `release-desktop.yml: ${ownerRepo} is not approved`);
+    assert.match(ref ?? '', /^[0-9a-f]{40}$/);
+  }
+  const usesLines = raw.split(/\r?\n/).filter((line) => /^\s*(-\s*)?uses:\s*\S+/.test(line)).filter((line) => !/uses:\s*\.\//.test(line));
+  assert.equal(usesLines.length, actionSteps(workflow).length);
+  for (const line of usesLines) assert.match(line, /uses:\s*\S+@[0-9a-f]{40}\s+#\s+v\d+\.\d+\.\d+\s*$/);
+});
+
 test('actions_are_pinned_to_official_shas', () => {
-  for (const name of ['ci.yml', 'checks.yml']) {
+  for (const name of ['ci.yml', 'checks.yml', 'release-desktop.yml']) {
     const { raw, workflow } = readWorkflow(name);
 
     for (const step of actionSteps(workflow)) {
