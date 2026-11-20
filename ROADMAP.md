@@ -34,7 +34,7 @@
 - [ ] Desktop acceptance на установленной сборке: OIDC cold/warm callback, восстановление аккаунта после перезапуска, E2EE и encrypted media/attachments, смена аккаунта/logout и Tray Exit
 - [ ] Signed updater A→B smoke: consent, сохранение credential state, установка и перезапуск; отрицательный тест с повреждённой/неверно подписанной сборкой
 - [ ] Подтвердить реальный зелёный GitHub Actions run для актуального commit/tag; локальные gates не заменяют удалённый CI
-- [ ] Production `docker-compose` для backend + landing + reverse proxy; проверить HTTP routing, external HTTPS ingress и smoke на целевом окружении
+- [ ] Production `docker-compose` для backend + landing + reverse proxy: HTTP-only стек подготовлен (`compose.yaml`, `deploy/`, Caddy Host-роутинг, smoke, docs), **но не проверен** — Docker CLI/compose и caddy локально отсутствуют, сборка образов, реальный Caddy smoke, зелёный GitHub-run, внешний HTTPS/Host/Nginx smoke и OIDC callback на app-поддомене не выполнялись; деплой и изменения сервера — только по отдельному разрешению владельца
 
 ### Последний локальный gate
 - JS `typecheck,lint,test,build`: PASS (9 проектов; Nx отметил один flaky task)

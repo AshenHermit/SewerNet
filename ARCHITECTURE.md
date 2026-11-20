@@ -13,7 +13,8 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 - **Лендинг/dev log**: Next.js 16 (App Router), статический пререндер.
 - **UI-дока**: Storybook 10 (react-vite) в `libs/ui` (конфиг `libs/ui/.storybook`).
 - **Тесты**: vitest + jsdom (`web`, `landing`, `ui`, `icons`, `utils`); jest (`backend`).
-- **План**: Tauri (desktop/mobile), docker-compose (prod), GitHub Actions (CI/CD).
+- **План**: Tauri (desktop/mobile), GitHub Actions (CI/CD). Prod docker-compose
+  подготовлен (HTTP-only стек), но реальный деплой не выполнялся.
 
 ## Ключевые решения
 1. **REST proxy вместо GraphQL** — простая совместимость с Matrix API; GraphQL можно добавить позже как отдельный слой.
@@ -140,6 +141,24 @@ web (React)
   ├─ chat-store            → activeRoomId, error
   └─ theme-store (persist) → ThemeSettings → applyTheme() → CSS vars → kits/icons
 ```
+
+## Production deployment (HTTP-only стек)
+
+`compose.yaml` + `deploy/` собирают три образа: `backend` (NestJS, приватный
+:3000, без published port, только сеть `services`), `landing` (статический
+Next.js export) и `reverse-proxy` (Caddy с `auto_https off`, запечённый
+`deploy/Caddyfile`). Роутер публикует только
+`127.0.0.1:${ROUTER_PORT:-8080}:80`; два named vhost
+(`${SITE_SUBDOMAIN}.${COMMON_DOMAIN}` → landing,
+`${APP_SUBDOMAIN}.${COMMON_DOMAIN}` → SPA из `apps/web/dist`) и catch-all 404.
+`/api/*` на публичных хостах отвергается. Backend не имеет публичного роута.
+
+Публичный HTTPS terminated **существующим** root Nginx владельца; compose
+никогда не биндит 443, не запускает automatic certificate issuance и не монтирует
+сертификаты. Два варианта ingress: host-Nginx (`proxy_pass` на loopback с
+сохранением `Host`) и container-Nginx (внешняя сеть `INGRESS_NETWORK`, только
+роутер, без host port). Внешний HTTPS обязателен для SW/WebCrypto/OIDC;
+внутренний HTTP его не заменяет. Подробности и blockers — `deploy/README.md`.
 
 ## Фокус прототипа
 - web + desktop (Tauri) позже; архитектурный запас под mobile.

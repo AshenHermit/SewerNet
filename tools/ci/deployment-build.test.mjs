@@ -35,6 +35,46 @@ test('landing_cache_tracks_out', () => {
   );
 });
 
+test('deployment_docs_distinguish_internal_http_and_external_tls', () => {
+  const readmePath = path.join(workspaceRoot, 'deploy', 'README.md');
+  const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, 'utf8') : '';
+  const envExample = fs.readFileSync(path.join(workspaceRoot, '.env.example'), 'utf8');
+
+  // Brief's exact assertions.
+  assert.ok(readme.includes('proxy_set_header Host $host;'));
+  assert.ok(readme.includes('127.0.0.1') && readme.includes('COMMON_DOMAIN'));
+  assert.ok(readme.includes('HTTPS') && readme.includes('INGRESS_NETWORK'));
+
+  // Required public env var names must appear in both the template and the guide.
+  for (const key of [
+    'COMMON_DOMAIN',
+    'SITE_SUBDOMAIN',
+    'APP_SUBDOMAIN',
+    'ROUTER_PORT',
+    'INGRESS_NETWORK',
+  ]) {
+    assert.match(envExample, new RegExp(`^${key}=`, 'm'), `${key} must be in .env.example`);
+    assert.ok(readme.includes(key), `${key} must be documented in deploy/README.md`);
+  }
+
+  // The external Nginx example must preserve the original Host header.
+  assert.match(readme, /proxy_set_header\s+Host\s+\$host;/);
+
+  // No ACME / 443 / TLS volumes may be instructed for the compose stack.
+  const deployDocs = readme;
+  assert.doesNotMatch(
+    deployDocs,
+    /acme|letsencrypt|certbot/i,
+    'deployment docs must not instruct ACME inside compose',
+  );
+  assert.doesNotMatch(deployDocs, /:\s*443\b|listen\s+443/i, 'no host 443 in the compose stack');
+  assert.doesNotMatch(
+    deployDocs,
+    /tls[_-]?(vol|cert|key)|mount[^\n]*\.(pem|key)/i,
+    'no TLS volumes for compose',
+  );
+});
+
 test('backend_generated_manifest_contains_runtime_only', () => {
   const distDir = path.join(workspaceRoot, 'apps', 'backend', 'dist');
   const manifestPath = path.join(distDir, 'package.json');
