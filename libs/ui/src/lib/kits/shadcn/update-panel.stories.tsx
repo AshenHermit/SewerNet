@@ -19,8 +19,8 @@ export const Available: Story = {
     dismissLabel: 'Later',
     draftWarningLabel: 'Unsaved message draft may be lost',
     draftWarning: true,
-    onCheck: () => {},
-    onInstall: () => {},
-    onDismiss: () => {},
+    onCheck: () => undefined,
+    onInstall: () => undefined,
+    onDismiss: () => undefined,
   },
 };

@@ -216,7 +216,7 @@ describe('desktop update lifecycle', () => {
       loadUpdater: async () => ({ check: async () => ({ version: '2.0.0', downloadAndInstall: async () => undefined }) }),
       flush: async () => undefined,
       confirmInstall: () => false,
-      requestExit: async () => vi.fn(),
+      requestExit: async () => undefined,
       isDraftPresent: () => true,
     });
     await controller.checkForUpdates(true);
@@ -246,6 +246,26 @@ describe('desktop update lifecycle', () => {
     expect(resetUpdateExit).toHaveBeenCalledOnce();
     expect(updateExitInProgress).toBe(false);
     expect(controller.getState().phase).toBe('error');
+  });
+
+  it('reports_install_and_guard_reset_failures', async () => {
+    const controller = createUpdateController({
+      isDesktop: () => true,
+      loadUpdater: async () => ({ check: async () => ({ version: '2.0.0', downloadAndInstall: async () => { throw new Error('download failed'); } }) }),
+      flush: async () => undefined,
+      beginUpdateExit: async () => undefined,
+      resetUpdateExit: async () => { throw new Error('guard reset failed'); },
+      confirmInstall: () => true,
+      requestExit: async () => undefined,
+      isDraftPresent: () => false,
+    });
+
+    await controller.checkForUpdates(true);
+    await controller.installAvailableUpdate();
+
+    expect(controller.getState().phase).toBe('error');
+    expect(controller.getState().error).toContain('download failed');
+    expect(controller.getState().error).toContain('guard reset failed');
   });
 
   it('invalid_signature_install_fails', async () => {

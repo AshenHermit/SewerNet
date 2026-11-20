@@ -16,18 +16,32 @@
 - [x] matrix-js-sdk v41 напрямую из браузера: синглтон клиента (`resume`/`logoutCurrent`), rust-crypto (E2EE), IndexedDB-сторы по юзеру
 - [x] Список комнат и таймлайн из SDK-сторов: событийные хуки `useRooms`/`useTimeline`, пагинация вверх, отправка, read receipts
 - [x] Медиа: `mxcUrlToHttp` + service worker, подмешивающий Bearer к authenticated media; аватары комнат
-- [x] Вложения: загрузка файлов (`m.image`/`m.file`) через `uploadContent`
+- [x] Вложения в незашифрованных комнатах: загрузка файлов (`m.image`/`m.file`) через `uploadContent`
+- [x] Вложения v2 в зашифрованных комнатах: шифрование до upload, проверка hash и расшифровка после получения; plaintext fallback запрещён
 - [x] Чистка: web больше не вызывает `/api/matrix/*` (REST-клиент удалён)
 
 ## MVP — доводка
 
-- [ ] Tauri desktop-обёртка apps/desktop
-- [ ] GitHub Actions CI (typecheck,lint,test,build) + сборки
-- [ ] docker-compose для prod (backend + landing + reverse proxy)
+### Реализовано
+- [x] Windows desktop-обёртка `apps/desktop` на Tauri 2: общий web UI, tray, deep links, secure credential storage и updater lifecycle; локальные native tests и production build проходят
+- [x] GitHub Actions scaffold: workspace JS gates, Windows native tests и unsigned desktop bundle; signed desktop release workflow подготовлен
 - [x] Холодная загрузка списка комнат с именами/превью сразу (теперь — из SDK после первого sync)
 - [x] Синхронизация сообщений: live-обновления через SDK `/sync`
 - [x] Пагинация истории (pagination tokens)
 - [x] Переключатель языка в UI (EN/RU в настройках)
+
+### Осталось до завершения MVP
+- [ ] Desktop acceptance на установленной сборке: OIDC cold/warm callback, восстановление аккаунта после перезапуска, E2EE и encrypted media/attachments, смена аккаунта/logout и Tray Exit
+- [ ] Signed updater A→B smoke: consent, сохранение credential state, установка и перезапуск; отрицательный тест с повреждённой/неверно подписанной сборкой
+- [ ] Подтвердить реальный зелёный GitHub Actions run для актуального commit/tag; локальные gates не заменяют удалённый CI
+- [ ] Production `docker-compose` для backend + landing + reverse proxy; проверить HTTP routing, external HTTPS ingress и smoke на целевом окружении
+
+### Последний локальный gate
+- JS `typecheck,lint,test,build`: PASS (9 проектов; Nx отметил один flaky task)
+- Desktop `native-test`: PASS (24 unit, 8 lifecycle integration, 3 storage tests; 1 native smoke test намеренно ignored)
+- Desktop/policy и frozen-prototype regression tests: PASS (12/12)
+- Tauri production build (`npx tauri build --no-bundle`): PASS
+- Эти проверки не подтверждают установленный desktop acceptance, подписанный A→B update, удалённый GitHub run или production deployment.
 
 ## Сразу после MVP
 

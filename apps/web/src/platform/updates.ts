@@ -101,7 +101,17 @@ export function createUpdateController(options: UpdateControllerOptions): Update
       set({ phase: 'installing', version: update.version, progress: 100 });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      set({ phase: 'error', version: update.version, error: message });
+      let resetError: string | null = null;
+      try {
+        if (options.resetUpdateExit) await options.resetUpdateExit();
+      } catch (resetFailure) {
+        resetError = resetFailure instanceof Error ? resetFailure.message : String(resetFailure);
+      }
+      set({
+        phase: 'error',
+        version: update.version,
+        error: resetError ? `${message}; failed to restore close behavior: ${resetError}` : message,
+      });
     }
   }
 

@@ -58,19 +58,6 @@ fn updater_exit_transition_is_narrow_and_registered() {
 }
 
 #[test]
-fn failed_update_can_reset_close_guard() {
-    lifecycle::reset_update_exit();
-    lifecycle::begin_update_exit();
-    assert!(lifecycle::is_update_exit_in_progress());
-
-    lifecycle::reset_update_exit();
-    assert!(!lifecycle::is_update_exit_in_progress());
-
-    let lib = include_str!("../src/lib.rs");
-    assert!(lib.contains("lifecycle::reset_update_exit"));
-}
-
-#[test]
 fn update_shutdown_bypasses_close_hide() {
     assert!(lifecycle::update_shutdown_bypasses_close_hide());
 }

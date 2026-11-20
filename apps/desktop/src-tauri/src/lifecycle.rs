@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::menu::{Menu, MenuItem};
-use tauri::tray::TrayIconBuilder;
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Runtime, WindowEvent};
 
 static UPDATE_EXIT_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
@@ -29,7 +29,8 @@ pub fn update_shutdown_bypasses_close_hide() -> bool {
 
 #[tauri::command]
 pub fn updater_available() -> bool {
-    let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap_or_default();
+    let config: serde_json::Value =
+        serde_json::from_str(include_str!("../tauri.conf.json")).unwrap_or_default();
     config
         .pointer("/plugins/updater/pubkey")
         .and_then(serde_json::Value::as_str)
@@ -47,8 +48,19 @@ pub fn reset_update_exit() {
 }
 
 #[cfg(test)]
-pub fn is_update_exit_in_progress() -> bool {
-    UPDATE_EXIT_IN_PROGRESS.load(Ordering::SeqCst)
+mod tests {
+    use super::{UPDATE_EXIT_IN_PROGRESS, begin_update_exit, reset_update_exit};
+    use std::sync::atomic::Ordering;
+
+    #[test]
+    fn failed_update_can_reset_close_guard() {
+        reset_update_exit();
+        begin_update_exit();
+        assert!(UPDATE_EXIT_IN_PROGRESS.load(Ordering::SeqCst));
+
+        reset_update_exit();
+        assert!(!UPDATE_EXIT_IN_PROGRESS.load(Ordering::SeqCst));
+    }
 }
 
 pub fn setup_tray<R: Runtime>(app: &mut tauri::App<R>) -> tauri::Result<()> {
@@ -63,23 +75,37 @@ pub fn setup_tray<R: Runtime>(app: &mut tauri::App<R>) -> tauri::Result<()> {
     )?;
     let exit = MenuItem::with_id(&app_handle, "exit", "Exit", true, None::<&str>)?;
     let menu = Menu::with_items(&app_handle, &[&open, &check, &exit])?;
-    let handle = app_handle.clone();
+    let click_handle = app_handle.clone();
+    let menu_handle = app_handle.clone();
     TrayIconBuilder::new()
         .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(move |_tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+                && let Some(window) = click_handle.get_webview_window("main")
+            {
+                show_main_window_handle(window);
+            }
+        })
         .on_menu_event(move |_tray, event| match event.id().as_ref() {
             "open" => {
-                let _ = handle
+                let _ = menu_handle
                     .get_webview_window("main")
                     .map(show_main_window_handle);
             }
             "check-updates" => {
-                if let Some(window) = handle.get_webview_window("main") {
+                if let Some(window) = menu_handle.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.emit("update-check-requested", true);
                 }
             }
             "exit" => {
-                if let Some(window) = handle.get_webview_window("main") {
+                if let Some(window) = menu_handle.get_webview_window("main") {
+                    show_main_window_handle(window.clone());
                     let _ = window.emit("app-exit-requested", true);
                 }
             }
@@ -94,8 +120,8 @@ pub fn show_main_window_handle<R: Runtime>(window: tauri::WebviewWindow<R>) {
     let _ = window.set_focus();
 }
 
-pub fn hide_on_close<R: Runtime>(window: &tauri::WebviewWindow<R>, event: &WindowEvent) {
-    if let WindowEvent::CloseRequested { api } = event {
+pub fn hide_on_close<R: Runtime>(window: &tauri::Window<R>, event: &WindowEvent) {
+    if let WindowEvent::CloseRequested { api, .. } = event {
         if UPDATE_EXIT_IN_PROGRESS.load(Ordering::SeqCst) {
             return;
         }

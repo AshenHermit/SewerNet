@@ -23,14 +23,14 @@ pub fn run() {
                 }
             }
             if let Some(window) = app.get_webview_window("main") {
-                let _ = crate::lifecycle::show_main_window_handle(window);
+                crate::lifecycle::show_main_window_handle(window);
             }
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(navigation::plugin())
-        .on_window_event(|window, event| lifecycle::hide_on_close(window, event))
+        .on_window_event(lifecycle::hide_on_close)
         .setup(|app| {
             lifecycle::setup_tray(app)?;
             use tauri_plugin_deep_link::DeepLinkExt;

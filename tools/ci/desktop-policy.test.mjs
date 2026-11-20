@@ -27,6 +27,7 @@ test('task3_oidc_callback_and_deep_link_policy', async () => {
   assert.match(serialized, /sewernet:\/\/oidc\/callback/);
   assert.doesNotMatch(serialized, /callback_url|raw_url|raw_callback|TAURI_SIGNING_PRIVATE_KEY/);
   assert.deepEqual(config.plugins?.['deep-link']?.desktop?.schemes, ['sewernet']);
+  assert.ok(capability.permissions.includes('deep-link:default'));
   assert.doesNotMatch(capability.permissions.join(','), /shell|http/);
 });
 
@@ -77,14 +78,53 @@ test('task5_native_media_navigation_and_csp_policy', async () => {
   assert.doesNotMatch(readme, /manual smoke passed|encrypted.*passed|SewerNet.*Element.*passed/i);
 });
 
+test('matrix_widget_api_freeze_compat_patch_is_applied_on_install', async () => {
+  const [rootPackage, patch] = await Promise.all([
+    readJson('package.json'),
+    read('patches/matrix-widget-api+1.20.0.patch'),
+  ]);
+  assert.equal(rootPackage.scripts.postinstall, 'patch-package');
+  assert.equal(rootPackage.devDependencies['patch-package'], '8.0.1');
+  assert.match(patch, /exports\.toString = toString;/);
+  assert.match(patch, /Object\.defineProperty\(exports, 'toString'/);
+});
+
+test('tray_exit_flushes_credentials_before_native_exit', async () => {
+  const [lifecycle, controller, updates] = await Promise.all([
+    read('apps/desktop/src-tauri/src/lifecycle.rs'),
+    read('apps/web/src/app/components/update-controller.tsx'),
+    read('apps/web/src/platform/updates.ts'),
+  ]);
+  assert.match(lifecycle, /"exit"\s*=>\s*\{[\s\S]*?show_main_window_handle\([\s\S]*?window\.emit\("app-exit-requested", true\)/);
+  assert.match(controller, /listen\('app-exit-requested',[^\n]*controller\.exitDesktop\(\)/);
+  assert.match(updates, /async function exitDesktop\(\): Promise<void>\s*\{[\s\S]*?await options\.flush\(\)[\s\S]*?await options\.requestExit\(\)/);
+  assert.match(lifecycle, /spawn_blocking\(move \|\| store\.flush\(\)\)[\s\S]*?app\.exit\(0\)/);
+});
+
+test('tray_left_click_opens_window_and_right_click_shows_menu', async () => {
+  const lifecycle = await read('apps/desktop/src-tauri/src/lifecycle.rs');
+  assert.match(lifecycle, /\.menu\(&menu\)/);
+  assert.match(lifecycle, /\.show_menu_on_left_click\(false\)/);
+  const clickHandler = lifecycle.split('.on_tray_icon_event')[1]?.split('.on_menu_event')[0] ?? '';
+  const menuHandler = lifecycle.split('.on_menu_event')[1]?.split('.build(&app_handle)')[0] ?? '';
+  assert.match(clickHandler, /if let TrayIconEvent::Click\s*\{/);
+  assert.match(clickHandler, /button:\s*MouseButton::Left/);
+  assert.match(clickHandler, /button_state:\s*MouseButtonState::Up/);
+  assert.match(clickHandler, /show_main_window_handle/);
+  assert.match(lifecycle, /let click_handle\s*=\s*app_handle\.clone\(\)/);
+  assert.match(lifecycle, /let menu_handle\s*=\s*app_handle\.clone\(\)/);
+  assert.match(menuHandler, /menu_handle\.get_webview_window\("main"\)/);
+});
+
 test('desktop_frontend_is_shared_and_separate', async () => {
-  const [project, packageJson, cargo, rustToolchain, config, vite] = await Promise.all([
+  const [project, packageJson, cargo, rustToolchain, config, vite, lifecycle] = await Promise.all([
     readJson('apps/desktop/project.json'),
     readJson('apps/desktop/package.json'),
     read('apps/desktop/src-tauri/Cargo.toml'),
     read('apps/desktop/src-tauri/rust-toolchain.toml'),
     readJson('apps/desktop/src-tauri/tauri.conf.json'),
     read('apps/web/vite.config.mts'),
+    read('apps/desktop/src-tauri/src/lifecycle.rs'),
   ]);
 
   assert.equal(packageJson.name, '@sewer-net/desktop');
@@ -94,6 +134,11 @@ test('desktop_frontend_is_shared_and_separate', async () => {
   assert.match(rustToolchain, /channel\s*=\s*"stable"/);
   assert.match(rustToolchain, /targets\s*=\s*\["x86_64-pc-windows-msvc"\]/);
   assert.doesNotMatch(rustToolchain, /1\.90\.0/);
+  assert.match(cargo, /tauri-plugin-deep-link\s*=\s*"2\.6\.3"/);
+  assert.match(cargo, /custom-protocol\s*=\s*\[\s*"tauri\/custom-protocol"\s*\]/);
+  assert.equal(packageJson.dependencies['@tauri-apps/plugin-deep-link'], '2.6.3');
+  assert.match(lifecycle, /WindowEvent::CloseRequested\s*\{\s*api,\s*\.\.\s*\}/);
+  assert.match(lifecycle, /&tauri::Window<R>/);
   assert.equal(config.build.frontendDist, '../dist');
   assert.match(config.build.beforeBuildCommand, /desktop:build/);
   assert.match(vite, /mode === 'desktop'/);
@@ -136,7 +181,7 @@ test('capabilities_are_local_main_only', async () => {
   const capability = await readJson('apps/desktop/src-tauri/capabilities/main.json');
   assert.equal(capability.identifier, 'main-capability');
   assert.deepEqual(capability.windows, ['main']);
-  assert.deepEqual(capability.permissions, ['core:default']);
+  assert.deepEqual(capability.permissions, ['core:default', 'deep-link:default']);
   assert.equal('remote' in capability, false);
   assert.equal('scope' in capability, false);
 });

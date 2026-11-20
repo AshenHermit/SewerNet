@@ -9,7 +9,8 @@
     "desktop:bundle": "nx run desktop:bundle --skip-nx-cache",
     "desktop:native-test": "nx run desktop:native-test",
     "desktop:test": "nx run desktop:test",
-    "desktop:validate-version": "node tools/release/desktop-release.mjs validate-version"
+    "desktop:validate-version": "node tools/release/desktop-release.mjs validate-version",
+    "postinstall": "patch-package"
   },
   "private": true,
   "devDependencies": {
@@ -63,6 +64,7 @@
     "jiti": "2.4.2",
     "jsdom": "^27.1.0",
     "nx": "24.0.6",
+    "patch-package": "8.0.1",
     "prettier": "~3.6.2",
     "storybook": "^10.6.2",
     "ts-jest": "^29.4.7",
