@@ -188,6 +188,17 @@ describe('WelcomeScreen', () => {
     expect(mockedRegister).toHaveBeenCalledWith(AUTH_METADATA, 'http://localhost:4200/oidc/callback');
   });
 
+  it('shows an OIDC failure next to the buttons instead of hiding it in the password section', async () => {
+    mockedDiscover.mockResolvedValue(DELEGATED);
+    mockedRegister.mockRejectedValue(new Error('oidc_redirect_uri_rejected'));
+    renderWelcome();
+    await flushDiscovery();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue with Matrix' }));
+    const message = await screen.findByText('oidc_redirect_uri_rejected');
+    expect(message.closest('details')).toBeNull();
+  });
+
   it('starts the register flow from the Create account button', async () => {
     mockedDiscover.mockResolvedValue(DELEGATED);
     mockedRegister.mockResolvedValue({ clientId: 'cid', redirectUri: 'http://localhost:4200/oidc/callback' });

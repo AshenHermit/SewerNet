@@ -71,7 +71,14 @@ export function WelcomeScreen() {
           prompt === 'create' ? 'register' : 'login',
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        const raw = err instanceof Error ? err.message : String(err);
+        if (raw.includes('invalid_redirect_uri') || raw.includes('invalid redirect_uri')) {
+          setError(
+            'This Matrix authentication server does not accept the desktop callback (sewernet://oidc/callback). Desktop OIDC is unavailable here; use password sign-in.',
+          );
+        } else {
+          setError(raw);
+        }
         setStarting(false);
       }
     },
@@ -104,6 +111,11 @@ export function WelcomeScreen() {
       onHomeserverChange={(value) => setHomeserverUrl(value)}
       onHomeserverBlur={() => undefined}
       oidc={Boolean(caps?.delegatedAuth)}
+      oidcUnavailableHint={
+        !resolving && !caps?.delegatedAuth
+          ? t`This homeserver does not advertise Matrix OIDC login; password sign-in is available.`
+          : null
+      }
       resolving={resolving}
       starting={starting}
       error={error}

@@ -18,6 +18,7 @@ export function ShadcnLoginScreen({
   onHomeserverChange,
   onHomeserverBlur,
   oidc,
+  oidcUnavailableHint,
   resolving,
   starting,
   error,
@@ -96,6 +97,14 @@ export function ShadcnLoginScreen({
 
           {oidc ? (
             <>
+              {error ? (
+                <p
+                  role="alert"
+                  className="break-words text-xs text-[var(--sn-text)] [overflow-wrap:anywhere]"
+                >
+                  {error}
+                </p>
+              ) : null}
               <ProxyButton
                 onClick={() => void onContinueWithMatrix()}
                 loading={starting || resolving}
@@ -118,7 +127,14 @@ export function ShadcnLoginScreen({
               </details>
             </>
           ) : (
-            passwordForm
+            <>
+              {oidcUnavailableHint ? (
+                <p className="break-words text-xs text-[var(--sn-text-muted)] [overflow-wrap:anywhere]">
+                  {oidcUnavailableHint}
+                </p>
+              ) : null}
+              {passwordForm}
+            </>
           )}
         </div>
       </div>

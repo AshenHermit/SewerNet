@@ -346,6 +346,8 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
   onHomeserverBlur: () => void;
   /** Homeserver advertises delegated (MAS/OIDC) auth — OAuth buttons instead of the password form. */
   oidc?: boolean;
+  /** Optional hint shown when delegated auth is unavailable. */
+  oidcUnavailableHint?: ReactNode;
   resolving: boolean;
   starting: boolean;
   error: string | null;
