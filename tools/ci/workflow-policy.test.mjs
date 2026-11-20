@@ -30,7 +30,7 @@ const ALLOWED_ACTIONS = new Set([
 // whole workspace, native/target directories or release outputs.
 const ALLOWED_ARTIFACT_PATHS = [
   'apps/web/dist',
-  'apps/landing/.next',
+  'apps/landing/out',
   'apps/*/test-output',
   'libs/*/test-output',
 ];
@@ -286,17 +286,10 @@ test('artifacts_are_allowlisted', () => {
   );
 
   const landingUpload = uploads.find((step) =>
-    stepPaths(step).some((candidate) =>
-      candidate.startsWith('apps/landing/.next'),
-    ),
+    stepPaths(step).includes('apps/landing/out'),
   );
 
-  assert.ok(landingUpload, 'landing output must be uploaded explicitly');
-  assert.equal(landingUpload.with['include-hidden-files'], true);
-  assert.ok(
-    stepPaths(landingUpload).includes('!apps/landing/.next/cache'),
-    'Next.js internal cache must not be uploaded',
-  );
+  assert.ok(landingUpload, 'landing export must be uploaded explicitly');
 
   const webUpload = uploads.find((step) =>
     stepPaths(step).some((candidate) => candidate.startsWith('apps/web/dist')),

@@ -78,15 +78,8 @@ jobs:
       - name: Upload landing build
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: landing-next
-          # Next.js output stays available until the deployment plan switches
-          # the landing build to a static `out` export. Only the artifact
-          # excludes the internal Next cache; the `.next` build output itself
-          # still lands in `.nx/cache` (see the Nx cache step above).
-          path: |
-            apps/landing/.next
-            !apps/landing/.next/cache
-          include-hidden-files: true
+          name: landing-static
+          path: apps/landing/out
           if-no-files-found: error
           retention-days: 7
 
