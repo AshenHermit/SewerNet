@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7
+FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS build
+WORKDIR /workspace
+
+COPY package.json package-lock.json ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY libs/types libs/types
+RUN npm ci
+
+COPY apps/backend apps/backend
+COPY nx.json tsconfig.base.json tsconfig.json ./
+COPY tools/ci/prune-backend-manifest.mjs tools/ci/prune-backend-manifest.mjs
+RUN npx nx build backend --configuration=production \
+    && npx nx run backend:prune
+
+FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS runtime-deps
+WORKDIR /app
+COPY --from=build /workspace/apps/backend/dist/package.json ./package.json
+COPY --from=build /workspace/apps/backend/dist/package-lock.json ./package-lock.json
+RUN npm ci --omit=dev
+
+FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build --chown=node:node /workspace/apps/backend/dist/ ./
+COPY --from=runtime-deps --chown=node:node /app/node_modules ./node_modules
+USER node
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+CMD ["node", "main.js"]
