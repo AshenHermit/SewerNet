@@ -27,6 +27,29 @@ describe('Desktop platform', () => {
     await expect(transport.fetchBlob('https://evil.test/media', session, new AbortController().signal)).rejects.toThrow();
   });
 
+  it('falls back to native media_download when webview fetch is blocked', async () => {
+    const transport = new (await import('./desktop')).DesktopMediaTransport();
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    const session = { userId: '@a:example.org', deviceId: 'DEV', baseUrl: 'https://home.test/matrix', accessToken: 'secret', epoch: 1 };
+    currentMediaSession.value = session;
+    invoke.mockResolvedValueOnce([9, 8, 7]);
+
+    const blob = await transport.fetchBlob(
+      'https://home.test/matrix/_matrix/client/v1/media/thumbnail/media.example/id?width=48&height=48&method=scale',
+      session,
+      new AbortController().signal,
+    );
+
+    expect(invoke).toHaveBeenCalledWith('media_download', {
+      mxc: 'mxc://media.example/id',
+      kind: 'thumbnail',
+      size: 48,
+      userId: '@a:example.org',
+    });
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.size).toBe(3);
+  });
+
   it('no_token_for_cross_origin_or_stale_account', async () => {
     const transport = new (await import('./desktop')).DesktopMediaTransport();
     const fetchSpy = vi.fn();

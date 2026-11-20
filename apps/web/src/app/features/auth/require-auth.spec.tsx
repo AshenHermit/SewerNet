@@ -69,6 +69,15 @@ describe('RequireAuth', () => {
     expect(mockedResume).not.toHaveBeenCalled();
   });
 
+  it('leaves the restoring screen for welcome when logout clears credentials before hydration finishes', async () => {
+    useAuthStore.setState({ credentials: null, status: 'loading', error: null });
+
+    renderGate();
+
+    expect(await screen.findByText('welcome-home')).toBeTruthy();
+    expect(screen.queryByText('Restoring session…')).toBeNull();
+  });
+
   it('resumes the client and renders children after the first sync', async () => {
     useAuthStore.setState({ credentials: CREDENTIALS, status: 'ready' });
     mockedResume.mockImplementation(

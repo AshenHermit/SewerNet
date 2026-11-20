@@ -59,8 +59,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     };
   }, [credentials, attempt]);
 
-  // The durable snapshot is still loading: never resume a guessed session.
-  if (status === 'loading') {
+  // Hydration still running. Credentials already cleared means logout (or no
+  // account), so the welcome route must replace the gate instead of sitting
+  // on "Restoring session…" with no login form and no visible Exit target.
+  if (status === 'loading' && credentials) {
     return <ProxyStatusPanel title={<Trans>Restoring session…</Trans>} />;
   }
 
