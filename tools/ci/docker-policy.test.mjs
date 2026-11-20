@@ -107,12 +107,12 @@ test('landing_and_router_copy_only_export_or_dist', () => {
 });
 
 test('router_caddyfile_serves_web_dist_root', () => {
-  const routerCaddyfile = readRootFile('deploy/Caddyfile.router');
-  assert.match(routerCaddyfile, /:80\s*\{/);
+  const routerCaddyfile = readRootFile('deploy/Caddyfile');
+  assert.match(routerCaddyfile, /auto_https\s+off/);
   assert.match(routerCaddyfile, /root\s+\*\s+\/srv\/web/);
   assert.match(routerCaddyfile, /file_server/);
   assert.match(
     routerDockerfile,
-    /COPY deploy\/Caddyfile\.router \/etc\/caddy\/Caddyfile/,
+    /COPY deploy\/Caddyfile \/etc\/caddy\/Caddyfile/,
   );
 });

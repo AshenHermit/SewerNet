@@ -222,6 +222,37 @@ test('docker_job_runs_bounded_http_smoke', () => {
   assert.ok(!JSON.stringify(job).includes('${{ secrets.'), 'docker job stays secret-free');
 });
 
+test('router_image_bakes_the_routing_caddyfile_under_test', () => {
+  const dockerfile = read('deploy/Dockerfile.router');
+  const caddyfileUnderTest = 'deploy/Caddyfile';
+
+  const copy = dockerfile.match(/^COPY\s+(\S*Caddyfile\S*)\s+(\/etc\/caddy\/Caddyfile)\s*$/m);
+  assert.ok(copy, 'router Dockerfile must COPY a Caddyfile into /etc/caddy/Caddyfile');
+  assert.equal(copy[2], '/etc/caddy/Caddyfile');
+  assert.equal(
+    copy[1],
+    caddyfileUnderTest,
+    'router image must bake the exact Caddyfile the routing policy tests read',
+  );
+  assert.ok(read(caddyfileUnderTest), 'routing Caddyfile must exist in the repo');
+  assert.doesNotMatch(
+    dockerfile,
+    /Caddyfile\.router/,
+    'stale catch-all Caddyfile must not be baked into the router',
+  );
+
+  // No runtime volume may shadow the baked file with dead config.
+  const composeFiles =
+    read('compose.yaml') +
+    read('deploy/compose.smoke.yaml') +
+    read('deploy/compose.ingress.yaml');
+  assert.doesNotMatch(
+    composeFiles,
+    /\/etc\/caddy\/Caddyfile/,
+    'no compose overlay may override the baked Caddyfile',
+  );
+});
+
 test('resolved_compose_config_json_matches_static_invariants', (t) => {
   const result = dockerRuns(
     ['compose', '-f', 'compose.yaml', '-f', 'deploy/compose.smoke.yaml', 'config', '--format', 'json'],

@@ -1,6 +1,0 @@
-:80 {
-  root * /srv/web
-  encode zstd gzip
-  try_files {path} {path}/index.html /index.html
-  file_server
-}
