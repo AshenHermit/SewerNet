@@ -1,0 +1,52 @@
+# HTTP-only router. TLS is terminated by the owner's root Nginx; this process
+# never binds 443, never runs ACME and never issues redirects.
+{
+  auto_https off
+}
+
+# Marketing site: static Next.js export behind landing:8080.
+http://{$SITE_HOST}:80 {
+  encode zstd gzip
+
+  # /api/* must never reach the private REST proxy through a public hostname.
+  @api path_regexp api ^/api/
+  handle @api {
+    respond 404
+  }
+
+  handle {
+    reverse_proxy landing:8080
+  }
+}
+
+# Web client: SPA from the web dist baked into this image.
+http://{$APP_HOST}:80 {
+  root * /srv/web
+  encode zstd gzip
+
+  # Go's built-in mime table does not map .wasm on every base image.
+  mime .wasm application/wasm
+
+  @api path_regexp api ^/api/
+  handle @api {
+    respond 404
+  }
+
+  handle {
+    # Hashed Vite assets (JS and WASM) are immutable.
+    @assets path_regexp assets ^/assets/
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+
+    # App shell and service worker must never be stale.
+    @shell path / /sw.js /welcome /oidc/callback
+    header @shell Cache-Control "no-store"
+
+    try_files {path} {path}/index.html /index.html
+    file_server
+  }
+}
+
+# Unknown Host: explicit 404, never site or app content.
+:80 {
+  respond 404
+}
