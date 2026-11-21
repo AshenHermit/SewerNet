@@ -74,7 +74,7 @@ export function WelcomeScreen() {
         const raw = err instanceof Error ? err.message : String(err);
         if (raw.includes('invalid_redirect_uri') || raw.includes('invalid redirect_uri')) {
           setError(
-            'This Matrix authentication server does not accept the desktop callback (sewernet://oidc/callback). Desktop OIDC is unavailable here; use password sign-in.',
+            'This Matrix authentication server does not accept the desktop callback. Desktop OIDC is unavailable here; use password sign-in.',
           );
         } else {
           setError(raw);

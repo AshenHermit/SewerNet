@@ -195,8 +195,10 @@ describe('WelcomeScreen', () => {
     await flushDiscovery();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Continue with Matrix' }));
-    const message = await screen.findByText('oidc_redirect_uri_rejected');
-    expect(message.closest('details')).toBeNull();
+    const messages = await screen.findAllByText('oidc_redirect_uri_rejected');
+    // Error should appear in visible OIDC section (not inside password form)
+    const visibleError = messages.find((m) => !m.closest('details'));
+    expect(visibleError).toBeTruthy();
   });
 
   it('starts the register flow from the Create account button', async () => {
