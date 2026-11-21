@@ -185,7 +185,14 @@ function removeBlockedEntry(userId: string): void {
 export class BrowserOidcPlatform implements OidcPlatform {
   redirectUri(): string { return new URL('/oidc/callback', window.location.origin).toString(); }
   applicationType(): 'web' | 'native' { return window.location.protocol === 'https:' ? 'web' : 'native'; }
-  clientUri(): string { return window.location.protocol === 'https:' ? window.location.origin : `${window.location.origin}/`; }
+  clientUri(): string {
+    if (window.location.protocol === 'https:') {
+      return window.location.origin;
+    }
+    // OIDC providers (e.g. matrix.org MAS) require client_uri to be HTTPS.
+    // In dev (HTTP localhost) use a valid HTTPS placeholder so registration succeeds.
+    return 'https://github.com/AshenHermit/SewerNet';
+  }
   async savePending(flow: StoredOidcFlow): Promise<void> {
     sessionStorage.setItem('sewernet:desktop_oidc_pending', JSON.stringify(flow));
   }

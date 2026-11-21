@@ -151,7 +151,7 @@ describe('getOrRegisterClientId', () => {
     expect(redirectUri).toBe('http://localhost:4200/oidc/callback');
     expect(registerClientMock).toHaveBeenCalledWith(metadata, {
       clientName: 'SewerNet',
-      clientUri: 'http://localhost:4200/',
+      clientUri: 'https://github.com/AshenHermit/SewerNet',
       applicationType: 'native',
       redirectUris: ['http://localhost:4200/oidc/callback'],
       contacts: [],
