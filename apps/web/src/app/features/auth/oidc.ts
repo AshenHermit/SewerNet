@@ -10,6 +10,7 @@ import type { MatrixCredentials, OidcSession } from '../../../client/account-typ
 import { commitLogin } from '../../../client/session';
 import { getOidcPlatform } from '../../../platform/runtime';
 import type { StoredOidcFlow } from '../../../platform/oidc-contract';
+import { DESKTOP_OIDC_REDIRECT_URI } from './desktop-oidc-consts';
 
 export type OidcAction = 'login' | 'register';
 export type OidcResponseMode = 'query' | 'fragment';
@@ -231,7 +232,7 @@ export async function startOidcLogin(
     revocationEndpoint: metadata.revocation_endpoint,
   };
   const platform = getAuthOidcPlatform();
-  if (redirectUri === 'sewernet://oidc/callback' && platform?.applicationType() === 'native') {
+  if (redirectUri === DESKTOP_OIDC_REDIRECT_URI && platform?.applicationType() === 'native') {
     const sdkKey = `mx_oidc_${stateFromAuthorizationUrl(url)}`;
     const sdkState = sessionStorage.getItem(sdkKey);
     if (!sdkState) throw new Error('oidc_missing_sdk_state');
