@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';
 import { IconSetProvider } from '@sewer-net/icons';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRooms, type RoomEntry } from '../hooks/use-rooms';
 import { useAuthStore } from '../stores/auth-store';
@@ -340,6 +340,39 @@ describe('ChatScreen navigation and logout', () => {
     expect(settings.getAttribute('aria-current')).toBe('page');
 
     expect(useChatStore.getState().section).toBe('settings');
+  });
+
+  it('navigates to /welcome on logout', () => {
+    useAuthStore.setState({
+      credentials: {
+        userId: '@alice:matrix.org',
+        accessToken: 'at',
+        deviceId: 'dev',
+        homeserverUrl: 'https://matrix.org',
+      },
+      status: 'ready',
+      error: null,
+    });
+
+    const { getByRole } = render(
+      <I18nProvider i18n={i18n}>
+        <UiKitProvider>
+          <IconSetProvider>
+            <MemoryRouter initialEntries={['/chat']}>
+              <Routes>
+                <Route path="/chat" element={<ChatScreen />} />
+                <Route path="/welcome" element={<div data-testid="welcome" />} />
+              </Routes>
+            </MemoryRouter>
+          </IconSetProvider>
+        </UiKitProvider>
+      </I18nProvider>,
+    );
+
+    fireEvent.click(getByRole('button', { name: 'Log out' }));
+
+    expect(screen.getByTestId('welcome')).toBeTruthy();
+    expect(useAuthStore.getState().credentials).toBeNull();
   });
 });
 

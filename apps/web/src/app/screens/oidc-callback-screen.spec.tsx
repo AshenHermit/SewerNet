@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { UiKitProvider } from '@sewer-net/ui';
@@ -39,6 +39,7 @@ function renderCallback(search = '?code=c1&state=s1') {
             <Routes>
               <Route path="/oidc/callback" element={<OidcCallbackScreen />} />
               <Route path="/" element={<div>chat-home</div>} />
+              <Route path="/welcome" element={<div>welcome-screen</div>} />
             </Routes>
           </MemoryRouter>
         </IconSetProvider>
@@ -112,5 +113,19 @@ describe('OidcCallbackScreen', () => {
 
     await waitFor(() => expect(mockedComplete).toHaveBeenCalledTimes(1));
     expect(mockedComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears pending flow and navigates to welcome on cancel', async () => {
+    mockedComplete.mockImplementation(() => new Promise(() => undefined));
+    renderCallback('?code=c1&state=s1');
+
+    // Screen is in loading state (Finishing sign-in…)
+    expect(await screen.findByText('Finishing sign-in…')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(mockedClearPending).toHaveBeenCalled();
+    expect(await screen.findByText('welcome-screen')).toBeTruthy();
   });
 });

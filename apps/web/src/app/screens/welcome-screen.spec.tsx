@@ -250,4 +250,84 @@ describe('WelcomeScreen', () => {
     );
     expect(await screen.findByText('chat-home')).toBeTruthy();
   });
+
+  describe('homeserver persistence', () => {
+    beforeEach(() => {
+      localStorage.removeItem('sewernet:homeservers');
+    });
+
+    it('prefills with the last used homeserver from localStorage', () => {
+      localStorage.setItem(
+        'sewernet:homeservers',
+        JSON.stringify(['https://custom.home.org', 'https://matrix-client.matrix.org']),
+      );
+
+      renderWelcome('/welcome');
+      const input = screen.getByLabelText('Homeserver URL');
+      expect((input as HTMLInputElement).value).toBe('https://custom.home.org');
+    });
+
+    it('prefills with URL param when present, ignoring saved list', () => {
+      localStorage.setItem(
+        'sewernet:homeservers',
+        JSON.stringify(['https://saved.home.org']),
+      );
+
+      renderWelcome('/welcome/matrix.org');
+      const input = screen.getByLabelText('Homeserver URL');
+      expect((input as HTMLInputElement).value).toBe('matrix.org');
+    });
+
+    it('defaults to matrix.org when no saved homeservers', () => {
+      renderWelcome();
+      const input = screen.getByLabelText('Homeserver URL');
+      expect((input as HTMLInputElement).value).toBe('matrix.org');
+    });
+
+    it('saves homeserver on OIDC continue', async () => {
+      mockedDiscover.mockResolvedValue(DELEGATED);
+      mockedRegister.mockResolvedValue({ clientId: 'cid', redirectUri: 'http://localhost:4200/oidc/callback' });
+      renderWelcome();
+      await flushDiscovery();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Continue with Matrix' }));
+
+      await waitFor(() =>
+        expect(mockedStart).toHaveBeenCalledTimes(1),
+      );
+      expect(JSON.parse(localStorage.getItem('sewernet:homeservers') ?? '[]')).toEqual([
+        'matrix.org',
+      ]);
+    });
+
+    it('saves homeserver on password sign-in', async () => {
+      mockedDiscover.mockResolvedValue(PASSWORD_ONLY);
+      mockedLogin.mockResolvedValue({
+        userId: '@alice:matrix.org',
+        accessToken: 'at',
+        deviceId: 'dev',
+        homeserverUrl: 'https://matrix-client.matrix.org',
+      });
+
+      renderWelcome();
+      await flushDiscovery();
+      fireEvent.change(await screen.findByLabelText('Homeserver URL'), {
+        target: { value: 'https://pw.home.org' },
+      });
+      fireEvent.change(await screen.findByLabelText('Username'), {
+        target: { value: 'alice' },
+      });
+      fireEvent.change(screen.getByLabelText('Password'), {
+        target: { value: 'secret' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+      await waitFor(() =>
+        expect(mockedLogin).toHaveBeenCalledTimes(1),
+      );
+      expect(JSON.parse(localStorage.getItem('sewernet:homeservers') ?? '[]')).toEqual([
+        'https://pw.home.org',
+      ]);
+    });
+  });
 });

@@ -14,12 +14,39 @@ import { loginWithPassword } from '../../client/init-matrix';
 
 const DEBOUNCE_MS = 300;
 const DEFAULT_HOMESERVER = 'matrix.org';
+const HOMESERVERS_KEY = 'sewernet:homeservers';
+
+function getSavedHomeservers(): string[] {
+  try {
+    const raw = localStorage.getItem(HOMESERVERS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.filter((h) => typeof h === 'string');
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHomeserver(url: string): void {
+  try {
+    const list = getSavedHomeservers();
+    const normalized = url.trim();
+    if (!normalized) return;
+    const updated = [normalized, ...list.filter((h) => h !== normalized)].slice(0, 10);
+    localStorage.setItem(HOMESERVERS_KEY, JSON.stringify(updated));
+  } catch {
+    // best-effort persistence only
+  }
+}
 
 export function WelcomeScreen() {
   const params = useParams<{ homeserver?: string }>();
   const navigate = useNavigate();
   const { t } = useLingui();
-  const [homeserverUrl, setHomeserverUrl] = useState(params.homeserver ?? DEFAULT_HOMESERVER);
+  const saved = getSavedHomeservers();
+  const defaultHomeserver = params.homeserver ?? saved[0] ?? DEFAULT_HOMESERVER;
+  const [homeserverUrl, setHomeserverUrl] = useState(defaultHomeserver);
   const [caps, setCaps] = useState<AuthCapabilities | null>(null);
   const [resolving, setResolving] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -58,6 +85,7 @@ export function WelcomeScreen() {
   const onContinue = useCallback(
     async (prompt?: string) => {
       if (!caps?.delegatedAuth || !caps.authMetadata || starting) return;
+      saveHomeserver(homeserverUrl);
       setStarting(true);
       setError(null);
       try {
@@ -87,6 +115,7 @@ export function WelcomeScreen() {
 
   const onSignIn = useCallback(async () => {
     if (!user || !password) return;
+    saveHomeserver(homeserverUrl);
     setLoading(true);
     setError(null);
     try {

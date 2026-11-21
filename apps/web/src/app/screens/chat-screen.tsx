@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useLingui } from '@lingui/react/macro';
+import { useNavigate } from 'react-router-dom';
 import { RoomList } from '../components/room-list';
 import { ChatView } from '../components/chat-view';
 import { Rail } from '../components/rail';
@@ -27,6 +28,7 @@ function isUnauthorized(err: unknown): boolean {
 }
 
 export function ChatScreen() {
+  const navigate = useNavigate();
   const section = useChatStore((state) => state.section);
   const activeRoomId = useChatStore((state) => state.activeRoomId);
   const showRooms = useChatStore((state) => state.showRooms);
@@ -56,7 +58,8 @@ export function ChatScreen() {
       // present a failed deletion as a successful sign-out.
       console.error('[sewernet] logout failed:', err);
     });
-  }, [resetUi]);
+    navigate('/welcome', { replace: true });
+  }, [clearPublishedCredentials, resetUi, logoutCurrent, navigate]);
 
   // The shell only ever receives the section it can actually render, so a
   // stale `chat` request can never show an empty conversation panel.

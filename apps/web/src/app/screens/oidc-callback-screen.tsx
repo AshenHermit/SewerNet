@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProxyStatusPanel } from '@sewer-net/ui';
@@ -90,6 +90,11 @@ export function OidcCallbackScreen() {
     })();
   }, [searchParams]);
 
+  const handleCancel = useCallback(() => {
+    clearPendingOidcFlow();
+    navigate('/welcome', { replace: true });
+  }, [navigate]);
+
   if (done) return <Navigate to="/" replace />;
 
   if (failure) {
@@ -111,5 +116,11 @@ export function OidcCallbackScreen() {
     );
   }
 
-  return <ProxyStatusPanel title={<Trans>Finishing sign-in…</Trans>} />;
+  return (
+    <ProxyStatusPanel
+      title={<Trans>Finishing sign-in…</Trans>}
+      actionLabel={<Trans>Cancel</Trans>}
+      onAction={handleCancel}
+    />
+  );
 }
