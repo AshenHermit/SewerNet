@@ -139,6 +139,8 @@ export function WelcomeScreen() {
       signInLabel={t`Sign in`}
       onHomeserverChange={(value) => setHomeserverUrl(value)}
       onHomeserverBlur={() => undefined}
+      savedHomeservers={saved}
+      onHomeserverSelect={(url: string) => setHomeserverUrl(url)}
       oidc={Boolean(caps?.delegatedAuth)}
       oidcUnavailableHint={
         error
@@ -161,7 +163,7 @@ export function WelcomeScreen() {
       onPasswordChange={(value) => setPassword(value)}
       passwordLoading={loading}
       passwordError={error}
-      onSignIn={() => void onSignIn()}
+      onSignIn={onSignIn}
     />
   );
 }

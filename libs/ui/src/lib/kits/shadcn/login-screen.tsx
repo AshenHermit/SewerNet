@@ -17,6 +17,8 @@ export function ShadcnLoginScreen({
   signInLabel,
   onHomeserverChange,
   onHomeserverBlur,
+  savedHomeservers,
+  onHomeserverSelect,
   oidc,
   oidcUnavailableHint,
   resolving,
@@ -94,6 +96,28 @@ export function ShadcnLoginScreen({
               required
             />
           </label>
+          {savedHomeservers?.length && onHomeserverSelect ? (
+            <label className="mt-2 flex flex-col gap-1">
+              <span className="text-xs font-medium text-[var(--sn-text-muted)]">
+                Saved homeservers
+              </span>
+              <select
+                aria-label="Saved homeservers"
+                value={homeserverUrl}
+                onChange={(e) =>
+                  onHomeserverSelect((e.target as HTMLSelectElement).value)
+                }
+                className="h-10 w-full rounded-[var(--sn-radius)] border bg-[var(--sn-surface-2)] px-3 text-sm text-[var(--sn-text)] outline-none transition-colors focus:border-[var(--sn-accent)] focus:ring-2 focus:ring-[var(--sn-accent)]/20 border-[var(--sn-border)]"
+              >
+                <option value="">Choose a saved homeserver</option>
+                {savedHomeservers.map((url) => (
+                  <option key={url} value={url}>
+                    {url}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           {oidc ? (
             <>

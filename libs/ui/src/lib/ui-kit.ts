@@ -344,6 +344,10 @@ export interface LoginScreenProps extends HTMLAttributes<HTMLDivElement> {
   signInLabel: ReactNode;
   onHomeserverChange: (value: string) => void;
   onHomeserverBlur: () => void;
+  /** Previously used homeservers, newest first — rendered as a dropdown below the input. */
+  savedHomeservers?: string[];
+  /** Called when the user picks a saved homeserver from the dropdown. */
+  onHomeserverSelect?: (url: string) => void;
   /** Homeserver advertises delegated (MAS/OIDC) auth — OAuth buttons instead of the password form. */
   oidc?: boolean;
   /** Optional hint shown when delegated auth is unavailable. */

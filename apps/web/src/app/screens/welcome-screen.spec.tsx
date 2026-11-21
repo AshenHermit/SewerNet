@@ -284,6 +284,33 @@ describe('WelcomeScreen', () => {
       expect((input as HTMLInputElement).value).toBe('matrix.org');
     });
 
+    it('renders a dropdown of saved homeservers', () => {
+      localStorage.setItem(
+        'sewernet:homeservers',
+        JSON.stringify(['https://custom.home.org', 'https://matrix-client.matrix.org']),
+      );
+
+      renderWelcome('/welcome');
+      expect(screen.getByLabelText('Saved homeservers')).toBeTruthy();
+    });
+
+    it('selecting a saved homeserver updates the input', () => {
+      localStorage.setItem(
+        'sewernet:homeservers',
+        JSON.stringify(['https://custom.home.org', 'https://matrix-client.matrix.org']),
+      );
+
+      renderWelcome('/welcome');
+      const input = screen.getByLabelText('Homeserver URL');
+      const select = screen.getByLabelText('Saved homeservers');
+      fireEvent.change(select, {
+        target: { value: 'https://matrix-client.matrix.org' },
+      });
+      expect((input as HTMLInputElement).value).toBe(
+        'https://matrix-client.matrix.org',
+      );
+    });
+
     it('saves homeserver on OIDC continue', async () => {
       mockedDiscover.mockResolvedValue(DELEGATED);
       mockedRegister.mockResolvedValue({ clientId: 'cid', redirectUri: 'http://localhost:4200/oidc/callback' });
