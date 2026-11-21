@@ -93,6 +93,6 @@ describe('Desktop platform', () => {
     const result = { flow, callback: { state: 's', code: 'c' } };
     invoke.mockResolvedValueOnce(result);
     expect(await platform.claimCallback('http://127.0.0.1:4201/oidc/callback?state=s&code=c')).toEqual(result);
-    expect(invoke.mock.calls[1]).toEqual(['oidc_callback_claim', { url: 'http://127.0.0.1:4201/oidc/callback?state=s&code=c' }]);
+    expect(invoke.mock.calls[1]).toEqual(['oidc_callback_claim', { redirectTarget: 'http://127.0.0.1:4201/oidc/callback?state=s&code=c', ttlMs: 900_000 }]);
   });
 });

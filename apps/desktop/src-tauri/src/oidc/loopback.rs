@@ -4,6 +4,8 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::log_oidc;
+use crate::log_error;
 use crate::oidc::callback::parse_callback;
 
 const LOOPBACK_ADDR: &str = "127.0.0.1:4201";
@@ -13,6 +15,7 @@ const HTML_OK: &str = "<!DOCTYPE html><html><body><h2>OIDC callback received</h2
 pub fn start_loopback_listener(app_handle: AppHandle) {
     match TcpListener::bind(LOOPBACK_ADDR) {
         Ok(listener) => {
+            log_oidc!("loopback listener started on {}", LOOPBACK_ADDR);
             thread::spawn(move || {
                 for stream in listener.incoming() {
                     if let Ok(mut stream) = stream {
@@ -22,7 +25,7 @@ pub fn start_loopback_listener(app_handle: AppHandle) {
             });
         }
         Err(e) => {
-            eprintln!("[oidc] loopback listener bind failed on {LOOPBACK_ADDR}: {e}");
+            log_error!("loopback listener bind failed on {}: {}", LOOPBACK_ADDR, e);
         }
     }
 }
@@ -33,10 +36,11 @@ fn handle_connection(stream: &mut std::net::TcpStream, app_handle: &AppHandle) {
     let n = match stream.read(&mut buffer) {
         Ok(n) => n,
         Err(e) => {
-            eprintln!("[oidc] loopback read error: {e}");
+            log_error!("loopback read error: {}", e);
             return;
         }
     };
+
     if n == 0 {
         return;
     }
@@ -48,40 +52,52 @@ fn handle_connection(stream: &mut std::net::TcpStream, app_handle: &AppHandle) {
     let _method = parts.next();
     let path = parts.next().unwrap_or("");
 
+    log_oidc!("incoming request: {}", request_line);
+
     let mut host: Option<&str> = None;
-    for line in lines.skip(1) {
-        if let Some(h) = line.strip_prefix("Host:") {
-            host = Some(h.trim());
+    for line in lines {
+        if let Some(idx) = line.find(':') {
+            let name = &line[..idx];
+            if name.eq_ignore_ascii_case("Host") {
+                host = Some(line[idx + 1..].trim());
+            }
         }
     }
 
     if path.is_empty() {
+        log_error!("empty path in callback request");
         send_response(stream, 400, b"bad request");
         return;
     }
 
     let callback_url = if path.starts_with("http://") || path.starts_with("https://") {
-        path.to_string()
+        path.split('#').next().unwrap_or(path).to_string()
     } else if let Some(h) = host {
         format!("http://{}{}", h, path)
     } else {
+        log_error!("missing host header, path: {}", path);
         send_response(stream, 400, b"missing host");
         return;
     };
 
-    if parse_callback(&callback_url).is_ok() {
-        let _ = app_handle.get_webview_window("main").map(|w| {
-            let _ = w.emit("sewernet://oidc-callback", callback_url.clone());
-        });
-        let response = format!(
-            "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-            HTML_OK.len(),
-            HTML_OK
-        );
-        let _ = stream.write_all(response.as_bytes());
-    } else {
-        send_response(stream, 400, b"invalid callback");
+    log_oidc!("parsed callback URL: {}", callback_url);
+
+    match parse_callback(&callback_url) {
+        Ok(params) => {
+            log_oidc!("callback parsed OK: state={}, code={:?}, error={:?}", params.state, params.code.is_some(), params.error);
+            let event_payload = callback_url.clone();
+            if let Err(e) = app_handle.emit("sewernet://oidc-callback", event_payload) {
+                log_error!("failed to emit oidc-callback event: {}", e);
+            } else {
+                log_oidc!("emitted sewernet://oidc-callback event");
+            }
+        }
+        Err(e) => {
+            log_error!("callback parse failed: {}", e);
+        }
     }
+
+    send_response(stream, 200, HTML_OK.as_bytes());
 }
 
 fn send_response(stream: &mut std::net::TcpStream, status: u16, body: &[u8]) {

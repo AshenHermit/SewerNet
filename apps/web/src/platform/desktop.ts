@@ -11,6 +11,8 @@ import { DESKTOP_OIDC_REDIRECT_URI } from '../app/features/auth/desktop-oidc-con
 
 const NATIVE_REDIRECT_URI = DESKTOP_OIDC_REDIRECT_URI;
 const NATIVE_CLIENT_URI = 'https://github.com/AshenHermit/SewerNet';
+// Must match Rust `TTL_MS` (15 min) in `apps/desktop/src-tauri/src/oidc/pending.rs`.
+const OIDC_CALLBACK_TTL_MS = 15 * 60 * 1000;
 
 export class DesktopOidcPlatform implements OidcPlatform {
   redirectUri(): string { return NATIVE_REDIRECT_URI; }
@@ -18,7 +20,10 @@ export class DesktopOidcPlatform implements OidcPlatform {
   clientUri(): string { return NATIVE_CLIENT_URI; }
   savePending(flow: StoredOidcFlow): Promise<void> { return savePendingOidcFlow(flow); }
   claimCallback(url: string): Promise<ClaimedOidcCallback> {
-    return invoke<ClaimedOidcCallback>('oidc_callback_claim', { url });
+    return invoke<ClaimedOidcCallback>('oidc_callback_claim', {
+      redirectTarget: url,
+      ttlMs: OIDC_CALLBACK_TTL_MS,
+    });
   }
   clearPending(state?: string): Promise<void> { return clearPendingOidcFlow(state); }
   async openAuthorization(url: string): Promise<void> {

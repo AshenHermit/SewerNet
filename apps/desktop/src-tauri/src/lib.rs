@@ -1,5 +1,6 @@
 pub mod deep_links;
 pub mod lifecycle;
+pub mod logging;
 pub mod media;
 pub mod navigation;
 pub mod oidc;

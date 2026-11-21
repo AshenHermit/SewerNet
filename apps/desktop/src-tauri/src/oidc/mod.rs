@@ -2,6 +2,8 @@ pub mod callback;
 pub mod loopback;
 pub mod pending;
 
+use crate::log_oidc;
+use crate::log_error;
 use tauri::State;
 use url::Url;
 
@@ -52,25 +54,37 @@ pub async fn oidc_pending_save(
     state: State<'_, crate::oidc::OidcState>,
     flow: StoredOidcFlow,
 ) -> Result<(), String> {
+    log_oidc!("Tauri command: oidc_pending_save state={}, issuer={}", flow.state, flow.issuer);
     let pending = state.pending.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        pending.save_pending(flow).map_err(|e| e.to_string())
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        pending.save_pending(flow).map_err(|e| {
+            log_error!("oidc_pending_save failed: {}", e);
+            e.to_string()
+        })
     })
     .await
-    .map_err(|_| "task join error")?
+    .map_err(|_| "task join error".to_string())??;
+    log_oidc!("Tauri command: oidc_pending_save OK");
+    Ok(result)
 }
 
 #[tauri::command]
 pub async fn oidc_pending_clear(
     state: State<'_, crate::oidc::OidcState>,
-    expected_state: Option<String>,
+    state_value: Option<String>,
 ) -> Result<(), String> {
+    log_oidc!("Tauri command: oidc_pending_clear state_value={:?}", state_value);
     let pending = state.pending.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        pending.clear(expected_state).map_err(|e| e.to_string())
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        pending.clear(state_value).map_err(|e| {
+            log_error!("oidc_pending_clear failed: {}", e);
+            e.to_string()
+        })
     })
     .await
-    .map_err(|_| "task join error")?
+    .map_err(|_| "task join error".to_string())??;
+    log_oidc!("Tauri command: oidc_pending_clear OK");
+    Ok(result)
 }
 
 #[tauri::command]
@@ -78,13 +92,17 @@ pub async fn oidc_callback_claim(
     state: State<'_, crate::oidc::OidcState>,
     redirect_target: String,
     ttl_ms: i64,
-) -> Result<Option<ClaimedOidcCallbackParams>, String> {
+) -> Result<Option<ClaimedOidcCallback>, String> {
+    log_oidc!("Tauri command: oidc_callback_claim redirect_target={}, ttl_ms={}", redirect_target, ttl_ms);
     let pending = state.pending.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        pending.claim_pending(redirect_target, ttl_ms).map_err(|e| e.to_string())
+        pending.claim_pending(redirect_target, ttl_ms).map_err(|e| {
+            log_error!("oidc_callback_claim failed: {}", e);
+            e.to_string()
+        })
     })
     .await
     .map_err(|_| "task join error".to_string())??;
-
-    Ok(result.map(|c| ClaimedOidcCallbackParams { callback: c.callback }))
+    log_oidc!("Tauri command: oidc_callback_claim OK: claimed={:?}", result.is_some());
+    Ok(result)
 }

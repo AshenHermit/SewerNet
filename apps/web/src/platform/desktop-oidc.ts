@@ -23,8 +23,9 @@ async function claimCallback(url: string): Promise<void> {
 }
 
 export function takeLatestCallbackUrl(): string | null {
-  if (callbackQueue.length) {
-    const url = callbackQueue.shift()!;
+  if (callbackQueue.length > 0) {
+    const url = callbackQueue.shift();
+    if (url === undefined) return null;
     latestCallbackUrl = callbackQueue.at(-1) ?? null;
     return url;
   }

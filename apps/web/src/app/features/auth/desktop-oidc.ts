@@ -70,13 +70,14 @@ export async function exchangeClaimedDesktopCallback(claimed: ClaimedOidcCallbac
 }
 
 export async function handleDesktopOidcCallback(url: string, platform = getOidcPlatform()): Promise<void> {
-  let claimed: ClaimedOidcCallback;
+  let claimed: ClaimedOidcCallback | null;
   try {
     claimed = await platform.claimCallback(url);
   } catch (error) {
     if (error instanceof Error && /processing|already|pending/i.test(error.message)) return;
     throw error;
   }
+  if (!claimed?.callback?.state) return;
   const state = claimed.callback.state;
   if (!state || inFlight.has(state) || completed.has(state)) return;
   inFlight.add(state);

@@ -1,7 +1,10 @@
 use crate::storage::credential_backend::{CredentialBackend, MemoryBackend};
 use crate::storage::{RecordStore, StorageError};
+use crate::log_oidc;
+use crate::log_error;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 use url::Url;
 
 const PENDING_KEY: &str = "oidc:pending:v1";
@@ -73,45 +76,63 @@ impl PendingStore {
 
     pub fn save(&self, mut flow: StoredOidcFlow) -> Result<(), StorageError> {
         let _guard = self.lock.lock().unwrap();
+        log_oidc!("save pending: state={}, issuer={}, redirect_uri={}, sdk_state_key={}, context_redirect_uri={:?}",
+            flow.state, flow.issuer, flow.redirect_uri, flow.sdk_state_key, flow.context.redirect_uri);
         if flow.schema != 1
             || flow.state.is_empty()
             || flow.state.len() > 512
             || flow.sdk_state_key != format!("mx_oidc_{}", flow.state)
             || flow.sdk_state.len() > 48 * 1024
             || !is_trusted_oidc_redirect_uri(&flow.redirect_uri)
-            || flow.context.redirect_uri.as_deref().map_or(false, |u| is_trusted_oidc_redirect_uri(u))
+            || flow.context.redirect_uri.as_deref().map_or(false, |u| !is_trusted_oidc_redirect_uri(u))
             || Url::parse(&flow.issuer).is_err()
             || !flow.issuer.starts_with("https://")
         {
+            log_error!("save pending rejected (corrupt): state={}, issuer={}, redirect_uri={}, sdk_state_key={}, context_redirect_uri={:?}",
+                flow.state, flow.issuer, flow.redirect_uri, flow.sdk_state_key, flow.context.redirect_uri);
             return Err(StorageError::Corrupt("oidc pending"));
         }
         flow.status = StoredStatus::Pending;
         let bytes = serde_json::to_vec(&flow).map_err(|_| StorageError::Transaction)?;
+        log_oidc!("save pending OK: state={}", flow.state);
         self.records.write(PENDING_KEY, &bytes)
     }
 
     pub fn read(&self) -> Result<Option<StoredOidcFlow>, StorageError> {
         let _guard = self.lock.lock().unwrap();
         let Some(bytes) = self.records.read(PENDING_KEY)? else {
+            log_oidc!("read pending: none found");
             return Ok(None);
         };
         if bytes.len() > 64 * 1024 {
             return Err(StorageError::Bounds);
         }
-        serde_json::from_slice(&bytes).map_err(|_| StorageError::Corrupt("oidc pending"))
+        match serde_json::from_slice::<StoredOidcFlow>(&bytes) {
+            Ok(flow) => {
+                log_oidc!("read pending OK: state={}, status={:?}", flow.state, flow.status);
+                Ok(Some(flow))
+            }
+            Err(e) => {
+                log_error!("read pending deserialization failed: {}", e);
+                Err(StorageError::Corrupt("oidc pending"))
+            }
+        }
     }
 
     pub fn clear(&self, expected_state: Option<String>) -> Result<(), StorageError> {
         let _guard = self.lock.lock().unwrap();
+        log_oidc!("clear pending: expected_state={:?}", expected_state);
         if let Some(expected) = expected_state {
             let current = self.read_unlocked()?;
             if let Some(current) = current {
                 if current.state != expected {
+                    log_error!("clear pending state mismatch: expected={}, found={}", expected, current.state);
                     return Err(StorageError::Corrupt("oidc pending"));
                 }
             }
         }
         self.records.delete(PENDING_KEY);
+        log_oidc!("clear pending OK");
         Ok(())
     }
 
@@ -134,16 +155,24 @@ impl PendingStore {
         ttl_ms: i64,
     ) -> Result<Option<ClaimedOidcCallback>, StorageError> {
         let _guard = self.lock.lock().unwrap();
+        log_oidc!("claim pending: redirect_target={}, ttl_ms={}", redirect_target, ttl_ms);
         let Some(mut flow) = self.read_unlocked()? else {
+            log_oidc!("claim pending: no flow found");
             return Ok(None);
         };
-        let params = crate::oidc::callback::parse_callback(redirect_target).map_err(|_| StorageError::Corrupt("oidc pending"))?;
+        log_oidc!("claim pending: found flow state={}, redirect_uri={}, created_at={}", flow.state, flow.redirect_uri, flow.created_at);
+        let params = crate::oidc::callback::parse_callback(redirect_target).map_err(|e| {
+            log_error!("claim pending: parse_callback failed: {}", e);
+            StorageError::Corrupt("oidc pending")
+        })?;
         if params.state != flow.state {
+            log_error!("claim pending: state mismatch: expected={}, got={}", flow.state, params.state);
             return Err(StorageError::Corrupt("oidc pending"));
         }
         if let Some(ttl) = pnet_timestamp_offset() {
             let age = get_current_time() - flow.created_at;
             if age > ttl + ttl_ms {
+                log_error!("claim pending: TTL expired: age={}, ttl={}, ttl_ms={}", age, ttl, ttl_ms);
                 self.clear(Some(flow.state.clone()))?;
                 return Err(StorageError::Corrupt("oidc pending"));
             }
@@ -152,6 +181,7 @@ impl PendingStore {
         let bytes = serde_json::to_vec(&flow).map_err(|_| StorageError::Transaction)?;
         self.records.write(PENDING_KEY, &bytes);
 
+        log_oidc!("claim pending OK: state={}, code={:?}, error={:?}", flow.state, params.code.is_some(), params.error);
         Ok(Some(ClaimedOidcCallback { flow, callback: params }))
     }
 
@@ -171,11 +201,14 @@ impl PendingStore {
 }
 
 fn pnet_timestamp_offset() -> Option<i64> {
-    None
+    Some(0)
 }
 
 fn get_current_time() -> i64 {
-    0
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
 }
 
 pub fn is_trusted_oidc_redirect_uri(uri: &str) -> bool {

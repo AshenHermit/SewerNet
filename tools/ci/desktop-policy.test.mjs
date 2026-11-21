@@ -71,7 +71,8 @@ test('task5_native_media_navigation_and_csp_policy', async () => {
   assert.match(sw, /getPlatformKind\(\) !== 'browser'/);
   assert.doesNotMatch(desktop, /register\(['"]\/sw\.js['"]/);
   assert.doesNotMatch(JSON.stringify({ config, capability, lib }), /dangerousRemoteDomainIpcAccess/);
-  assert.doesNotMatch(capability.permissions.join(','), /shell|http|opener/);
+  // opener:default is required for tauri-plugin-opener (OIDC browser launch)
+  assert.doesNotMatch(capability.permissions.join(','), /shell|http/);
   assert.match(config.app.security.csp, /wasm-unsafe-eval/);
   assert.match(config.app.security.csp, /blob:/);
   assert.equal(config.app.security.assetProtocol.enable, false);
@@ -181,7 +182,8 @@ test('capabilities_are_local_main_only', async () => {
   const capability = await readJson('apps/desktop/src-tauri/capabilities/main.json');
   assert.equal(capability.identifier, 'main-capability');
   assert.deepEqual(capability.windows, ['main']);
-  assert.deepEqual(capability.permissions, ['core:default', 'deep-link:default']);
+  // opener:default required for tauri-plugin-opener (OIDC browser launch)
+  assert.deepEqual(capability.permissions, ['core:default', 'deep-link:default', 'opener:default']);
   assert.equal('remote' in capability, false);
   assert.equal('scope' in capability, false);
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProxyStatusPanel } from '@sewer-net/ui';
 import { getPlatformKind } from '../../platform/runtime';
 import { handleDesktopOidcCallback } from '../features/auth/desktop-oidc';
@@ -29,6 +29,7 @@ class CallbackFailure extends Error {
  */
 export function OidcCallbackScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [failure, setFailure] = useState<{
     kind: FailureKind;
@@ -46,7 +47,10 @@ export function OidcCallbackScreen() {
         let isDesktop = false;
         try { isDesktop = getPlatformKind() === 'desktop'; } catch { /* callback tests render before bootstrap */ }
         if (isDesktop) {
-          const claimedUrl = takeLatestCallbackUrl();
+          // Prefer callback URL from navigation state (passed by app.tsx listener)
+          // Fall back to queue for backwards compat (deep link activation)
+          const stateUrl = (location.state as { callbackUrl?: string } | null)?.callbackUrl;
+          const claimedUrl = stateUrl ?? takeLatestCallbackUrl();
           if (!claimedUrl) throw new CallbackFailure('failed', 'desktop_callback_not_claimed');
           await handleDesktopOidcCallback(claimedUrl);
           setDone(true);

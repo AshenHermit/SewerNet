@@ -25,6 +25,7 @@
     "stallTimeoutMs": 300000
   },
   "knowledgeBases": [
-    "C:\\Users\\hermit\\webdev\\wizardchat-web"
+    "C:\\Users\\hermit\\webdev\\wizardchat-web",
+    "."
   ]
 }
