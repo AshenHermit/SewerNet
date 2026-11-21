@@ -51,6 +51,7 @@ pub fn run() {
                     }
                 }
             }
+            crate::oidc::loopback::start_loopback_listener(app.handle().clone());
             Ok(())
         });
     #[cfg(debug_assertions)]

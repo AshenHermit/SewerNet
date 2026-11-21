@@ -10,20 +10,20 @@
 - Tauri, пока только Windows;
 - общий web-интерфейс и платформенные адаптеры, без отдельного desktop-фронтенда;
 - Rust-side secure storage, OS credential store через семейство keyring;
-- `sewernet://` deep links для OIDC callback, автообновление, tray;
+- `sewernet://` deep links для автообновления и tray; loopback `http://127.0.0.1:4201/oidc/callback` для OIDC callback;
 - Tauri Bundler для установщиков и Tauri Updater Plugin для обновлений.
 
 Дополнительные решения, одобренные пользователем 2026-11-18:
 - Windows x64 (`x86_64-pc-windows-msvc`), Windows 10/11 с WebView2;
 - NSIS `.exe`, установка для текущего пользователя;
-- callback точно `sewernet://oidc/callback`;
+- callback OIDC — loopback `http://127.0.0.1:4201/oidc/callback` (/dev+loopback port, не production-only); `sewernet://oidc/callback` сохраняется как легаси deep-link для уже выданных сессий;
 - закрытие окна скрывает его в tray; меню «Открыть», «Проверить обновления», «Выход»;
 - автоматическая проверка обновлений при запуске; установка только после подтверждения;
 - stable-релизы и manifest updater в публичных GitHub Releases `AshenHermit/SewerNet`;
 - Caddy только для HTTP host-routing `subdomain.${COMMON_DOMAIN}` к сервисам SewerNet; сертификаты, внешний HTTPS и входящий routing обеспечивает существующий корневой Nginx пользователя;
 - landing и web на отдельных subdomains, landing — static export;
 - backend по умолчанию доступен только внутри compose, не опубликован как открытый Matrix/OAuth-прокси;
-- desktop OIDC приёмка на `unredacted.org`; password fallback при несовместимости MAS не закрывает этот пункт;
+- desktop OIDC приёмка на `unredacted.org` через loopback redirect; password fallback при несовместимости MAS не закрывает этот пункт;
 - стандартное Matrix encrypted attachments v2: шифрование отправляемых файлов и расшифровка полученных в общей web/desktop-реализации.
 
 ## 2. Цели, не-цели и ограничения
@@ -109,7 +109,7 @@ IPC commands узкие: собственные account операции, pendin
 
 ## 6. Desktop OIDC и deep links
 
-1. Register native OIDC client с точным `sewernet://oidc/callback`; `applicationType: native` независимо от HTTPS-схемы WebView. ClientId cache учитывает issuer и точный redirect URI, не содержит секретов. ClientUri — валидный публичный HTTPS URL проекта, не `tauri://`.
+1. Register native OIDC client с точным `http://127.0.0.1:4201/oidc/callback` (loopback, браузерно-нативный origin); `applicationType: native` независимо от HTTPS-схемы WebView. Легаси `sewernet://oidc/callback` принимается только для уже сохранённых deep-link сессий, не для новой регистрации. ClientId cache учитывает issuer и точный redirect URI, не содержит секретов. ClientUri — валидный публичный HTTPS URL проекта, не `tauri://`.
 2. SDK создаёт authorization URL и PKCE/state в sessionStorage. Прочитать только связанный с этим state `mx_oidc_` record и собственный pending контекст, записать их через Rust secure storage **до** открытия системного браузера. Не зеркалировать всё sessionStorage.
 3. Pending record содержит redirectUri, state, issuer, SDK serialized state, контекст и время создания; один текущий flow, срок 15 минут. Новый flow заменяет прежний. При ошибке сохранения/открытия браузера flow не считается запущенным.
 4. Single-instance plugin регистрируется первым, с deep-link feature. Deep-link scheme статически задан в config; installer регистрирует обработчик. Для dev registration требуется явный dev режим; не перезаписывать установленный handler бесшумно.
@@ -117,7 +117,7 @@ IPC commands узкие: собственные account операции, pendin
 6. Callback сопоставляется с unexpired pending state, валидируется атомарно и получает in-flight guard. Дубликат не вызывает второй token exchange. При restart восстановить SDK state в sessionStorage и использовать SDK code grant validation/PKCE/nonce; не писать свой OAuth-клиент.
 7. Callback навигирует во внутренний flow без помещения code/state в постоянную историю и без логирования. После успеха дождаться keyring commit аккаунта, очистить pending и SDK временный state, активировать UI, показать/фокусировать окно.
 8. Отказ пользователя, malformed/expired callback и ошибка обмена завершают flow с безопасным сообщением и возможностью нового login. Claim pending допускает сохранённую отметку processing; после аварии во время обмена требуется новый login, а не повторный обмен потенциально использованного code.
-9. Если provider отклоняет custom redirect scheme, показать несовместимость и сохранить доступный password fallback. Не добавлять бесшумный loopback fallback с другим URI. Пользователь подтвердил приёмку на `unredacted.org`: там должны пройти реальные warm/cold callback и вход. Отказ MAS или несовместимый WebView origin — blocker, password fallback не считается выполненным desktop OIDC. Если non-media CORS потребует более широкого native transport, согласовать отдельно, не превращать узкий media fetch в generic proxy.
+9. Loopback redirect принят как браузерно-нативная альтернатива custom scheme: нативный процесс Windows слушает `127.0.0.1:4201` и направляет callback в WebView;MAS `unredacted.org` должен принять loopback в регистрации. Это не бесшумный fallback: при отказе MAS показывается явная ошибка OIDC и доступен password fallback. Password fallback сам по себе достаточно, когда homeserver не читает loopback или provider отвергает регистрируемый URI, но он не закрывает desktop OIDC приёмку. Пользователь подтвердил приёмку на `unredacted.org`: там должны пройти реальные warm/cold callback и вход. Отказ MAS или несовместимый WebView origin — blocker. Если non-media CORS потребует более широкого native transport, согласовать отдельно, не превращать узкий media fetch в generic proxy.
 
 ## 7. Media, WASM и WebView
 

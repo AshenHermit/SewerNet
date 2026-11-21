@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DesktopOidcPlatform } from '../../../platform/desktop';
 import { handleDesktopOidcCallback, resetDesktopOidcForTesting } from './desktop-oidc';
+import { DESKTOP_OIDC_REDIRECT_URI } from './desktop-oidc-consts';
 
 const { grant, commitLogin, invoke, openUrl, whoami } = vi.hoisted(() => ({
   grant: vi.fn(),
@@ -16,16 +17,16 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke, isTauri: () => true }));
 vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl }));
 vi.mock('matrix-js-sdk', () => ({ createClient: () => ({ whoami }) }));
 
-const callback = 'sewernet://oidc/callback?state=oauth-state&code=secret-code';
+const callback = `${DESKTOP_OIDC_REDIRECT_URI}?state=oauth-state&code=secret-code`;
 const flow = {
   schema: 1 as const,
   state: 'oauth-state',
   issuer: 'https://issuer.example',
-  redirectUri: 'sewernet://oidc/callback' as const,
+  redirectUri: DESKTOP_OIDC_REDIRECT_URI as typeof DESKTOP_OIDC_REDIRECT_URI,
   sdkStateKey: 'sdk-state-key',
   sdkState: JSON.stringify({ request_type: 'si:c', state: { homeserverUrl: 'https://hs.example', nonce: 'n' } }),
   createdAt: Date.now(),
-  context: { homeserverUrl: 'https://hs.example', nonce: 'n', responseMode: 'query' as const, redirectUri: 'sewernet://oidc/callback' as const },
+  context: { homeserverUrl: 'https://hs.example', nonce: 'n', responseMode: 'query' as const, redirectUri: DESKTOP_OIDC_REDIRECT_URI as typeof DESKTOP_OIDC_REDIRECT_URI },
   status: 'processing' as const,
 };
 
@@ -45,7 +46,7 @@ describe('desktop OIDC orchestration', () => {
 
   it('uses exact native registration metadata and external opener capability', async () => {
     const platform = new DesktopOidcPlatform();
-    expect(platform.redirectUri()).toBe('sewernet://oidc/callback');
+    expect(platform.redirectUri()).toBe(DESKTOP_OIDC_REDIRECT_URI);
     expect(platform.applicationType()).toBe('native');
     expect(platform.clientUri()).toBe('https://github.com/AshenHermit/SewerNet');
     await platform.openAuthorization('https://issuer.example/authorize');

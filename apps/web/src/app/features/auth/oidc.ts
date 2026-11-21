@@ -6,6 +6,8 @@ import {
   type OidcClientConfig,
   type OidcRegistrationClientMetadata,
 } from 'matrix-js-sdk/lib/oidc';
+
+export type { OidcClientConfig, OidcRegistrationClientMetadata };
 import type { MatrixCredentials, OidcSession } from '../../../client/account-types';
 import { commitLogin } from '../../../client/session';
 import { getOidcPlatform } from '../../../platform/runtime';

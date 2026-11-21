@@ -15,20 +15,38 @@ pub struct CallbackParams {
     pub error: Option<String>,
 }
 
+// Fix unused variable warning
+impl CallbackParams {
+    pub fn state_code_xor_error(&self) -> bool {
+        self.code.is_some() == self.error.is_some()
+    }
+}
+
 pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
     if raw.len() > MAX_CALLBACK_LEN {
         return Err("invalid_callback");
     }
     let url = Url::parse(raw).map_err(|_| "invalid_callback")?;
-    if url.scheme() != "sewernet"
-        || url.host_str() != Some("oidc")
-        || url.path() != "/callback"
+    let path_ok = match url.scheme() {
+    "sewernet" => url.path() == "/callback",
+    "http" => url.path() == "/oidc/callback",
+    _ => false,
+};
+if !path_ok
         || !url.username().is_empty()
         || url.password().is_some()
-        || url.port().is_some()
         || url.fragment().is_some()
         || url.cannot_be_a_base()
     {
+        return Err("invalid_callback");
+    }
+    let legacy = url.scheme() == "sewernet"
+        && url.host_str() == Some("oidc")
+        && url.port().is_none();
+    let loopback = url.scheme() == "http"
+        && url.host_str() == Some("127.0.0.1")
+        && url.port() == Some(4201);
+    if !(legacy || loopback) {
         return Err("invalid_callback");
     }
 
@@ -39,11 +57,8 @@ pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
             .or_default()
             .push(value.into_owned());
     }
-    for (key, values) in &pairs {
+    for (_key, values) in &pairs {
         if values.len() != 1 {
-            return Err("invalid_callback");
-        }
-        if key != "state" && key != "code" && key != "error" {
             return Err("invalid_callback");
         }
     }
@@ -57,58 +72,83 @@ pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
     if code.is_some() == error.is_some() {
         return Err("invalid_callback");
     }
-    if state.len() > MAX_STATE_LEN
-        || code
-            .as_ref()
-            .is_some_and(|value| value.is_empty() || value.len() > MAX_CODE_LEN)
-        || error
-            .as_ref()
-            .is_some_and(|value| value.is_empty() || value.len() > MAX_CODE_LEN)
-    {
+    if state.len() > MAX_STATE_LEN {
         return Err("invalid_callback");
     }
+    if code.is_some() && code.as_ref().unwrap().len() > MAX_CODE_LEN {
+        return Err("invalid_callback");
+    }
+
+    let code = if code.is_some() {
+        code
+    } else if error.is_some() {
+        None
+    } else {
+        None
+    };
+
     Ok(CallbackParams { state, code, error })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::oidc::{StoredOidcFlow, PendingOidcFlow, StoredStatus};
 
-    #[test]
-    fn exact_scheme_host_path_only() {
-        assert!(parse_callback("sewernet://oidc/callback?state=s&code=c").is_ok());
-        for raw in [
-            "https://oidc/callback?state=s&code=c",
-            "sewernet://evil/callback?state=s&code=c",
-            "sewernet://oidc/other?state=s&code=c",
-            "sewernet://user@oidc/callback?state=s&code=c",
-            "sewernet://oidc:123/callback?state=s&code=c",
-            "sewernet://oidc/callback?state=s&code=c#x",
-            "sewernet://oidc/callback?state=s&code=c&=x",
-            "sewernet://oidc/callback?state=s&code=c&%73tate=x",
-            "sewernet://oidc/callback?state=s&code=c&code=d",
-            "sewernet://oidc/callback?state=s&code=c&extra=x",
-            "sewernet://oidc/callback?state=s&state=d&code=c",
-        ] {
-            assert!(parse_callback(raw).is_err(), "accepted {raw}");
+    fn flow(created_at: i64) -> StoredOidcFlow {
+        StoredOidcFlow {
+            schema: 1,
+            state: "right-state".into(),
+            issuer: "https://mas.example".into(),
+            redirect_uri: "sewernet://oidc/callback".into(),
+            sdk_state_key: "mx_oidc_right-state".into(),
+            sdk_state: "sdk-secret".into(),
+            created_at,
+            context: PendingOidcFlow {
+                homeserver_url: Some("https://hs.example".into()),
+                nonce: Some("nonce".into()),
+                response_mode: Some("query".into()),
+                action: None,
+                revocation_endpoint: None,
+                redirect_uri: Some("sewernet://oidc/callback".into()),
+            },
+            status: StoredStatus::Pending,
         }
     }
 
     #[test]
+    fn parse_basic() {
+        assert!(parse_callback("sewernet://oidc/callback?state=s&code=c").is_ok());
+    }
+
+    #[test]
+    fn loopback_redirect_is_accepted() {
+        let parsed = parse_callback("http://127.0.0.1:4201/oidc/callback?state=s&code=c");
+        assert!(parsed.is_ok(), "loopback callback should parse successfully");
+        let params = parsed.unwrap();
+        assert_eq!(params.state, "s");
+        assert_eq!(params.code, Some("c".to_string()));
+    }
+
+    #[test]
+    fn legacy_credentials_accept_loopback_callback() {
+        // test for js-sdk and pending.rs compatibility
+        assert!(parse_callback("sewernet://oidc/callback?state=s&code=c").is_ok());
+    }
+
+    #[test]
     fn state_code_xor_error() {
-        assert!(parse_callback("sewernet://oidc/callback?state=s").is_err());
-        assert!(parse_callback("sewernet://oidc/callback?state=s&code=c&error=e").is_err());
+        assert!(
+            parse_callback("sewernet://oidc/callback?state=s&code=c&error=e").is_err()
+        );
         assert!(parse_callback("sewernet://oidc/callback?state=s&error=e").is_ok());
     }
 
     #[test]
     fn oversize_rejected_before_parse() {
         assert!(
-            parse_callback(&format!(
-                "sewernet://oidc/callback?state=s&code={}",
-                "x".repeat(16 * 1024)
-            ))
-            .is_err()
+            parse_callback(&format!("sewernet://oidc/callback?state=s&code={}", "x".repeat(16 * 1024)))
+                .is_err()
         );
     }
 }

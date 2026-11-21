@@ -85,7 +85,7 @@ describe('Desktop platform', () => {
 
   it('saves flow before browser launch and claims callback through native IPC', async () => {
     const platform = new DesktopOidcPlatform();
-    const flow = { schema: 1 as const, state: 's', issuer: 'https://issuer.example', redirectUri: 'sewernet://oidc/callback', sdkStateKey: 'key', sdkState: '{}', createdAt: 1, context: { homeserverUrl: 'https://hs.example', nonce: 'n', responseMode: 'query' as const, redirectUri: 'sewernet://oidc/callback' }, status: 'pending' as const };
+    const flow = { schema: 1 as const, state: 's', issuer: 'https://issuer.example', redirectUri: 'http://127.0.0.1:4201/oidc/callback', sdkStateKey: 'key', sdkState: '{}', createdAt: 1, context: { homeserverUrl: 'https://hs.example', nonce: 'n', responseMode: 'query' as const, redirectUri: 'http://127.0.0.1:4201/oidc/callback' }, status: 'pending' as const };
     await platform.savePending(flow);
     await platform.openAuthorization('https://issuer.example/auth');
     expect(invoke.mock.calls[0]).toEqual(['oidc_pending_save', { flow }]);

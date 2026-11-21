@@ -4,7 +4,7 @@ pub const OIDC_CALLBACK_SCHEME: &str = "sewernet";
 pub const OIDC_CALLBACK_HOST: &str = "oidc";
 pub const OIDC_CALLBACK_PATH: &str = "/callback";
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct DeepLinkQueue {
     urls: Arc<Mutex<Vec<String>>>,
 }

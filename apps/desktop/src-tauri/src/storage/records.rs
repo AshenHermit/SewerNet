@@ -16,6 +16,7 @@ struct Root {
     hash: [u8; 32],
 }
 
+#[derive(Clone)]
 pub struct RecordStore {
     backend: Arc<dyn CredentialBackend>,
     mutex: Arc<Mutex<()>>,

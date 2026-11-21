@@ -19,6 +19,9 @@ export function App() {
     <>
     <UpdateLifecycle />
     <Routes>
+      {/* Browser redirect destination for desktop OIDC is the loopback URI
+          http://127.0.0.1:4201/oidc/callback. The native listener forwards the
+          callback into this route; no sewernet:// deep-link navigation here. */}
       <Route path="/oidc/callback" element={<OidcCallbackScreen />} />
       <Route path="/welcome/:homeserver?" element={<WelcomeScreen />} />
       <Route

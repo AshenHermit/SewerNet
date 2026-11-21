@@ -201,6 +201,17 @@ describe('WelcomeScreen', () => {
     expect(visibleError).toBeTruthy();
   });
 
+  it('keeps the password fallback hint visible when loopback OIDC registration fails', async () => {
+    mockedDiscover.mockResolvedValue(DELEGATED);
+    mockedRegister.mockRejectedValue(new Error('invalid_redirect_uri'));
+    renderWelcome();
+    await flushDiscovery();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue with Matrix' }));
+    const hint = await screen.findByText(/Desktop OIDC is unavailable\. Use password sign-in\./);
+    expect(hint.closest('details')).toBeNull();
+  });
+
   it('starts the register flow from the Create account button', async () => {
     mockedDiscover.mockResolvedValue(DELEGATED);
     mockedRegister.mockResolvedValue({ clientId: 'cid', redirectUri: 'http://localhost:4200/oidc/callback' });

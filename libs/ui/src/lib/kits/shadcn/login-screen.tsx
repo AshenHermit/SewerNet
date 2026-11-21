@@ -97,6 +97,11 @@ export function ShadcnLoginScreen({
 
           {oidc ? (
             <>
+              {oidcUnavailableHint ? (
+                <p className="break-words text-xs text-[var(--sn-text-muted)] [overflow-wrap:anywhere]">
+                  {oidcUnavailableHint}
+                </p>
+              ) : null}
               {error ? (
                 <p
                   role="alert"

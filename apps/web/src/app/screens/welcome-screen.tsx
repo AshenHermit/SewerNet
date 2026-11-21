@@ -112,9 +112,11 @@ export function WelcomeScreen() {
       onHomeserverBlur={() => undefined}
       oidc={Boolean(caps?.delegatedAuth)}
       oidcUnavailableHint={
-        !resolving && !caps?.delegatedAuth
-          ? t`This homeserver does not advertise Matrix OIDC login; password sign-in is available.`
-          : null
+        error
+          ? t`Desktop OIDC is unavailable. Use password sign-in.`
+          : !resolving && !caps?.delegatedAuth
+            ? t`This homeserver does not advertise Matrix OIDC login; password sign-in is available.`
+            : null
       }
       resolving={resolving}
       starting={starting}
