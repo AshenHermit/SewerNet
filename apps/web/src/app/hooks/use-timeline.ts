@@ -6,6 +6,7 @@ import type { MatrixEncryptedFile } from '../../lib/attachment-crypto';
 import { getMatrixClient } from '../../client/init-matrix';
 import { encryptAttachment } from '../../lib/attachment-crypto';
 import { useMatrixEvent } from './use-matrix-event';
+import { getMediaTransport, getMediaSession, getPlatformKind } from '../../platform/runtime';
 
 const PAGINATION_LIMIT = 80;
 
@@ -365,54 +366,72 @@ export async function sendMessageFile(
   };
   const encrypted = await getEncryptionState();
   const mimetype = file.type || 'application/octet-stream';
-  const upload = async (payload: Blob, type: string) => client.uploadContent(payload, {
-    type,
-    progressHandler: (progress: { loaded: number; total: number }) => {
-      if (onProgress) {
-        const fraction = progress.total > 0 ? progress.loaded / progress.total : 0;
-        onProgress(Math.min(1, Math.max(0, fraction)));
-      }
-    },
-  });
 
-  if (encrypted) {
-    const { ciphertext, descriptor } = await encryptAttachment(await readFileBytes(file));
-    const encryptedBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
-    const uploaded = await upload(encryptedBlob, 'application/octet-stream');
-    // Re-check at send time: never publish a plaintext MXC reference if room changed state.
-    if (!(await getEncryptionState())) {
-      throw new Error('Room encryption state changed during attachment upload');
+  // Desktop: use Tauri media_upload to bypass WebView2 CORS.
+  // Browser: use matrix-js-sdk uploadContent.
+  const isDesktop = getPlatformKind() === 'desktop';
+  let contentUri: string;
+  let descriptor: { key: JsonWebKey; iv: string; hashes: { sha256: string } } | null = null;
+
+  const fileBytes = await readFileBytes(file);
+  let encryptedResult = encrypted ? await encryptAttachment(fileBytes) : null;
+
+  if (isDesktop) {
+    const transport = getMediaTransport();
+    const session = getMediaSession();
+    if (!transport || !session) throw new Error('Desktop media transport unavailable');
+    const payload = encrypted
+      ? new Blob([new Uint8Array(encryptedResult!.ciphertext)], { type: 'application/octet-stream' })
+      : file;
+    const uploadType = encrypted ? 'application/octet-stream' : mimetype;
+    const controller = new AbortController();
+    if (onProgress) onProgress(0);
+    contentUri = await transport.upload(payload, uploadType, file.name, session, controller.signal);
+    if (onProgress) onProgress(1);
+    if (encrypted) descriptor = encryptedResult!.descriptor;
+  } else {
+    const upload = async (payload: Blob, type: string) => client.uploadContent(payload, {
+      type,
+      progressHandler: (progress: { loaded: number; total: number }) => {
+        if (onProgress) {
+          const fraction = progress.total > 0 ? progress.loaded / progress.total : 0;
+          onProgress(Math.min(1, Math.max(0, fraction)));
+        }
+      },
+    });
+    if (encrypted) {
+      const encryptedBlob = new Blob([encryptedResult!.ciphertext], { type: 'application/octet-stream' });
+      const uploaded = await upload(encryptedBlob, 'application/octet-stream');
+      if (!(await getEncryptionState())) throw new Error('Room encryption state changed during attachment upload');
+      contentUri = uploaded.content_uri;
+      descriptor = encryptedResult!.descriptor;
+    } else {
+      const uploaded = await upload(file, mimetype);
+      if (await getEncryptionState()) throw new Error('Room encryption state changed during attachment upload');
+      contentUri = uploaded.content_uri;
     }
-    const content = {
-      msgtype: mimetype.startsWith('image/') ? 'm.image' : 'm.file',
-      body: file.name,
-      filename: file.name,
-      file: { ...descriptor, url: uploaded.content_uri },
-      info: { size: file.size, mimetype },
-    };
-    await client.sendMessage(roomId, content as unknown as RoomMessageEventContent);
-    return;
   }
 
-  const uploaded = await upload(file, mimetype);
-  // Re-check immediately before publishing plaintext MXC reference.
-  if (await getEncryptionState()) {
-    throw new Error('Room encryption state changed during attachment upload');
-  }
+  // Re-check encryption state before sending.
+  if (encrypted && !(await getEncryptionState())) throw new Error('Room encryption state changed during attachment upload');
+  if (!encrypted && await getEncryptionState()) throw new Error('Room encryption state changed during attachment upload');
+
   const isImage = mimetype.startsWith('image/');
-  const content: {
-    msgtype: string;
-    body: string;
-    filename: string;
-    url: string;
-    info: { size: number; mimetype: string };
-  } = {
-    msgtype: isImage ? 'm.image' : 'm.file',
-    body: file.name,
-    filename: file.name,
-    url: uploaded.content_uri,
-    info: { size: file.size, mimetype },
-  };
+  const content = encrypted
+    ? {
+        msgtype: isImage ? 'm.image' : 'm.file',
+        body: file.name,
+        filename: file.name,
+        file: { ...descriptor!, url: contentUri, v: 'v2' as const },
+        info: { size: file.size, mimetype },
+      }
+    : {
+        msgtype: isImage ? 'm.image' : 'm.file',
+        body: file.name,
+        filename: file.name,
+        url: contentUri,
+        info: { size: file.size, mimetype },
+      };
   await client.sendMessage(roomId, content as unknown as RoomMessageEventContent);
 }
 

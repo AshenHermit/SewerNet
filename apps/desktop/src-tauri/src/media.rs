@@ -150,6 +150,51 @@ pub async fn media_download(
         .map_err(|_| "media fetch failed".to_string())
 }
 
+#[tauri::command]
+pub async fn media_upload(
+    state: State<'_, crate::storage::StorageState>,
+    file_bytes: Vec<u8>,
+    content_type: String,
+    filename: Option<String>,
+    user_id: String,
+) -> Result<String, String> {
+    let store = state.0.clone();
+    let account = tauri::async_runtime::spawn_blocking(move || account_for_user(&store, &user_id))
+        .await
+        .map_err(|_| "media storage failed".to_string())?
+        .map_err(|e| e.to_string())?;
+
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|_| "media client unavailable".to_string())?;
+
+    let upload_url = format!("{}/_matrix/client/v3/media/upload", account.homeserver_url.trim_end_matches('/'));
+    let mut multipart = reqwest::multipart::Form::new()
+        .part("file", reqwest::multipart::Part::bytes(file_bytes)
+            .file_name(filename.unwrap_or_else(|| "upload".to_string()))
+            .mime_str(&content_type).map_err(|_| "invalid content type".to_string())?);
+
+    let response = client
+        .post(upload_url)
+        .header(reqwest::header::AUTHORIZATION, format!("Bearer {}", account.access_token))
+        .multipart(multipart)
+        .send()
+        .await
+        .map_err(|_| "media upload failed".to_string())?;
+
+    if !response.status().is_success() {
+        return Err("media upload failed".to_string());
+    }
+
+    let json: serde_json::Value = response.json().await.map_err(|_| "media upload failed".to_string())?;
+    json.get("content_uri")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .ok_or_else(|| "media upload failed: no content_uri".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

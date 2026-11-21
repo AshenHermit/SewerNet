@@ -131,6 +131,19 @@ export class DesktopMediaTransport implements MediaTransport {
       return new Blob([new Uint8Array(bytes)]);
     }
   }
+
+  async upload(file: Blob, contentType: string, filename: string, session: MediaSession, signal: AbortSignal): Promise<string> {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const contentUri = await invoke<string>('media_upload', {
+      fileBytes: Array.from(bytes),
+      contentType,
+      filename,
+      userId: session.userId,
+    });
+    if (signal.aborted) throw new Error('Upload aborted');
+    return contentUri;
+  }
 }
 
 export const desktopMediaTransport = new DesktopMediaTransport();

@@ -87,6 +87,7 @@ pub fn run() {
             storage::accounts_clear,
             storage::storage_flush,
             media::media_download,
+            media::media_upload,
             navigation::open_external_url,
             lifecycle::show_main_window,
             lifecycle::request_app_exit,

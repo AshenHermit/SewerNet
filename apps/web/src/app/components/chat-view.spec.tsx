@@ -11,6 +11,17 @@ import { MessageAttachment } from './message-attachment';
 import * as resolver from '../../lib/media-resolver';
 
 vi.mock('../../lib/media-resolver', () => ({ acquireMedia: vi.fn(), clearMediaCache: vi.fn() }));
+vi.mock('../../platform/runtime', () => ({
+  getPlatformKind: vi.fn(() => 'browser'),
+  getMediaSession: vi.fn(() => ({
+    userId: '@alice:matrix.org',
+    deviceId: 'DEV',
+    baseUrl: 'https://matrix.org',
+    accessToken: 'at',
+    epoch: 1,
+  })),
+  getMediaTransport: vi.fn(() => null),
+}));
 
 type Handler = (...args: unknown[]) => void;
 

@@ -10,6 +10,18 @@ vi.mock('../../client/init-matrix', () => ({
   getMatrixClient: vi.fn(),
 }));
 
+vi.mock('../../platform/runtime', () => ({
+  getPlatformKind: vi.fn(() => 'browser'),
+  getMediaSession: vi.fn(() => ({
+    userId: ME,
+    deviceId: 'DEVICE',
+    baseUrl: 'https://hs.example',
+    accessToken: 'tok',
+    epoch: 1,
+  })),
+  getMediaTransport: vi.fn(() => null),
+}));
+
 const ROOM_ID = '!r:h.example';
 const ME = '@me:h.example';
 

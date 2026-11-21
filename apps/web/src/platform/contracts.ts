@@ -17,6 +17,7 @@ export interface MediaSource {
 
 export interface MediaTransport {
   fetchBlob(url: string, session: MediaSession, signal: AbortSignal): Promise<Blob>;
+  upload(file: Blob, contentType: string, filename: string, session: MediaSession, signal: AbortSignal): Promise<string>;
 }
 
 export interface OidcPlatform {

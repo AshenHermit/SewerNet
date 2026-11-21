@@ -36,16 +36,54 @@ export async function initializePlatform(): Promise<void> {
     _platformKind = 'desktop';
     if (!_adapter || _adapter.kind !== 'desktop') throw new Error('desktop adapter unavailable');
     _oidc = _adapter.oidc;
+    _persistence = _adapter.persistence;
+    _mediaTransport = _adapter.mediaTransport ?? null;
     return;
   }
-  if (!_adapter) {
-    const persistence = new BrowserPersistence();
-    const oidc = new BrowserOidcPlatform();
-    _adapter = { kind: 'browser', persistence, oidc };
-    _persistence = persistence;
-    _oidc = oidc;
-  }
-  _platformKind = _adapter.kind;
+  // Browser: always use localStorage-backed persistence, never the desktop
+  // adapter registered by './platform/desktop'. Importing desktop module is
+  // harmless on the web only if initializePlatform() forces browser storage.
+  const persistence = new BrowserPersistence();
+  const oidc = new BrowserOidcPlatform();
+  const mediaTransport: MediaTransport = {
+    async fetchBlob(url, session, signal) {
+      const validated = new URL(url);
+      if (validated.origin !== new URL(session.baseUrl).origin) throw new Error('Media origin changed');
+      const response = await fetch(validated.href, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        redirect: 'error',
+        cache: 'no-store',
+        signal,
+      });
+      if (!response.ok) throw new Error(`Media fetch failed (${response.status})`);
+      return await response.blob();
+    },
+    async upload(file, contentType, filename, session, signal) {
+      const base = new URL(session.baseUrl);
+      const uploadUrl = new URL('/_matrix/client/v3/media/upload', base.origin);
+      uploadUrl.pathname = base.pathname.replace(/\/+$/, '') + uploadUrl.pathname;
+      const form = new FormData();
+      form.append('file', file, filename);
+      const response = await fetch(uploadUrl.href, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        body: form,
+        signal,
+      });
+      if (!response.ok) throw new Error(`Media upload failed (${response.status})`);
+      const json = await response.json();
+      if (!json.content_uri) throw new Error('Media upload failed: no content_uri');
+      return json.content_uri;
+    },
+  };
+  const browserAdapter: PlatformAdapter = { kind: 'browser', persistence, oidc, mediaTransport };
+  registerPlatformAdapter(browserAdapter);
+  _adapter = browserAdapter;
+  _persistence = persistence;
+  _oidc = oidc;
+  _mediaTransport = mediaTransport;
+  _platformKind = 'browser';
   if (_platformKind === 'browser') {
     _persistence = _adapter.persistence;
     _oidc = _adapter.oidc;
@@ -62,6 +100,23 @@ export async function initializePlatform(): Promise<void> {
         });
         if (!response.ok) throw new Error(`Media fetch failed (${response.status})`);
         return await response.blob();
+      },
+      async upload(file, contentType, filename, session, signal) {
+        const base = new URL(session.baseUrl);
+        const uploadUrl = new URL('/_matrix/client/v3/media/upload', base.origin);
+        uploadUrl.pathname = base.pathname.replace(/\/+$/, '') + uploadUrl.pathname;
+        const form = new FormData();
+        form.append('file', file, filename);
+        const response = await fetch(uploadUrl.href, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+          body: form,
+          signal,
+        });
+        if (!response.ok) throw new Error(`Media upload failed (${response.status})`);
+        const json = await response.json();
+        if (!json.content_uri) throw new Error('Media upload failed: no content_uri');
+        return json.content_uri;
       },
     };
   }
