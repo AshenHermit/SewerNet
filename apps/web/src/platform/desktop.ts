@@ -7,8 +7,9 @@ import type { PlatformAdapter } from './contracts';
 import { registerPlatformAdapter } from './runtime';
 import type { ClaimedOidcCallback, StoredOidcFlow } from './oidc-contract';
 import { clearPendingOidcFlow, savePendingOidcFlow } from './desktop-oidc';
+import { DESKTOP_OIDC_REDIRECT_URI } from '../app/features/auth/desktop-oidc-consts';
 
-const NATIVE_REDIRECT_URI = 'sewernet://oidc/callback';
+const NATIVE_REDIRECT_URI = DESKTOP_OIDC_REDIRECT_URI;
 const NATIVE_CLIENT_URI = 'https://github.com/AshenHermit/SewerNet';
 
 export class DesktopOidcPlatform implements OidcPlatform {

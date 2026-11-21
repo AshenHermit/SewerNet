@@ -74,9 +74,9 @@ describe('Desktop platform', () => {
     ]);
   });
 
-  it('uses exact native OIDC registration identifiers and invokes external opener', async () => {
+  it('uses loopback OIDC redirect URI and invokes external opener', async () => {
     const platform = new DesktopOidcPlatform();
-    expect(platform.redirectUri()).toBe('sewernet://oidc/callback');
+    expect(platform.redirectUri()).toBe('http://127.0.0.1:4201/oidc/callback');
     expect(platform.applicationType()).toBe('native');
     expect(platform.clientUri()).toBe('https://github.com/AshenHermit/SewerNet');
     await platform.openAuthorization('https://issuer.example/authorize');
@@ -92,7 +92,7 @@ describe('Desktop platform', () => {
     expect(openUrl).toHaveBeenCalledWith('https://issuer.example/auth');
     const result = { flow, callback: { state: 's', code: 'c' } };
     invoke.mockResolvedValueOnce(result);
-    expect(await platform.claimCallback('sewernet://oidc/callback?state=s&code=c')).toEqual(result);
-    expect(invoke.mock.calls[1]).toEqual(['oidc_callback_claim', { url: 'sewernet://oidc/callback?state=s&code=c' }]);
+    expect(await platform.claimCallback('http://127.0.0.1:4201/oidc/callback?state=s&code=c')).toEqual(result);
+    expect(invoke.mock.calls[1]).toEqual(['oidc_callback_claim', { url: 'http://127.0.0.1:4201/oidc/callback?state=s&code=c' }]);
   });
 });
