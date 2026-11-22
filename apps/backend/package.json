@@ -16,7 +16,8 @@
           "{workspaceRoot}/apps/backend/dist/package-lock.json"
         ],
         "options": {
-          "buildTarget": "build"
+          "buildTarget": "build",
+          "outputPath": "apps/backend/dist"
         }
       },
       "copy-workspace-modules": {
@@ -37,7 +38,10 @@
           "prune-lockfile",
           "copy-workspace-modules"
         ],
-        "executor": "nx:noop"
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node tools/ci/prune-backend-manifest.mjs"
+        }
       },
       "serve": {
         "continuous": true,
@@ -78,8 +82,5 @@
     "rxjs": "^7.8.0",
     "tslib": "^2.3.0",
     "undici": "^7.30.1"
-  },
-  "devDependencies": {
-    "@nestjs/testing": "^11.0.0"
   }
 }

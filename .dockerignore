@@ -1,0 +1,41 @@
+# Credentials and local environment files (keep .env.example as documentation)
+CREDENTIALS.md
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# VCS, editor, and local agent state
+.git
+.github
+.superpowers
+.claude
+.opencode
+AGENTS.md
+**/AGENTS.md
+
+# Desktop/native sources and generated artifacts
+apps/desktop
+apps/**/src-tauri/target
+**/src-tauri/target
+
+# Keys, certificates, and signing material
+*.key
+*.pem
+**/*.key
+**/*.pem
+signing-temp-overlay
+signing-temp-overlay/**
+
+# Dependencies and generated output; builders reinstall/build from lockfile
+node_modules
+**/node_modules
+apps/backend/dist
+apps/backend/out-tsc
+apps/landing/.next
+apps/landing/out
+apps/web/dist
+libs/**/dist
+coverage
+**/coverage
+*.log

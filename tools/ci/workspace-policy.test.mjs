@@ -59,8 +59,8 @@ test('typecheck_works_without_next_output', () => {
     'tsconfig.tsbuildinfo',
   );
 
-  // Park .next outside the workspace: inside it, the backup's package.json
-  // would be picked up by Nx project graph inference.
+  // Rename can fail on Windows while Next holds cache handles; a recursive copy
+  // gives the policy test same empty-.next check without mutating build output.
   const hasNextOutput = fs.existsSync(nextDir);
   const backupParent = hasNextOutput
     ? fs.mkdtempSync(path.join(os.tmpdir(), 'landing-next-policy-'))
@@ -69,7 +69,8 @@ test('typecheck_works_without_next_output', () => {
     ? path.join(backupParent, '.next')
     : null;
   if (hasNextOutput) {
-    fs.renameSync(nextDir, backupDir);
+    fs.cpSync(nextDir, backupDir, { recursive: true });
+    fs.rmSync(nextDir, { recursive: true, force: true });
   }
   // Force a full tsc run instead of reusing incremental state.
   fs.rmSync(buildInfoPath, { force: true });
@@ -78,7 +79,8 @@ test('typecheck_works_without_next_output', () => {
     nx(['run', 'landing:typecheck', '--skip-nx-cache']);
   } finally {
     if (hasNextOutput) {
-      fs.renameSync(backupDir, nextDir);
+      fs.rmSync(nextDir, { recursive: true, force: true });
+      fs.cpSync(backupDir, nextDir, { recursive: true });
       fs.rmSync(backupParent, { recursive: true, force: true });
     }
   }

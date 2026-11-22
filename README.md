@@ -17,7 +17,7 @@ libs/
   types/      # общие типы (Matrix API DTO)
   utils/      # общие утилиты (cn и др.)
 scripts/      # вспомогательные скрипты
-docker/       # (план) prod docker-compose
+deploy/       # prod docker-compose, Dockerfiles, HTTP-роутер, smoke, README
 .github/      # GitHub Actions: ci.yml + переиспользуемый checks.yml
 ```
 
@@ -60,6 +60,18 @@ npx nx run-many -t typecheck,lint,test,build
   в следующих планах.
 - Зелёный CI на GitHub пока не подтверждён: первый реальный запуск произойдёт
   после push/PR, до этого обязателен локальный зелёный gate выше.
+
+## Production deployment
+
+Готовый HTTP-only стек: `compose.yaml` + `deploy/` (Dockerfiles, Caddyfile,
+smoke). Роутер слушает только loopback `127.0.0.1:${ROUTER_PORT:-8080}`;
+публичный HTTPS terminated существующим root Nginx владельца — он не
+редактируется и не управляется этим репозиторием. Внешний HTTPS обязателен
+для service worker / WebCrypto (E2EE) / OIDC; внутренний HTTP его не заменяет.
+Backend приватный (:3000, без published port), доступ — через private
+integration / VPN / SSH. Инструкции, env-переменные, два варианта ingress и blockers —
+в [deploy/README.md](./deploy/README.md). Реальный деплой и внешний smoke
+ещё не выполнялись.
 
 ## Авторизация
 
