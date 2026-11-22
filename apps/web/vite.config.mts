@@ -82,7 +82,7 @@ export default defineConfig(({ mode }) => ({
       transformMixedEsModules: true,
     },
     rolldownOptions: {
-      external: ['@tauri-apps/plugin-deep-link'],
+      external: ['@tauri-apps/plugin-deep-link', '@tauri-apps/plugin-updater', '@tauri-apps/plugin-opener'],
     },
   },
   test: {
