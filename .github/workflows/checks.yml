@@ -1,0 +1,194 @@
+# Reusable JavaScript workspace gate (Linux runner).
+#
+# Only read-only, unsigned JS checks run here. The restored `.nx/cache` holds
+# Nx task outputs from these checks, including the unsigned landing `.next`
+# build and the web `dist` build, and untrusted pull request runs populate it.
+# Signed release workflows must therefore use their own cache namespace and
+# must never restore the JS-check `.nx/cache`.
+name: Workspace checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    name: JavaScript (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # Full history plus tags: the future release gate must prove that a
+          # stable tag is reachable from the default branch.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.11.0
+
+      - name: Restore npm download cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.npm/_cacache
+          key: npm-${{ runner.os }}-node-24.11.0-npm-11.6.1-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-node-24.11.0-npm-11.6.1-
+
+      - name: Pin npm
+        run: |
+          npm install --global npm@11.6.1
+          npm --version
+
+      - name: Restore Nx cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          # Nx stores task outputs here, so this cache carries unsigned build
+          # outputs (landing `apps/landing/.next/!(cache)`, web `apps/web/dist`).
+          # Release workflows must not restore it.
+          path: .nx/cache
+          key: nx-${{ runner.os }}-node-24.11.0-npm-11.6.1-${{ hashFiles('package-lock.json', 'nx.json', 'tsconfig.base.json', 'tsconfig.json') }}
+          restore-keys: |
+            nx-${{ runner.os }}-node-24.11.0-npm-11.6.1-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check CI policy
+        run: node --test "tools/ci/*.test.mjs" "tools/release/*.test.mjs"
+
+      - name: Run full workspace gate
+        run: npx nx run-many -t typecheck,lint,test,build
+
+      - name: Upload web build
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: web-dist
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload landing build
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: landing-static
+          path: apps/landing/out
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Run desktop configuration policy tests
+        run: npm run desktop:test --workspace=@sewer-net/desktop
+
+  # Linux, read-only: build the three images, boot the stack under a uniquely
+  # named CI project, exercise HTTP routing with synthetic hosts, then tear it
+  # down. No secrets, no user environment, no published public ports.
+  docker:
+    name: Compose HTTP smoke (Linux)
+    needs: [javascript]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CI: 'true'
+      COMPOSE_PROJECT_NAME: sewernet-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      SITE_SUBDOMAIN: sewer-net
+      APP_SUBDOMAIN: sewer-net-app
+      COMMON_DOMAIN: example.test
+      ROUTER_PORT: '8080'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.11.0
+
+      # With Docker present here, the resolved `compose config --format json`
+      # assertions in this file actually execute (they skip elsewhere).
+      - name: Check compose policy
+        run: node --test tools/ci/compose-policy.test.mjs
+
+      - name: Check Compose configuration
+        run: docker compose -f compose.yaml -f deploy/compose.smoke.yaml config
+
+      - name: Build images
+        run: docker compose -f compose.yaml -f deploy/compose.smoke.yaml build
+
+      - name: Run HTTP smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose() { docker compose -f compose.yaml -f deploy/compose.smoke.yaml "$@"; }
+          cleanup() {
+            local status=$?
+            if [ "$status" -ne 0 ]; then
+              echo '--- bounded compose logs (failure only) ---'
+              compose logs --tail 50 --no-color || true
+            fi
+            compose down --volumes --remove-orphans || true
+          }
+          trap cleanup EXIT
+          compose up -d --wait
+          compose exec -T backend node -e "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+          node deploy/smoke.mjs --base-url http://127.0.0.1:8080 --domain example.test
+
+  desktop-native:
+    name: Desktop native (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.11.0
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install pinned Rust MSVC toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy --target x86_64-pc-windows-msvc
+          rustup default stable-x86_64-pc-windows-msvc
+          rustc --version
+          cargo --version
+          rustup target list --installed
+
+      - name: Check native formatting
+        run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
+
+      - name: Lint native targets
+        run: cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
+
+      - name: Test native targets
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+
+      - name: Build unsigned NSIS bundle
+        run: npx nx run desktop:bundle --skip-nx-cache
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: test-reports
+          path: |
+            apps/*/test-output
+            libs/*/test-output
+          if-no-files-found: ignore
+          retention-days: 7

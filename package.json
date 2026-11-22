@@ -1,8 +1,17 @@
 {
   "name": "@sewer-net/source",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "nx run-many -t serve -p backend web --parallel=2",
+    "desktop:build": "nx run desktop:build",
+    "desktop:dev": "nx run desktop:dev",
+    "desktop:bundle": "nx run desktop:bundle --skip-nx-cache",
+    "desktop:native-test": "nx run desktop:native-test",
+    "desktop:test": "nx run desktop:test",
+    "desktop:validate-version": "node tools/release/desktop-release.mjs validate-version",
+    "postinstall": "patch-package"
+  },
   "private": true,
   "devDependencies": {
     "@babel/core": "^7.14.5",
@@ -55,6 +64,7 @@
     "jiti": "2.4.2",
     "jsdom": "^27.1.0",
     "nx": "24.0.6",
+    "patch-package": "8.0.1",
     "prettier": "~3.6.2",
     "storybook": "^10.6.2",
     "ts-jest": "^29.4.7",
@@ -66,7 +76,8 @@
     "vitest": "~5.0.1",
     "webpack": "~5.110.0",
     "webpack-cli": "^7.0.0",
-    "webpack-dev-server": "^5.2.1"
+    "webpack-dev-server": "^5.2.1",
+    "yaml": "^2.9.1"
   },
   "packageManager": "npm@11.6.1",
   "workspaces": [
@@ -80,6 +91,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@tailwindcss/vite": "^4.3.5",
+    "@tauri-apps/plugin-opener": "^2.7.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.73.0",

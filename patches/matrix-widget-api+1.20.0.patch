@@ -1,0 +1,13 @@
+diff --git a/node_modules/matrix-widget-api/lib/templating/url-template.js b/node_modules/matrix-widget-api/lib/templating/url-template.js
+index c88d0a4..3bcac4b 100644
+--- a/node_modules/matrix-widget-api/lib/templating/url-template.js
++++ b/node_modules/matrix-widget-api/lib/templating/url-template.js
+@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", {
+   value: true
+ });
+ exports.runTemplate = runTemplate;
+-exports.toString = toString;
++Object.defineProperty(exports, 'toString', { value: toString, enumerable: true, configurable: true, writable: true });
+ /*
+  * Copyright 2020, 2021 The Matrix.org Foundation C.I.C.
+  *

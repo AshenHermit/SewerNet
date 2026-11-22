@@ -1,0 +1,18 @@
+/* Single responsive source: the wide breakpoint lives here and nowhere else.
+ * Tailwind reads `--breakpoint-sn-wide`; the TypeScript layout-mode module reads
+ * this file through `?raw` and derives the same media query. */
+@theme static {
+  --breakpoint-sn-wide: 48rem;
+}
+
+:root {
+  --sn-rail-width: 3.5rem;
+  --sn-room-list-width: clamp(12rem, 24vw, 19rem);
+  --sn-bottom-nav-height: 3.5rem;
+  --sn-bottom-nav-gap: 0.75rem;
+  --sn-touch-target: 44px;
+  --sn-safe-top: env(safe-area-inset-top, 0px);
+  --sn-safe-right: env(safe-area-inset-right, 0px);
+  --sn-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --sn-safe-left: env(safe-area-inset-left, 0px);
+}

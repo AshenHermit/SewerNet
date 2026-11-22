@@ -11,6 +11,7 @@ function formatTime(ts: number): string {
 export function ShadcnChatViewMessage({
   event,
   own = false,
+  attachment,
   className,
   ...props
 }: ChatViewMessageProps) {
@@ -41,6 +42,7 @@ export function ShadcnChatViewMessage({
         )}
       >
         {body}
+        {attachment}
       </div>
       <p
         className={cn(

@@ -1,3 +1,4 @@
+import { useCallback, type FormEvent } from 'react';
 import { cn } from '@sewer-net/utils';
 import { ProxyInput, ProxyButton } from '../../proxy/index';
 import type { LoginFormProps } from '../../ui-kit';
@@ -17,10 +18,18 @@ export function ShadcnLoginForm({
   className,
   ...props
 }: LoginFormProps) {
+  const handleSubmit = useCallback(
+    (event: FormEvent) => {
+      event.preventDefault();
+      onSubmit();
+    },
+    [onSubmit],
+  );
+
   return (
     <form
       {...props}
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
       className={cn('flex flex-col gap-3', className)}
     >
       <label className="flex flex-col gap-1.5">

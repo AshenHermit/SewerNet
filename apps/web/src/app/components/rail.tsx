@@ -1,19 +1,23 @@
-import { useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { useThemeStore, resolveMode, type ThemeMode } from '@sewer-net/themes';
-import { useAuthStore } from '../stores/auth-store';
-import { ProxyRail, ProxyRailButton } from '@sewer-net/ui';
-import { SettingsPanel } from './settings-panel';
+import type { ChatSection } from '@sewer-net/ui';
+import { ProxyRail } from '@sewer-net/ui';
 
-const NAV_ITEMS = [
-  { icon: 'chats', label: 'Chats', active: true },
-] as const;
+interface RailProps {
+  section: ChatSection;
+  onRooms: () => void;
+  onSettings: () => void;
+  onLogout: () => void;
+}
 
-export function Rail() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+/**
+ * Wide navigation rail. It owns only the appearance quick-toggle; the active
+ * section comes from the chat store, so the highlight follows the same state
+ * as the compact navigation.
+ */
+export function Rail({ section, onRooms, onSettings, onLogout }: RailProps) {
   const settings = useThemeStore((state) => state.settings);
   const setMode = useThemeStore((state) => state.setMode);
-  const clearSession = useAuthStore((state) => state.clearSession);
   const { t } = useLingui();
 
   // Derive the target from the *resolved* theme, not the raw mode: with
@@ -24,41 +28,19 @@ export function Rail() {
 
   return (
     <ProxyRail
-      mode={settings.mode}
+      section={section}
+      navigationLabel={t`Main navigation`}
+      roomsLabel={t`Chats`}
+      onRooms={onRooms}
+      settingsLabel={t`Settings`}
+      onSettings={onSettings}
+      logoutLabel={t`Log out`}
+      onLogout={onLogout}
+      themeToggleLabel={
+        targetMode === 'light' ? t`Switch to light theme` : t`Switch to dark theme`
+      }
+      themeIcon={targetMode === 'light' ? 'sun' : 'moon'}
       onThemeToggle={() => setMode(targetMode)}
-      onSettings={() => setSettingsOpen((open) => !open)}
-      onLogout={() => clearSession()}
-    >
-      {NAV_ITEMS.map((item) => (
-        <ProxyRailButton
-          key={item.icon}
-          icon={item.icon}
-          title={item.label}
-          active={item.active}
-        />
-      ))}
-      <ProxyRailButton
-        title={
-          targetMode === 'light'
-            ? t`Switch to light theme`
-            : t`Switch to dark theme`
-        }
-        icon={targetMode === 'light' ? 'sun' : 'moon'}
-        onClick={() => setMode(targetMode)}
-      />
-      <ProxyRailButton
-        title={t`Settings`}
-        icon="settings"
-        onClick={() => setSettingsOpen((open) => !open)}
-      />
-      <ProxyRailButton
-        title={t`Log out`}
-        icon="logout"
-        onClick={() => clearSession()}
-      />
-      {settingsOpen ? (
-        <SettingsPanel onClose={() => setSettingsOpen(false)} />
-      ) : null}
-    </ProxyRail>
+    />
   );
 }

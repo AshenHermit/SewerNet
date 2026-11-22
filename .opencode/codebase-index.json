@@ -23,5 +23,9 @@
   },
   "mcp": {
     "stallTimeoutMs": 300000
-  }
+  },
+  "knowledgeBases": [
+    "C:\\Users\\hermit\\webdev\\wizardchat-web",
+    "."
+  ]
 }

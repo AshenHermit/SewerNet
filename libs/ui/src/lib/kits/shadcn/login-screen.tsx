@@ -17,7 +17,10 @@ export function ShadcnLoginScreen({
   signInLabel,
   onHomeserverChange,
   onHomeserverBlur,
-  mas,
+  savedHomeservers,
+  onHomeserverSelect,
+  oidc,
+  oidcUnavailableHint,
   resolving,
   starting,
   error,
@@ -55,17 +58,26 @@ export function ShadcnLoginScreen({
   return (
     <div
       {...props}
-      className={cn('flex h-full items-center justify-center bg-[var(--sn-bg)] p-4', className)}
+      className={cn(
+        // A short viewport (landscape phone, keyboard open) must scroll the
+        // whole page: dynamic viewport height with the `100vh` fallback, an
+        // auto block margin instead of a forced centering that clips, and the
+        // safe-area insets applied outside the card.
+        'sn-vh-full min-h-dvh w-full overflow-y-auto bg-[var(--sn-bg)]',
+        'px-[max(1rem,var(--sn-safe-left))] py-[max(1rem,var(--sn-safe-top))]',
+        'pb-[max(1rem,var(--sn-safe-bottom))] pr-[max(1rem,var(--sn-safe-right))]',
+        className,
+      )}
     >
-      <div className="w-full max-w-sm rounded-[calc(var(--sn-radius)*1.5)] border border-[var(--sn-border)] bg-[var(--sn-surface-1)] p-6 shadow-lg">
+      <div className="mx-auto my-auto w-full max-w-sm rounded-[calc(var(--sn-radius)*1.5)] border border-[var(--sn-border)] bg-[var(--sn-surface-1)] p-6 shadow-lg">
         <div className="mb-6 flex flex-col items-center gap-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--sn-accent)] text-[var(--sn-accent-contrast)]">
             <ProxyIcon name="message" size={24} />
           </div>
-          <h1 className="text-lg font-semibold text-[var(--sn-text)]">
+          <h1 className="truncate text-lg font-semibold text-[var(--sn-text)]">
             {appName}
           </h1>
-          <p className="text-xs text-[var(--sn-text-muted)]">
+          <p className="max-w-full break-words text-xs text-[var(--sn-text-muted)] [overflow-wrap:anywhere]">
             {subtitle}
           </p>
         </div>
@@ -84,9 +96,44 @@ export function ShadcnLoginScreen({
               required
             />
           </label>
+          {savedHomeservers?.length && onHomeserverSelect ? (
+            <label className="mt-2 flex flex-col gap-1">
+              <span className="text-xs font-medium text-[var(--sn-text-muted)]">
+                Saved homeservers
+              </span>
+              <select
+                aria-label="Saved homeservers"
+                value={homeserverUrl}
+                onChange={(e) =>
+                  onHomeserverSelect((e.target as HTMLSelectElement).value)
+                }
+                className="h-10 w-full rounded-[var(--sn-radius)] border bg-[var(--sn-surface-2)] px-3 text-sm text-[var(--sn-text)] outline-none transition-colors focus:border-[var(--sn-accent)] focus:ring-2 focus:ring-[var(--sn-accent)]/20 border-[var(--sn-border)]"
+              >
+                <option value="">Choose a saved homeserver</option>
+                {savedHomeservers.map((url) => (
+                  <option key={url} value={url}>
+                    {url}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
-          {mas ? (
+          {oidc ? (
             <>
+              {oidcUnavailableHint ? (
+                <p className="break-words text-xs text-[var(--sn-text-muted)] [overflow-wrap:anywhere]">
+                  {oidcUnavailableHint}
+                </p>
+              ) : null}
+              {error ? (
+                <p
+                  role="alert"
+                  className="break-words text-xs text-[var(--sn-text)] [overflow-wrap:anywhere]"
+                >
+                  {error}
+                </p>
+              ) : null}
               <ProxyButton
                 onClick={() => void onContinueWithMatrix()}
                 loading={starting || resolving}
@@ -109,7 +156,14 @@ export function ShadcnLoginScreen({
               </details>
             </>
           ) : (
-            passwordForm
+            <>
+              {oidcUnavailableHint ? (
+                <p className="break-words text-xs text-[var(--sn-text-muted)] [overflow-wrap:anywhere]">
+                  {oidcUnavailableHint}
+                </p>
+              ) : null}
+              {passwordForm}
+            </>
           )}
         </div>
       </div>

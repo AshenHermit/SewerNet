@@ -12,167 +12,284 @@ msgstr ""
 #~ msgid "{0}"
 #~ msgstr "{0}"
 
-#: apps/web/src/app/components/settings-panel.tsx:46
+#: apps/web/src/app/components/update-controller.tsx:46
+msgid "A new version is available"
+msgstr "A new version is available"
+
+#: apps/web/src/app/components/settings-panel.tsx:68
 msgid "Accent color"
 msgstr "Accent color"
 
-#: apps/web/src/app/components/settings-panel.tsx:43
+#: apps/web/src/app/components/settings-panel.tsx:65
 msgid "Appearance"
 msgstr "Appearance"
 
-#: apps/web/src/app/components/chat-view.tsx:195
-#~ msgid "Attach"
-#~ msgstr "Attach"
+#: apps/web/src/app/components/chat-view.tsx:196
+msgid "Attach"
+msgstr "Attach"
 
-#: apps/web/src/app/components/chat-view.tsx:165
+#: apps/web/src/app/components/chat-view.tsx:166
 msgid "Back"
 msgstr "Back"
 
-#: apps/web/src/app/screens/callback-screen.tsx:130
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:104
 msgid "Back to sign in"
 msgstr "Back to sign in"
 
-#: apps/web/src/app/components/settings-panel.tsx:42
+#: apps/web/src/app/components/rail.tsx:33
+#: apps/web/src/app/components/room-list.tsx:70
+#: apps/web/src/app/screens/chat-screen.tsx:96
+msgid "Chats"
+msgstr "Chats"
+
+#: apps/web/src/app/components/update-controller.tsx:51
+#: apps/web/src/app/components/update-controller.tsx:60
+msgid "Check for updates"
+msgstr "Check for updates"
+
+#: apps/web/src/app/components/update-controller.tsx:44
+msgid "Checking for updates"
+msgstr "Checking for updates"
+
+#: apps/web/src/app/components/settings-panel.tsx:64
 msgid "Close"
 msgstr "Close"
 
-#: apps/web/src/app/components/settings-panel.tsx:45
+#: apps/web/src/app/components/settings-panel.tsx:67
 msgid "Color scheme"
 msgstr "Color scheme"
 
-#: apps/web/src/app/screens/login-screen.tsx:133
+#: apps/web/src/app/screens/welcome-screen.tsx:111
 msgid "Continue with Matrix"
 msgstr "Continue with Matrix"
 
-#: apps/web/src/app/components/settings-panel.tsx:48
+#: apps/web/src/app/components/settings-panel.tsx:70
 msgid "Corner radius"
 msgstr "Corner radius"
 
-#: apps/web/src/app/screens/login-screen.tsx:134
+#: apps/web/src/app/features/auth/require-auth.tsx:72
+#: apps/web/src/app/features/auth/require-auth.tsx:109
+msgid "Could not restore the session"
+msgstr "Could not restore the session"
+
+#: apps/web/src/app/components/bootstrap-status.tsx:12
+msgid "Could not start SewerNet"
+msgstr "Could not start SewerNet"
+
+#: apps/web/src/app/screens/welcome-screen.tsx:112
 msgid "Create account"
 msgstr "Create account"
 
-#: apps/web/src/app/components/settings-panel.tsx:35
+#: apps/web/src/app/components/settings-panel.tsx:53
 msgid "Dark"
 msgstr "Dark"
 
-#: apps/web/src/app/screens/callback-screen.tsx:138
+#: apps/web/src/app/components/chat-view.tsx:186
+msgid "Download"
+msgstr "Download"
+
+#: apps/web/src/app/components/update-controller.tsx:48
+msgid "Downloading update"
+msgstr "Downloading update"
+
+#: apps/web/src/app/components/chat-view.tsx:171
+msgid "Encrypted"
+msgstr "Encrypted"
+
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:110
 msgid "Finishing sign-in…"
 msgstr "Finishing sign-in…"
 
-#: apps/web/src/app/components/settings-panel.tsx:47
+#: apps/web/src/app/components/settings-panel.tsx:69
 msgid "Font"
 msgstr "Font"
 
-#: apps/web/src/app/screens/login-screen.tsx:122
+#: apps/web/src/app/screens/welcome-screen.tsx:100
 msgid "Homeserver URL"
 msgstr "Homeserver URL"
 
-#: apps/web/src/app/components/settings-panel.tsx:44
+#: apps/web/src/app/components/update-controller.tsx:61
+msgid "Install and restart"
+msgstr "Install and restart"
+
+#: apps/web/src/app/components/update-controller.tsx:50
+msgid "Installing update"
+msgstr "Installing update"
+
+#: apps/web/src/app/components/settings-panel.tsx:66
 msgid "Interface"
 msgstr "Interface"
 
-#: apps/web/src/app/components/settings-panel.tsx:34
+#: apps/web/src/app/components/update-controller.tsx:62
+msgid "Later"
+msgstr "Later"
+
+#: apps/web/src/app/components/settings-panel.tsx:52
 msgid "Light"
 msgstr "Light"
 
+#: apps/web/src/app/components/chat-view.tsx:182
+msgid "Load older messages"
+msgstr "Load older messages"
+
+#: apps/web/src/app/components/chat-view.tsx:186
+msgid "Loading attachment"
+msgstr "Loading attachment"
+
 #: apps/web/src/app/components/room-list.tsx:38
-msgid "Loading chats…"
-msgstr "Loading chats…"
+#~ msgid "Loading chats…"
+#~ msgstr "Loading chats…"
+
+#: apps/web/src/app/components/chat-view.tsx:180
+msgid "Loading messages"
+msgstr "Loading messages"
 
 #: apps/web/src/app/components/chat-view.tsx:165
 #~ msgid "Loading messages…"
 #~ msgstr "Loading messages…"
 
-#: apps/web/src/app/components/rail.tsx:53
+#: apps/web/src/app/components/bootstrap-status.tsx:14
+msgid "Local session storage is unavailable. Your saved accounts were not changed."
+msgstr "Local session storage is unavailable. Your saved accounts were not changed."
+
+#: apps/web/src/app/components/rail.tsx:37
+#: apps/web/src/app/components/settings-panel.tsx:63
+#: apps/web/src/app/features/auth/require-auth.tsx:115
 msgid "Log out"
 msgstr "Log out"
 
-#: apps/web/src/app/components/chat-view.tsx:201
-#: apps/web/src/app/components/chat-view.tsx:202
-#~ msgid "Message"
-#~ msgstr "Message"
+#: apps/web/src/app/components/rail.tsx:32
+#: apps/web/src/app/screens/chat-screen.tsx:98
+msgid "Main navigation"
+msgstr "Main navigation"
 
-#: apps/web/src/app/components/room-list.tsx:42
+#: apps/web/src/app/components/chat-view.tsx:197
+msgid "Message"
+msgstr "Message"
+
+#: apps/web/src/app/components/room-list.tsx:68
 msgid "No chats yet"
 msgstr "No chats yet"
 
-#: apps/web/src/app/components/chat-view.tsx:169
-#~ msgid "No messages yet"
-#~ msgstr "No messages yet"
+#: apps/web/src/app/components/chat-view.tsx:181
+msgid "No messages yet"
+msgstr "No messages yet"
 
-#: apps/web/src/app/screens/login-screen.tsx:124
+#: apps/web/src/app/screens/welcome-screen.tsx:102
 msgid "Password"
 msgstr "Password"
 
-#: apps/web/src/app/components/settings-panel.tsx:49
+#: apps/web/src/app/components/settings-panel.tsx:71
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: apps/web/src/app/components/room-list.tsx:33
+#: apps/web/src/app/features/auth/require-auth.tsx:64
+#: apps/web/src/app/features/auth/require-auth.tsx:122
+msgid "Restoring session…"
+msgstr "Restoring session…"
+
+#: apps/web/src/app/components/chat-view.tsx:186
+msgid "Retry"
+msgstr "Retry"
+
+#: apps/web/src/app/components/room-list.tsx:65
 msgid "Search"
 msgstr "Search"
 
 #: apps/web/src/app/screens/callback-screen.tsx:118
-msgid "Security check failed. Please try signing in again."
-msgstr "Security check failed. Please try signing in again."
+#~ msgid "Security check failed. Please try signing in again."
+#~ msgstr "Security check failed. Please try signing in again."
 
-#: apps/web/src/app/components/chat-view.tsx:155
+#: apps/web/src/app/components/chat-view.tsx:159
 msgid "Select a chat to start messaging"
 msgstr "Select a chat to start messaging"
 
-#: apps/web/src/app/components/chat-view.tsx:205
-#~ msgid "Send"
-#~ msgstr "Send"
+#: apps/web/src/app/components/chat-view.tsx:198
+msgid "Send"
+msgstr "Send"
 
-#: apps/web/src/app/components/rail.tsx:48
+#: apps/web/src/app/components/rail.tsx:35
+#: apps/web/src/app/components/settings-panel.tsx:62
+#: apps/web/src/app/screens/chat-screen.tsx:97
 msgid "Settings"
 msgstr "Settings"
 
-#: apps/web/src/app/screens/login-screen.tsx:119
+#: apps/web/src/app/components/room-list.tsx:61
+#: apps/web/src/app/screens/welcome-screen.tsx:97
 msgid "SewerNet"
 msgstr "SewerNet"
 
-#: apps/web/src/app/screens/login-screen.tsx:125
+#: apps/web/src/app/features/auth/require-auth.tsx:80
+#: apps/web/src/app/screens/welcome-screen.tsx:103
 msgid "Sign in"
 msgstr "Sign in"
 
-#: apps/web/src/app/screens/login-screen.tsx:120
+#: apps/web/src/app/features/auth/require-auth.tsx:75
+msgid "Sign in again to continue."
+msgstr "Sign in again to continue."
+
+#: apps/web/src/app/screens/welcome-screen.tsx:98
 msgid "Sign in to your Matrix account"
 msgstr "Sign in to your Matrix account"
 
-#: apps/web/src/app/screens/login-screen.tsx:136
+#: apps/web/src/app/screens/welcome-screen.tsx:114
 msgid "Sign in with password"
 msgstr "Sign in with password"
 
-#: apps/web/src/app/screens/callback-screen.tsx:123
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:100
 msgid "Sign-in failed"
 msgstr "Sign-in failed"
 
-#: apps/web/src/app/screens/callback-screen.tsx:121
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:98
 msgid "Sign-in session expired. Please try again."
 msgstr "Sign-in session expired. Please try again."
 
-#: apps/web/src/app/screens/callback-screen.tsx:116
+#: apps/web/src/app/screens/oidc-callback-screen.tsx:96
 msgid "Sign-in was cancelled"
 msgstr "Sign-in was cancelled"
 
-#: apps/web/src/app/components/rail.tsx:42
+#: apps/web/src/app/components/update-controller.tsx:58
+msgid "Software updates"
+msgstr "Software updates"
+
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to dark theme"
 msgstr "Switch to dark theme"
 
-#: apps/web/src/app/components/rail.tsx:41
+#: apps/web/src/app/components/rail.tsx:40
 msgid "Switch to light theme"
 msgstr "Switch to light theme"
 
-#: apps/web/src/app/components/settings-panel.tsx:36
+#: apps/web/src/app/components/settings-panel.tsx:54
 msgid "System"
 msgstr "System"
 
-#: apps/web/src/app/components/settings-panel.tsx:51
+#: apps/web/src/app/features/auth/require-auth.tsx:77
+#: apps/web/src/app/features/auth/require-auth.tsx:110
+msgid "The homeserver is unreachable or the session expired."
+msgstr "The homeserver is unreachable or the session expired."
+
+#: apps/web/src/app/components/bootstrap-status.tsx:18
+#: apps/web/src/app/features/auth/require-auth.tsx:111
+msgid "Try again"
+msgstr "Try again"
+
+#: apps/web/src/app/components/settings-panel.tsx:73
 msgid "UI kit"
 msgstr "UI kit"
 
-#: apps/web/src/app/screens/login-screen.tsx:123
+#: apps/web/src/app/components/update-controller.tsx:63
+msgid "Unsaved message draft may be lost"
+msgstr "Unsaved message draft may be lost"
+
+#: apps/web/src/app/components/update-controller.tsx:42
+msgid "Updates unavailable"
+msgstr "Updates unavailable"
+
+#: apps/web/src/app/screens/welcome-screen.tsx:101
 msgid "Username"
 msgstr "Username"
+
+#: apps/web/src/app/components/update-controller.tsx:40
+msgid "You are up to date"
+msgstr "You are up to date"

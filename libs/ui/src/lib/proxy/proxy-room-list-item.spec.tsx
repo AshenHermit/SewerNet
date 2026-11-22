@@ -3,16 +3,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { ProxyRoomListItem } from './proxy-room-list-item';
 
 describe('ProxyRoomListItem', () => {
-  it('renders room name', () => {
+  it('renders room name as a button', () => {
     render(<ProxyRoomListItem id="general">General</ProxyRoomListItem>);
-    expect(screen.getByRole('option', { name: 'General' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'General' })).toBeTruthy();
   });
 
-  it('marks active item with aria-selected', () => {
+  it('marks active item with aria-current', () => {
     render(<ProxyRoomListItem id="random" active>Random</ProxyRoomListItem>);
-    expect(screen.getByRole('option', { name: 'Random' }).getAttribute('aria-selected')).toBe(
-      'true',
-    );
+    const button = screen.getByRole('button', { name: 'Random' });
+    expect(button.getAttribute('aria-current')).toBe('true');
+    // Navigation state, not a listbox selection.
+    expect(button.hasAttribute('aria-selected')).toBe(false);
+    expect(button.getAttribute('role')).not.toBe('option');
   });
 
   it('shows unread badge', () => {
@@ -23,8 +25,7 @@ describe('ProxyRoomListItem', () => {
   it('calls onSelect with id on click', () => {
     const onSelect = vi.fn();
     render(<ProxyRoomListItem id="general" onSelect={onSelect}>General</ProxyRoomListItem>);
-    fireEvent.click(screen.getByRole('option', { name: 'General' }));
+    fireEvent.click(screen.getByRole('button', { name: 'General' }));
     expect(onSelect).toHaveBeenCalledWith('general');
   });
 });
-

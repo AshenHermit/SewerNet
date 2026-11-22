@@ -19,10 +19,7 @@
   },
   "instructions": [
     "AGENTS.md",
-    "ARCHITECTURE.md",
-    "SPECIFICATION.md",
-    "ROADMAP.md",
-    "docs/**"
+    "CREDENTIALS.md"
   ],
   "watcher": {
     "ignore": [

@@ -17,8 +17,8 @@ libs/
   types/      # общие типы (Matrix API DTO)
   utils/      # общие утилиты (cn и др.)
 scripts/      # вспомогательные скрипты
-docker/       # (план) prod docker-compose
-.github/      # (план) GitHub Actions
+deploy/       # prod docker-compose, Dockerfiles, HTTP-роутер, smoke, README
+.github/      # GitHub Actions: ci.yml + переиспользуемый checks.yml
 ```
 
 ## Быстрый старт
@@ -41,22 +41,61 @@ npx nx serve landing
 npx nx storybook ui
 ```
 
-Проверка всего воркспейса:
+## Проверка воркспейса и CI
+
+Полная JS-проверка воркспейса (те же шаги выполняет Linux CI):
 
 ```bash
 npx nx run-many -t typecheck,lint,test,build
 ```
 
+- Node-тесты политики CI (workflow YAML, кэши, артефакты):
+  `node --test "tools/ci/*.test.mjs"`.
+- `.github/workflows/ci.yml` запускается на `pull_request`, push в `master` и
+  вручную, права только `contents: read`. Реальный gate живёт в
+  переиспользуемом `.github/workflows/checks.yml` (job `javascript`), который
+  позже будет вызываться из release-пайплайна.
+- Native-проверки (Tauri/Rust/MSVC/WebView2, позже) — **отдельная** команда вне
+  `run-many`: JS-gate не требует Windows-toolchain, native и Docker jobs появятся
+  в следующих планах.
+- Зелёный CI на GitHub пока не подтверждён: первый реальный запуск произойдёт
+  после push/PR, до этого обязателен локальный зелёный gate выше.
+
+## Production deployment
+
+Готовый HTTP-only стек: `compose.yaml` + `deploy/` (Dockerfiles, Caddyfile,
+smoke). Роутер слушает только loopback `127.0.0.1:${ROUTER_PORT:-8080}`;
+публичный HTTPS terminated существующим root Nginx владельца — он не
+редактируется и не управляется этим репозиторием. Внешний HTTPS обязателен
+для service worker / WebCrypto (E2EE) / OIDC; внутренний HTTP его не заменяет.
+Backend приватный (:3000, без published port), доступ — через private
+integration / VPN / SSH. Инструкции, env-переменные, два варианта ingress и blockers —
+в [deploy/README.md](./deploy/README.md). Реальный деплой и внешний smoke
+ещё не выполнялись.
+
 ## Авторизация
 
-Вход через **Matrix Authentication Service** (OAuth 2.0 authorization code + PKCE S256,
-MSC2964/2965/2966) по образцу Element X: «Продолжить с Matrix» → логин/consent на
-issuer'е (для matrix.org — `account.matrix.org`) → возврат на `/callback` с токенами.
+Вход через **Matrix Authentication Service** (OAuth 2.0, MSC2964/2965/2966) по
+образцу Element X и WizardChat: «Продолжить с Matrix» → логин/consent на
+issuer'е (для matrix.org — `account.matrix.org`) → возврат на `/oidc/callback`.
 Парольная форма остаётся запасным вариантом (для homeserver'ов без MAS).
 
-- Discovery MAS у homeserver'а: `_matrix/client/v1/auth_metadata` → `.well-known/matrix/client` (`authentication`) → парольный fallback.
-- Динамическая регистрация клиента (RFC 7591) и обмен/refresh токенов — через stateless backend (`/api/matrix/oauth/*`); PKCE/state живут на фронте (`sessionStorage`).
-- Access token MAS работает как обычный Matrix Bearer; при 401 — прозрачный refresh и один retry.
+- OIDC идёт через `matrix-js-sdk` (oidc-модуль: динамическая регистрация
+  клиента, PKCE и state внутри SDK); токены обмениваются напрямую с issuer'ом.
+- Discovery возможностей homeserver'а: `loginFlows`, register-probe,
+  `_matrix/client/v1/auth_metadata` и `.well-known/matrix/client` → при
+  `delegatedAuth` показываются OIDC-кнопки, иначе парольная форма.
+- Креды лежат в `localStorage` (`sewernet_accounts`, `Record<userId, MatrixCredentials>`);
+  refresh — `tokenRefreshFunction` (OIDC refresher или native `/refresh`).
+
+## Matrix-клиент
+
+Web-клиент работает с homeserver напрямую через `matrix-js-sdk` v41 (CORS):
+синглтон в `apps/web/src/client/init-matrix.ts` (`resume`, `getMatrixClient`,
+`logoutCurrent`), UI читает данные из SDK-сторов хуками `useRooms`/`useTimeline`,
+E2EE — rust-crypto, authenticated media — через service worker
+(`apps/web/public/sw.js`). Backend-прокси `/api/matrix/*` web больше не
+использует.
 
 ## Локализация
 

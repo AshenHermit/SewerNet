@@ -28,3 +28,13 @@ export const Sending: Story = {
   },
 };
 
+export const WithAttachments: Story = {
+  args: {
+    draft: '',
+    onChange: () => undefined,
+    onSubmit: () => undefined,
+    onAttach: () => undefined,
+    attachLabel: 'Attach file',
+  },
+};
+
