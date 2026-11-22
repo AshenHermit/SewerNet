@@ -5,7 +5,8 @@
 }
 
 # Marketing site: static Next.js export behind landing:8080.
-http://{$SITE_HOST}:80 {
+# Hostname: sewer-net.example.test (parametrize via SITE_HOST env var in production).
+http://sewer-net.example.test:80 {
   encode zstd gzip
 
   # /api/* must never reach the private REST proxy through a public hostname.
@@ -20,7 +21,8 @@ http://{$SITE_HOST}:80 {
 }
 
 # Web client: SPA from the web dist baked into this image.
-http://{$APP_HOST}:80 {
+# Hostname: sewer-net-app.example.test (parametrize via APP_HOST env var in production).
+http://sewer-net-app.example.test:80 {
   root * /srv/web
   encode zstd gzip
 
