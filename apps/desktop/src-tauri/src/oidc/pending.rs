@@ -143,7 +143,9 @@ impl PendingStore {
         log_oidc!("clear pending: expected_state={:?}", expected_state);
         if let Some(expected) = expected_state {
             let current = self.read_unlocked()?;
-            if let Some(current) = current && current.state != expected {
+            if let Some(current) = current
+                && current.state != expected
+            {
                 log_error!(
                     "clear pending state mismatch: expected={}, found={}",
                     expected,
