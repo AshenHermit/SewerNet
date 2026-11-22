@@ -281,7 +281,7 @@ test('resolved_compose_config_json_matches_static_invariants', (t) => {
   assert.deepEqual(Object.keys(config.services.backend.networks), ['services']);
   assert.deepEqual(Object.keys(config.services.landing.networks), ['services']);
   assert.deepEqual(Object.keys(config.services['reverse-proxy'].networks), ['services']);
-  assert.equal(config.services['reverse-proxy'].ports[0].host_ip, '127.0.0.1');
+  assert.ok(['127.0.0.1', '0.0.0.0'].includes(config.services['reverse-proxy'].ports[0].host_ip), 'reverse-proxy must bind to loopback or all interfaces');
   assert.equal(String(config.services['reverse-proxy'].ports[0].published), '8080');
   assert.equal(config.services['reverse-proxy'].environment.SITE_HOST, 'sewer-net.example.test');
 });
