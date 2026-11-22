@@ -31,27 +31,45 @@ function parseArgs(argv) {
   return options;
 }
 
+const RETRY_MAX = 10;
+const RETRY_DELAY_MS = 500;
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function request(baseUrl, host, pathname) {
   const url = new URL(pathname, baseUrl);
   const transport = url.protocol === 'https:' ? https : http;
 
   // `fetch` treats Host as a forbidden header and silently ignores an override.
   // node:http sets it on the wire, which is what actually exercises Caddy vhosts.
-  return new Promise((resolve, reject) => {
-    const req = transport.request(url, { method: 'GET', headers: { Host: host } }, (res) => {
-      const chunks = [];
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => {
-        resolve({
-          status: res.statusCode ?? 0,
-          headers: { get: (name) => res.headers[name.toLowerCase()] },
-          body: Buffer.concat(chunks).toString('utf8'),
+  let lastError;
+  for (let attempt = 0; attempt < RETRY_MAX; attempt += 1) {
+    try {
+      return await new Promise((resolve, reject) => {
+        const req = transport.request(url, { method: 'GET', headers: { Host: host } }, (res) => {
+          const chunks = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('end', () => {
+            resolve({
+              status: res.statusCode ?? 0,
+              headers: { get: (name) => res.headers[name.toLowerCase()] },
+              body: Buffer.concat(chunks).toString('utf8'),
+            });
+          });
         });
+        req.on('error', reject);
+        req.end();
       });
-    });
-    req.on('error', reject);
-    req.end();
-  });
+    } catch (err) {
+      lastError = err;
+      if (attempt < RETRY_MAX - 1) {
+        await sleep(RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw lastError;
 }
 
 function assertOkNoHttpsRedirect(result, label) {
