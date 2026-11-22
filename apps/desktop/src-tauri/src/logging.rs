@@ -35,6 +35,6 @@ macro_rules! log_debug {
 }
 
 // Re-export macros for use within the crate
-pub use log_oidc;
-pub use log_error;
 pub use log_debug;
+pub use log_error;
+pub use log_oidc;

@@ -4,8 +4,8 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::log_oidc;
 use crate::log_error;
+use crate::log_oidc;
 use crate::oidc::callback::parse_callback;
 
 const LOOPBACK_ADDR: &str = "127.0.0.1:4201";
@@ -84,7 +84,12 @@ fn handle_connection(stream: &mut std::net::TcpStream, app_handle: &AppHandle) {
 
     match parse_callback(&callback_url) {
         Ok(params) => {
-            log_oidc!("callback parsed OK: state={}, code={:?}, error={:?}", params.state, params.code.is_some(), params.error);
+            log_oidc!(
+                "callback parsed OK: state={}, code={:?}, error={:?}",
+                params.state,
+                params.code.is_some(),
+                params.error
+            );
             let event_payload = callback_url.clone();
             if let Err(e) = app_handle.emit("sewernet://oidc-callback", event_payload) {
                 log_error!("failed to emit oidc-callback event: {}", e);

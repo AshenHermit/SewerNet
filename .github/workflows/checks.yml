@@ -61,11 +61,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check CI policy
-        run: node --test "tools/ci/*.test.mjs" "tools/release/*.test.mjs"
+      - name: Check CI policy (pre-build)
+        run: node --test "tools/ci/workspace-policy.test.mjs" "tools/ci/workflow-policy.test.mjs" "tools/ci/docker-policy.test.mjs" "tools/ci/compose-policy.test.mjs" "tools/ci/desktop-policy.test.mjs" "tools/ci/matrix-widget-api-freeze.test.mjs"
 
       - name: Run full workspace gate
         run: npx nx run-many -t typecheck,lint,test,build
+
+      - name: Check CI policy (post-build)
+        run: node --test "tools/ci/deployment-build.test.mjs" "tools/release/*.test.mjs"
 
       - name: Upload web build
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

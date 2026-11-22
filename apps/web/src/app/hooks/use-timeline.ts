@@ -374,7 +374,7 @@ export async function sendMessageFile(
   let descriptor: { key: JsonWebKey; iv: string; hashes: { sha256: string } } | null = null;
 
   const fileBytes = await readFileBytes(file);
-  let encryptedResult = encrypted ? await encryptAttachment(fileBytes) : null;
+  const encryptedResult = encrypted ? await encryptAttachment(fileBytes) : null;
 
   if (isDesktop) {
     const transport = getMediaTransport();

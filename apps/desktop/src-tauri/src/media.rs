@@ -170,15 +170,24 @@ pub async fn media_upload(
         .build()
         .map_err(|_| "media client unavailable".to_string())?;
 
-    let upload_url = format!("{}/_matrix/client/v3/media/upload", account.homeserver_url.trim_end_matches('/'));
-    let mut multipart = reqwest::multipart::Form::new()
-        .part("file", reqwest::multipart::Part::bytes(file_bytes)
+    let upload_url = format!(
+        "{}/_matrix/client/v3/media/upload",
+        account.homeserver_url.trim_end_matches('/')
+    );
+    let mut multipart = reqwest::multipart::Form::new().part(
+        "file",
+        reqwest::multipart::Part::bytes(file_bytes)
             .file_name(filename.unwrap_or_else(|| "upload".to_string()))
-            .mime_str(&content_type).map_err(|_| "invalid content type".to_string())?);
+            .mime_str(&content_type)
+            .map_err(|_| "invalid content type".to_string())?,
+    );
 
     let response = client
         .post(upload_url)
-        .header(reqwest::header::AUTHORIZATION, format!("Bearer {}", account.access_token))
+        .header(
+            reqwest::header::AUTHORIZATION,
+            format!("Bearer {}", account.access_token),
+        )
         .multipart(multipart)
         .send()
         .await
@@ -188,7 +197,10 @@ pub async fn media_upload(
         return Err("media upload failed".to_string());
     }
 
-    let json: serde_json::Value = response.json().await.map_err(|_| "media upload failed".to_string())?;
+    let json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|_| "media upload failed".to_string())?;
     json.get("content_uri")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())

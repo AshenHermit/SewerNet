@@ -182,9 +182,16 @@ test('checks_run_full_workspace_nonwatch', () => {
   assert.ok(
     runs.some(
       (run) =>
-        run.includes('node --test') && run.includes('tools/ci/*.test.mjs'),
+        run.includes('node --test') && run.includes('tools/ci/') && !run.includes('deployment-build'),
     ),
-    'policy tests must run before the Nx gate',
+    'non-deployment CI policy tests must run before the Nx gate',
+  );
+  assert.ok(
+    runs.some(
+      (run) =>
+        run.includes('node --test') && run.includes('deployment-build'),
+    ),
+    'deployment-build policy tests must run after the Nx gate',
   );
   assert.ok(
     runs.some((run) => run.includes(`npm@${REQUIRED_NPM_VERSION}`)),

@@ -6,13 +6,13 @@ import {
   type OidcClientConfig,
   type OidcRegistrationClientMetadata,
 } from 'matrix-js-sdk/lib/oidc';
-
-export type { OidcClientConfig, OidcRegistrationClientMetadata };
 import type { MatrixCredentials, OidcSession } from '../../../client/account-types';
 import { commitLogin } from '../../../client/session';
 import { getOidcPlatform } from '../../../platform/runtime';
 import type { StoredOidcFlow } from '../../../platform/oidc-contract';
 import { DESKTOP_OIDC_REDIRECT_URI } from './desktop-oidc-consts';
+
+export type { OidcClientConfig, OidcRegistrationClientMetadata };
 
 export type OidcAction = 'login' | 'register';
 export type OidcResponseMode = 'query' | 'fragment';
