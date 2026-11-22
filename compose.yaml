@@ -38,6 +38,9 @@ services:
     build:
       context: .
       dockerfile: deploy/Dockerfile.router
+      args:
+        SITE_HOST: '${SITE_SUBDOMAIN:-sewer-net}.${COMMON_DOMAIN:-example.com}'
+        APP_HOST: '${APP_SUBDOMAIN:-sewer-net-app}.${COMMON_DOMAIN:-example.com}'
     depends_on:
       - backend
       - landing
