@@ -147,22 +147,11 @@ jobs:
           trap cleanup EXIT
           compose up -d --wait
           compose exec -T backend node -e "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-          # Wait for published host port 8080 to accept connections.
-          # Docker `--wait` only waits for container health, not for the
-          # published port to be ready. Poll for up to 60 seconds.
-          for i in $(seq 1 30); do
-            if bash -c 'echo > /dev/tcp/127.0.0.1/8080' 2>/dev/null; then
-              echo "Port 8080 is open"
-              break
-            fi
-            if [ "$i" -eq 30 ]; then
-              echo "Port 8080 never became available" >&2
-              exit 1
-            fi
-            echo "Waiting for port 8080... ($i/30)"
-            sleep 2
-          done
-          node deploy/smoke.mjs --base-url http://127.0.0.1:8080 --domain example.test
+          # Run smoke test from inside the Docker network: published host
+          # ports are unreliable in GitHub Actions runners. Backend container
+          # has Node.js and can reach reverse-proxy on the internal network.
+          compose cp deploy/smoke.mjs backend:/tmp/smoke.mjs
+          compose exec -T backend node /tmp/smoke.mjs --base-url http://reverse-proxy:80 --domain example.test
 
   desktop-native:
     name: Desktop native (Windows)
