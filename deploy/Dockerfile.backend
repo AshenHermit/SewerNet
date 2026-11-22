@@ -10,6 +10,7 @@ RUN npm ci
 COPY apps/backend apps/backend
 COPY nx.json tsconfig.base.json tsconfig.json ./
 COPY tools/ci/prune-backend-manifest.mjs tools/ci/prune-backend-manifest.mjs
+RUN npx nx sync
 RUN npx nx build backend --configuration=production \
     && npx nx run backend:prune
 

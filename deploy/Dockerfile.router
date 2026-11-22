@@ -9,6 +9,7 @@ RUN npm ci
 
 COPY apps/web apps/web
 COPY nx.json tsconfig.base.json tsconfig.json lingui.config.ts ./
+RUN npx nx sync
 RUN npx nx build web --configuration=production
 
 FROM caddy:2.10.2-alpine@sha256:d8c17a862962def15cde69863a3a463f25a2664942eafd7bdbf050e9c3116b83
