@@ -90,7 +90,7 @@ const get = (host, pathname) => request(options.baseUrl, host, pathname);
 const site = await get(siteHost, '/');
 assertOkNoHttpsRedirect(site, `site ${siteHost}/`);
 assert.match(site.headers.get('content-type') ?? '', /text\/html/, 'site / must be HTML');
-assert.match(site.body, /SewerNet/, 'site / must render the landing page');
+assert.match(site.body, /Sewer/, 'site / must render the landing page');
 
 // App: SPA fallback for deep links served by file_server.
 for (const route of ['/welcome', '/oidc/callback']) {
@@ -122,7 +122,7 @@ assert.match(
 // Unknown Host: explicit 404, never site or app content.
 const unknown = await get(`unknown.${options.domain}`, '/');
 assert.equal(unknown.status, 404, 'unknown Host must be rejected with 404');
-assert.doesNotMatch(unknown.body, /SewerNet/, 'unknown Host must not leak site content');
+assert.doesNotMatch(unknown.body, /Sewer/, 'unknown Host must not leak site content');
 
 // /api/matrix/* is never proxied to the private backend from a public host.
 for (const host of [siteHost, appHost]) {
