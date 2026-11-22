@@ -75,8 +75,8 @@ test('only_two_exact_host_routes', () => {
   );
 
   assert.equal(addresses.length, 3, 'two named vhosts plus one catch-all');
-  assert.ok(addresses.includes('http://{env.SITE_HOST}:80'), 'site vhost must be explicit HTTP');
-  assert.ok(addresses.includes('http://{env.APP_HOST}:80'), 'app vhost must be explicit HTTP');
+  assert.ok(addresses.includes('http://{$SITE_HOST}:80'), 'site vhost must be explicit HTTP');
+  assert.ok(addresses.includes('http://{$APP_HOST}:80'), 'app vhost must be explicit HTTP');
   assert.ok(addresses.includes(':80'), 'unknown Host needs an explicit catch-all vhost');
   assert.equal(addresses.filter((address) => address.startsWith('http://')).length, 2);
   assert.ok(!addresses.some((address) => address.startsWith('https://')));
