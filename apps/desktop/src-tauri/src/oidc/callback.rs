@@ -85,7 +85,6 @@ pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::oidc::{PendingOidcFlow, StoredOidcFlow, StoredStatus};
 
     #[test]
     fn parse_basic() {
