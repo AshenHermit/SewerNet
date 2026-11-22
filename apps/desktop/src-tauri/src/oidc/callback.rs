@@ -55,7 +55,7 @@ pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
             .or_default()
             .push(value.into_owned());
     }
-    for (_key, values) in &pairs {
+    for values in pairs.values() {
         if values.len() != 1 {
             return Err("invalid_callback");
         }
@@ -77,13 +77,7 @@ pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
         return Err("invalid_callback");
     }
 
-    let code = if code.is_some() {
-        code
-    } else if error.is_some() {
-        None
-    } else {
-        None
-    };
+    let code = if code.is_some() { code } else { None };
 
     Ok(CallbackParams { state, code, error })
 }
@@ -92,27 +86,6 @@ pub fn parse_callback(raw: &str) -> Result<CallbackParams, &'static str> {
 mod tests {
     use super::*;
     use crate::oidc::{PendingOidcFlow, StoredOidcFlow, StoredStatus};
-
-    fn flow(created_at: i64) -> StoredOidcFlow {
-        StoredOidcFlow {
-            schema: 1,
-            state: "right-state".into(),
-            issuer: "https://mas.example".into(),
-            redirect_uri: "sewernet://oidc/callback".into(),
-            sdk_state_key: "mx_oidc_right-state".into(),
-            sdk_state: "sdk-secret".into(),
-            created_at,
-            context: PendingOidcFlow {
-                homeserver_url: Some("https://hs.example".into()),
-                nonce: Some("nonce".into()),
-                response_mode: Some("query".into()),
-                action: None,
-                revocation_endpoint: None,
-                redirect_uri: Some("sewernet://oidc/callback".into()),
-            },
-            status: StoredStatus::Pending,
-        }
-    }
 
     #[test]
     fn parse_basic() {

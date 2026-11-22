@@ -5,6 +5,7 @@ dist
 apps/desktop/src-tauri/target
 apps/desktop/src-tauri/gen/schemas
 apps/desktop/src-tauri/icons/*.ico
+!apps/desktop/src-tauri/icons/icon.ico
 apps/desktop/src-tauri/icons/*.icns
 tmp
 out-tsc

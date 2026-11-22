@@ -60,7 +60,7 @@ pub async fn oidc_pending_save(
         flow.issuer
     );
     let pending = state.pending.clone();
-    let result = tauri::async_runtime::spawn_blocking(move || {
+    tauri::async_runtime::spawn_blocking(move || {
         pending.save_pending(flow).map_err(|e| {
             log_error!("oidc_pending_save failed: {}", e);
             e.to_string()
@@ -69,7 +69,7 @@ pub async fn oidc_pending_save(
     .await
     .map_err(|_| "task join error".to_string())??;
     log_oidc!("Tauri command: oidc_pending_save OK");
-    Ok(result)
+    Ok(())
 }
 
 #[tauri::command]
@@ -82,7 +82,7 @@ pub async fn oidc_pending_clear(
         state_value
     );
     let pending = state.pending.clone();
-    let result = tauri::async_runtime::spawn_blocking(move || {
+    tauri::async_runtime::spawn_blocking(move || {
         pending.clear(state_value).map_err(|e| {
             log_error!("oidc_pending_clear failed: {}", e);
             e.to_string()
@@ -91,7 +91,7 @@ pub async fn oidc_pending_clear(
     .await
     .map_err(|_| "task join error".to_string())??;
     log_oidc!("Tauri command: oidc_pending_clear OK");
-    Ok(result)
+    Ok(())
 }
 
 #[tauri::command]

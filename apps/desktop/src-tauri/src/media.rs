@@ -174,7 +174,7 @@ pub async fn media_upload(
         "{}/_matrix/client/v3/media/upload",
         account.homeserver_url.trim_end_matches('/')
     );
-    let mut multipart = reqwest::multipart::Form::new().part(
+    let multipart = reqwest::multipart::Form::new().part(
         "file",
         reqwest::multipart::Part::bytes(file_bytes)
             .file_name(filename.unwrap_or_else(|| "upload".to_string()))

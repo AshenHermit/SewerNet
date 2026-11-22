@@ -2,7 +2,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 
 use crate::log_error;
 use crate::log_oidc;
@@ -17,10 +17,8 @@ pub fn start_loopback_listener(app_handle: AppHandle) {
         Ok(listener) => {
             log_oidc!("loopback listener started on {}", LOOPBACK_ADDR);
             thread::spawn(move || {
-                for stream in listener.incoming() {
-                    if let Ok(mut stream) = stream {
-                        handle_connection(&mut stream, &app_handle);
-                    }
+                for mut stream in listener.incoming().flatten() {
+                    handle_connection(&mut stream, &app_handle);
                 }
             });
         }
