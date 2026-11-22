@@ -24,9 +24,6 @@ http://{$APP_HOST}:80 {
   root * /srv/web
   encode zstd gzip
 
-  # Go's built-in mime table does not map .wasm on every base image.
-  mime .wasm application/wasm
-
   @api path_regexp api ^/api/
   handle @api {
     respond 404
