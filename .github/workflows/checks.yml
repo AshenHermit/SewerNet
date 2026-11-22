@@ -117,6 +117,9 @@ jobs:
         with:
           node-version: 24.11.0
 
+      - name: Install npm dependencies
+        run: npm ci
+
       # With Docker present here, the resolved `compose config --format json`
       # assertions in this file actually execute (they skip elsewhere).
       - name: Check compose policy
