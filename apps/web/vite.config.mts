@@ -81,6 +81,9 @@ export default defineConfig(({ mode }) => ({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    rolldownOptions: {
+      external: ['@tauri-apps/plugin-deep-link'],
+    },
   },
   test: {
     name: 'web',

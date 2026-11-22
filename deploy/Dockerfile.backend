@@ -8,7 +8,7 @@ COPY libs/types libs/types
 RUN npm ci
 
 COPY apps/backend apps/backend
-COPY nx.json tsconfig.base.json tsconfig.json ./
+COPY nx.json tsconfig.base.json tsconfig.json eslint.config.mjs ./
 COPY tools/ci/prune-backend-manifest.mjs tools/ci/prune-backend-manifest.mjs
 RUN npx nx sync
 RUN npx nx build backend --configuration=production \
