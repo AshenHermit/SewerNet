@@ -59,13 +59,14 @@ export function mediaUrlForSource(source: MediaSource, session: MediaSession): s
   const server = mxc.hostname;
   const mediaId = mxc.pathname.replace(/^\//, '').replace(/\/+/g, '/').replace(/(^|\/)\.?(?:\.|$)/g, '$1');
   if (!server || !mediaId || mediaId.includes('/') && mediaId.split('/').some((x) => x === '..' || x === '.')) throw new Error('Invalid MXC URI');
-  const kind = source.encryptedFile ? 'download' : source.size ? 'thumbnail' : 'download';
+  const kind = source.encryptedFile ? 'download' : source.thumbnail ? 'thumbnail' : 'download';
   const base = normalizedBase(session.baseUrl);
   const prefix = base.pathname === '/' ? '' : base.pathname;
   const url = new URL(`${prefix}/_matrix/client/v1/media/${kind}/${encodeURIComponent(server)}/${encodeURIComponent(mediaId)}`, base.origin);
-  if (source.size) {
-    url.searchParams.set('width', String(Math.max(1, Math.round(source.size))));
-    url.searchParams.set('height', String(Math.max(1, Math.round(source.size))));
+  if (source.thumbnail) {
+    const dim = Math.max(1, Math.round(source.thumbnail));
+    url.searchParams.set('width', String(dim));
+    url.searchParams.set('height', String(dim));
     url.searchParams.set('method', 'scale');
   }
   return validateMatrixMediaUrl(url.href, session.baseUrl).href;

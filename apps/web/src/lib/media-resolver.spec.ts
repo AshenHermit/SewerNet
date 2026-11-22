@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MediaSession } from '../platform/contracts';
+import type { MediaSession, MediaTransport } from '../platform/contracts';
 import { getMediaSession, getMediaTransport, setMediaTransport } from '../platform/runtime';
 import { acquireMedia, clearMediaCache, validateMatrixMediaUrl } from './media-resolver';
 
@@ -19,8 +19,8 @@ const session: MediaSession = {
   epoch: 1,
 };
 
-function mediaTransport(fetchBlob: MediaSession extends never ? never : (...args: any[]) => Promise<Blob>) {
-  return { fetchBlob };
+function mediaTransport(fetchBlob: MediaSession extends never ? never : (...args: any[]) => Promise<Blob>): MediaTransport {
+  return { fetchBlob, upload: vi.fn().mockResolvedValue('mxc://test/uploaded') };
 }
 
 function mxc(mxcUrl = 'mxc://media.example/synthetic') {
@@ -112,6 +112,34 @@ describe('acquireMedia', () => {
     await expect(acquireMedia({ mxc: encryptedFile.url, size: 64, encryptedFile })).rejects.toThrow();
     expect(fetchBlob).toHaveBeenCalledWith(expect.stringContaining('/download/'), expect.anything(), expect.anything());
     expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('file_size_bytes_alone_uses_download_and_no_thumbnailedimensions', async () => {
+    const fetchBlob = vi.fn().mockResolvedValue(new Blob(['document-bytes']));
+    setMediaTransport(mediaTransport(fetchBlob));
+    vi.mocked(getMediaTransport).mockReturnValue(mediaTransport(fetchBlob));
+
+    const lease = await acquireMedia({ mxc: mxc().mxc, size: 50000 });
+    const url = fetchBlob.mock.calls[0][0] as string;
+
+    expect(url).toContain('/download/');
+    expect(url).not.toContain('width=');
+    expect(url).not.toContain('height=');
+    lease.release();
+  });
+
+  it('thumbnail_dimension_requests_scaled_thumbnail_url', async () => {
+    const fetchBlob = vi.fn().mockResolvedValue(new Blob(['avatar-bytes']));
+    setMediaTransport(mediaTransport(fetchBlob));
+    vi.mocked(getMediaTransport).mockReturnValue(mediaTransport(fetchBlob));
+
+    const lease = await acquireMedia({ mxc: mxc().mxc, thumbnail: 48 });
+    const url = fetchBlob.mock.calls[0][0] as string;
+
+    expect(url).toContain('/thumbnail/');
+    expect(url).toContain('width=48');
+    expect(url).toContain('height=48');
+    lease.release();
   });
 
   it('rejects unsupported transport and does not expose a URL', async () => {

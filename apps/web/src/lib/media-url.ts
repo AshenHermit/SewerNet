@@ -9,7 +9,7 @@ import type { MediaSource } from '../platform/contracts';
  */
 export function roomAvatarSource(mxcUrl: string | undefined, size = 48): MediaSource | null {
   if (!mxcUrl) return null;
-  return { mxc: mxcUrl, size };
+  return { mxc: mxcUrl, thumbnail: size };
 }
 
 export function roomAvatarUrl(

@@ -11,7 +11,10 @@ export interface MediaSession {
 
 export interface MediaSource {
   mxc: string;
+  // File size in bytes. Used for cache keying / validation only; NOT thumbnail dimensions.
   size?: number;
+  // Requested thumbnail side length in pixels. Set only for avatars/thumbnails; messages omit it.
+  thumbnail?: number;
   encryptedFile?: MatrixEncryptedFile;
 }
 

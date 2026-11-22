@@ -135,12 +135,19 @@ export class DesktopMediaTransport implements MediaTransport {
   async upload(file: Blob, contentType: string, filename: string, session: MediaSession, signal: AbortSignal): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    const contentUri = await invoke<string>('media_upload', {
-      fileBytes: Array.from(bytes),
-      contentType,
-      filename,
-      userId: session.userId,
-    });
+    let contentUri: string;
+    try {
+      contentUri = await invoke<string>('media_upload', {
+        fileBytes: Array.from(bytes),
+        contentType,
+        filename,
+        userId: session.userId,
+      });
+    } catch (error) {
+      if (signal.aborted) throw new Error('Upload aborted');
+      const message = error instanceof Error ? error.message : String(error ?? 'Media upload failed');
+      throw new Error(`Media upload failed (desktop): ${message}`);
+    }
     if (signal.aborted) throw new Error('Upload aborted');
     return contentUri;
   }
