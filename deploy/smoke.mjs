@@ -48,7 +48,7 @@ async function request(baseUrl, host, pathname) {
   for (let attempt = 0; attempt < RETRY_MAX; attempt += 1) {
     try {
       return await new Promise((resolve, reject) => {
-        const req = transport.request(url, { method: 'GET', headers: { Host: host } }, (res) => {
+        const req = transport.request(url, { method: 'GET', headers: { Host: host }, setHost: false }, (res) => {
           const chunks = [];
           res.on('data', (chunk) => chunks.push(chunk));
           res.on('end', () => {
