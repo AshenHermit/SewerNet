@@ -213,7 +213,7 @@ test('docker_job_runs_bounded_http_smoke', () => {
   assert.ok(runs.some((run) => run.includes('/api/health')));
   assert.ok(
     runs.some((run) =>
-      run.includes('node deploy/smoke.mjs --base-url http://127.0.0.1:8080 --domain example.test'),
+      run.includes('smoke.mjs --base-url http://reverse-proxy:80 --domain example.test'),
     ),
   );
   assert.ok(runs.some((run) => run.includes('down --volumes')));
