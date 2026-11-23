@@ -13,6 +13,6 @@ RUN npx nx sync
 RUN npx nx build landing --configuration=production
 
 FROM caddy:2.10.2-alpine@sha256:d8c17a862962def15cde69863a3a463f25a2664942eafd7bdbf050e9c3116b83
-COPY --from=builder /workspace/apps/landing/out ./
+COPY --from=builder /workspace/apps/landing/out /usr/share/caddy
 COPY deploy/Caddyfile.landing /etc/caddy/Caddyfile
 EXPOSE 8080
