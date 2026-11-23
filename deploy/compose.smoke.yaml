@@ -1,6 +1,6 @@
 # Synthetic, credential-free overlay for local/CI HTTP smoke tests.
 # No published ports — smoke test runs inside the stack at http://reverse-proxy:80
-# Uses !reset to override shared-net from external to local bridge for CI.
+# Does not use shared-net; services connect via sewernet only.
 services:
   reverse-proxy:
     build:
@@ -23,9 +23,6 @@ services:
         required: true
     networks:
       - sewernet
-      - shared-net
 
 networks:
   sewernet: {}
-  shared-net: !reset
-    driver: bridge
