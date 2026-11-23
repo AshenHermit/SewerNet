@@ -105,7 +105,7 @@ jobs:
       SITE_SUBDOMAIN: sewer-net
       APP_SUBDOMAIN: sewer-net-app
       COMMON_DOMAIN: example.test
-      ROUTER_PORT: '8080'
+      ROUTER_PORT: '8082'
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0

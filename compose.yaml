@@ -47,7 +47,7 @@ services:
     # Loopback only: the owner's Nginx owns the public mapping. The container
     # inside still listens on :80 with auto_https off.
     ports:
-      - '127.0.0.1:${ROUTER_PORT:-8080}:80'
+      - '127.0.0.1:${ROUTER_PORT:-8082}:80'
     environment:
       SITE_HOST: '${SITE_SUBDOMAIN:-sewer-net}.${COMMON_DOMAIN:-example.com}'
       APP_HOST: '${APP_SUBDOMAIN:-sewer-net-app}.${COMMON_DOMAIN:-example.com}'

@@ -26,7 +26,7 @@ Required variables (all present in `.env.example`):
 - `COMMON_DOMAIN` — shared external domain, e.g. `example.com`.
 - `SITE_SUBDOMAIN` — marketing site subdomain, e.g. `sewer-net`.
 - `APP_SUBDOMAIN` — web client subdomain, e.g. `sewer-net-app`.
-- `ROUTER_PORT` — loopback port the router publishes on the host, e.g. `8080`
+- `ROUTER_PORT` — loopback port the router publishes on the host, e.g. `8082`
   (bound as `127.0.0.1:${ROUTER_PORT}:80`).
 - `INGRESS_NETWORK` — only for the container-Nginx variant below; name of the
   owner's external Docker network, e.g. `nginx_proxy`.
@@ -65,7 +65,7 @@ server {
     server_name sewer-net.example.com sewer-net-app.example.com;
 
     location / {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:8082;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -74,7 +74,7 @@ server {
 }
 ```
 
-Use the value of `ROUTER_PORT` in place of `8080` if you changed it. The example
+Use the value of `ROUTER_PORT` in place of `8082` if you changed it. The example
 terminates public HTTPS in the owner's Nginx; do not move that termination into
 this compose stack.
 
@@ -118,7 +118,7 @@ docker compose -f compose.yaml up -d --wait
 
 # Resolved config check (uses synthetic values, no secrets)
 SITE_SUBDOMAIN=sewer-net APP_SUBDOMAIN=sewer-net-app \
-COMMON_DOMAIN=example.test ROUTER_PORT=8080 \
+COMMON_DOMAIN=example.test ROUTER_PORT=8082 \
   docker compose -f compose.yaml config
 ```
 
@@ -133,7 +133,7 @@ docker compose -f compose.yaml logs --tail=100
 HTTP smoke (requires a running stack; sends real `Host` headers):
 
 ```bash
-node deploy/smoke.mjs --base-url http://127.0.0.1:8080 --domain example.com
+node deploy/smoke.mjs --base-url http://127.0.0.1:8082 --domain example.com
 ```
 
 These commands never remove volumes and never touch anything outside this
