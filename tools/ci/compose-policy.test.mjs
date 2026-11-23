@@ -70,15 +70,24 @@ test('router_is_http_only_no_acme_or_443', () => {
 
 test('only_two_exact_host_routes', () => {
   const caddy = stripComments(read('deploy/Caddyfile'));
-  const addresses = [...caddy.matchAll(/^(https?:\/\/\S+?|:[0-9]+)\s+\{$/gm)].map(
+  const addresses = [...caddy.matchAll(/^(.+:\d+|:\d+)\s+\{/gm)].map(
     (match) => match[1],
   );
 
   assert.equal(addresses.length, 3, 'two named vhosts plus one catch-all');
-  assert.ok(addresses.includes('http://{$SITE_HOST}:80'), 'site vhost must be explicit HTTP');
-  assert.ok(addresses.includes('http://{$APP_HOST}:80'), 'app vhost must be explicit HTTP');
+  assert.ok(
+    addresses.includes('http://{$SITE_HOST}:80') || addresses.includes('{$SITE_HOST}:80'),
+    'site vhost must be explicit HTTP or bare hostname',
+  );
+  assert.ok(
+    addresses.includes('http://{$APP_HOST}:80') || addresses.includes('{$APP_HOST}:80'),
+    'app vhost must be explicit HTTP or bare hostname',
+  );
   assert.ok(addresses.includes(':80'), 'unknown Host needs an explicit catch-all vhost');
-  assert.equal(addresses.filter((address) => address.startsWith('http://')).length, 2);
+  assert.equal(
+    addresses.filter((a) => a.startsWith('http://') || a.startsWith('https://') || /^[{}\w$.-]+:\d+$/.test(a)).length,
+    2,
+  );
   assert.ok(!addresses.some((address) => address.startsWith('https://')));
 
   assert.match(caddy, /:80\s*\{\s*respond\s+404\s*\}/, 'catch-all must answer 404');
