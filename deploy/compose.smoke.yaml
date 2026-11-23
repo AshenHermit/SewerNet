@@ -27,4 +27,4 @@ services:
 networks:
   sewernet: {}
   shared-net:
-    external: true
+    driver: bridge
