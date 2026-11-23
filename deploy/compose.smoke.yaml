@@ -1,5 +1,6 @@
 # Synthetic, credential-free overlay for local/CI HTTP smoke tests.
-# Requires Docker Compose v2.24.4+ for the `!reset` tag.
+# Compose merges `ports` lists by index, so this entry overrides the base
+# loopback mapping with a host-accessible one.
 services:
   reverse-proxy:
     build:
@@ -9,5 +10,5 @@ services:
     environment:
       SITE_HOST: sewer-net.example.test
       APP_HOST: sewer-net-app.example.test
-    ports: !reset
+    ports:
       - '0.0.0.0:8082:80'
