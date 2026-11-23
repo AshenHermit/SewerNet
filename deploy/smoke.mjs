@@ -2,14 +2,14 @@
 // HTTP smoke for the Caddy router. Pure HTTP + Host headers: no Docker API,
 // no credentials, no dependence on the owner's real domain or ports.
 // Example:
-//   node deploy/smoke.mjs --base-url http://127.0.0.1:8082 --domain example.test
+//   node deploy/smoke.mjs --base-url http://reverse-proxy:80 --domain example.test
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import https from 'node:https';
 
 function parseArgs(argv) {
   const options = {
-    baseUrl: 'http://127.0.0.1:8082',
+    baseUrl: 'http://reverse-proxy:80',
     domain: 'example.test',
     siteSubdomain: 'sewer-net',
     appSubdomain: 'sewer-net-app',
