@@ -1,7 +1,7 @@
 set -Eeuo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-/home/SewerNet}"
-REF="${1:-0.1.0}"
+REF="${1:-master}"
 
 cd "$DEPLOY_PATH"
 

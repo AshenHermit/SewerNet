@@ -12,8 +12,8 @@ services:
     expose:
       - '3000'
     networks:
-      - sewernet
-      - shared-net
+      sewernet: {}
+      shared-net: {}
     # Opt-in outbound proxy for Matrix egress; values come from the shell or
     # the public .env.example template, never from a secret bundle.
     environment:
@@ -32,8 +32,8 @@ services:
     expose:
       - '8080'
     networks:
-      - sewernet
-      - shared-net
+      sewernet: {}
+      shared-net: {}
     restart: unless-stopped
 
   reverse-proxy:
@@ -54,8 +54,8 @@ services:
       SITE_HOST: '${SITE_SUBDOMAIN:-sewer-net}.${COMMON_DOMAIN:-example.com}'
       APP_HOST: '${APP_SUBDOMAIN:-sewer-net-app}.${COMMON_DOMAIN:-example.com}'
     networks:
-      - sewernet
-      - shared-net
+      sewernet: {}
+      shared-net: {}
     restart: unless-stopped
 
 # Private by isolation, not `internal`: backend still needs egress to the

@@ -113,17 +113,18 @@ test('backend_has_no_public_ports_or_routes', () => {
 
   const backend = base.services.backend;
   assert.equal(backend.ports, undefined);
-  assert.deepEqual(Object.keys(backend.networks), ['services']);
+  assert.deepEqual(Object.keys(backend.networks).sort(), ['sewernet', 'shared-net']);
   assert.deepEqual(backend.expose?.map(String), ['3000']);
   assert.equal(backend.env_file, undefined, 'backend must not load local .env');
 
   const landing = base.services.landing;
   assert.equal(landing.ports, undefined);
-  assert.deepEqual(Object.keys(landing.networks), ['services']);
+  assert.deepEqual(Object.keys(landing.networks).sort(), ['sewernet', 'shared-net']);
 
   const proxy = base.services['reverse-proxy'];
   assert.ok(['127.0.0.1:${ROUTER_PORT:-8080}:80', '127.0.0.1:${ROUTER_PORT:-8083}:80'].includes(proxy.ports[0]), `reverse-proxy port must be 8080 or 8083: got ${proxy.ports[0]}`);
-  assert.notEqual(base.networks?.services?.internal, true, 'services net must allow Matrix egress');
+  assert.deepEqual(Object.keys(proxy.networks).sort(), ['sewernet', 'shared-net']);
+  assert.notEqual(base.networks?.sewernet?.internal, true, 'sewernet must allow Matrix egress');
 
   const caddy = stripComments(read('deploy/Caddyfile'));
   assert.doesNotMatch(caddy, /backend:3000|reverse_proxy\s+backend/, 'no backend host route');
