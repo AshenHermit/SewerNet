@@ -5,7 +5,7 @@
 }
 
 # Marketing site: static Next.js export behind landing:8080.
-http://{$SITE_HOST}:80 {
+{$SITE_HOST} {
   encode zstd gzip
 
   # /api/* must never reach the private REST proxy through a public hostname.
@@ -20,7 +20,7 @@ http://{$SITE_HOST}:80 {
 }
 
 # Web client: SPA from the web dist baked into this image.
-http://{$APP_HOST}:80 {
+{$APP_HOST} {
   root * /srv/web
   encode zstd gzip
 
