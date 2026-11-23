@@ -13,6 +13,18 @@ RUN npx nx sync
 RUN npx nx build web --configuration=production
 
 FROM caddy:2.10.2-alpine@sha256:d8c17a862962def15cde69863a3a463f25a2664942eafd7bdbf050e9c3116b83
+
+# Install envsubst for runtime env var substitution
+RUN apk add --no-cache gettext
+
+# Copy Caddyfile (for policy test) and as template (for runtime substitution)
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY deploy/Caddyfile /etc/caddy/Caddyfile.template
+COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 COPY --from=builder /workspace/apps/web/dist /srv/web
+
 EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
