@@ -1,0 +1,15 @@
+# Optional overlay: attach the router to the owner's container-Nginx on the
+# Docker host instead of publishing a host port. Requires Docker Compose
+# v2.24.4+ for the `!reset` tag.
+# Usage: INGRESS_NETWORK=nginx_proxy docker compose -f compose.yaml \
+#   -f deploy/compose.ingress.yaml up -d
+services:
+  reverse-proxy:
+    ports: !reset []
+    networks:
+      services: {}
+      ingress: {}
+networks:
+  ingress:
+    name: '${INGRESS_NETWORK:-ingress}'
+    external: true

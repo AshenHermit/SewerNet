@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/web"
+    },
+    {
+      "path": "./apps/backend"
+    },
+    {
+      "path": "./apps/landing"
+    },
+    {
+      "path": "./libs/ui"
+    },
+    {
+      "path": "./libs/icons"
+    },
+    {
+      "path": "./libs/utils"
+    },
+    {
+      "path": "./libs/types"
+    },
+    {
+      "path": "./libs/themes"
+    }
+  ]
+}

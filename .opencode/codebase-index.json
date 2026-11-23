@@ -1,0 +1,31 @@
+{
+  "embeddingProvider": "custom",
+  "scope": "project",
+  "customProvider": {
+    "baseUrl": "http://localhost:20128/v1",
+    "model": "jina-ai/jina-embeddings-v5-omni-small",
+    "dimensions": 1024,
+    "apiKey": "{env:EMBEDDING_API_KEY}",
+    "timeoutMs": 30000,
+    "concurrency": 3
+  },
+  "indexing": {
+    "autoIndex": false,
+    "watchFiles": true,
+    "requireProjectMarker": true,
+    "semanticOnly": false
+  },
+  "search": {
+    "maxResults": 20,
+    "minScore": 0.1,
+    "fusionStrategy": "rrf",
+    "rerankTopN": 20
+  },
+  "mcp": {
+    "stallTimeoutMs": 300000
+  },
+  "knowledgeBases": [
+    "C:\\Users\\hermit\\webdev\\wizardchat-web",
+    "."
+  ]
+}

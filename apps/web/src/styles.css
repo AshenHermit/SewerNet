@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+/* Shared reset, palette, layout tokens and responsive rules live in libs/ui. */
+@import '@sewer-net/ui/styles.css';
+
+@source '../../../libs/ui/src';
+@source '../../../libs/icons/src';
+@source './';

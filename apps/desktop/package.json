@@ -1,0 +1,19 @@
+{
+  "name": "@sewer-net/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "desktop:build": "vite build --config ../web/vite.config.mts --mode desktop",
+    "desktop:dev": "tauri dev",
+    "desktop:bundle": "tauri build --bundles nsis",
+    "desktop:native-test": "cargo fmt --manifest-path src-tauri/Cargo.toml -- --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml",
+    "desktop:test": "node --test ../../tools/ci/desktop-policy.test.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-deep-link": "2.6.3",
+    "@tauri-apps/plugin-updater": "^2.9.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.6"
+  }
+}

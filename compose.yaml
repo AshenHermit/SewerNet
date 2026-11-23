@@ -1,0 +1,67 @@
+# Production stack: HTTP only. External TLS is terminated by the owner's
+# existing root Nginx, which is never managed or edited here.
+# The overlays in deploy/ use the `!reset` tag: Docker Compose v2.24.4+.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    # Private REST proxy for external integrations only. The web client
+    # talks to the homeserver directly, so no port is ever published here.
+    # No `env_file`: local credentials must not leak into this container.
+    expose:
+      - '3000'
+    networks:
+      sewernet: {}
+      shared-net: {}
+    # Opt-in outbound proxy for Matrix egress; values come from the shell or
+    # the public .env.example template, never from a secret bundle.
+    environment:
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-}
+      http_proxy: ${HTTP_PROXY:-}
+      https_proxy: ${HTTPS_PROXY:-}
+      no_proxy: ${NO_PROXY:-}
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.landing
+    expose:
+      - '8080'
+    networks:
+      sewernet: {}
+      shared-net: {}
+    restart: unless-stopped
+
+  reverse-proxy:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.router
+      args:
+        SITE_HOST: '${SITE_SUBDOMAIN:-sewer-net}.${COMMON_DOMAIN:-example.com}'
+        APP_HOST: '${APP_SUBDOMAIN:-sewer-net-app}.${COMMON_DOMAIN:-example.com}'
+    depends_on:
+      - backend
+      - landing
+    # Loopback only: the owner's Nginx owns the public mapping. The container
+    # inside still listens on :80 with auto_https off.
+    ports:
+      - '127.0.0.1:${ROUTER_PORT:-8083}:80'
+    environment:
+      SITE_HOST: '${SITE_SUBDOMAIN:-sewer-net}.${COMMON_DOMAIN:-example.com}'
+      APP_HOST: '${APP_SUBDOMAIN:-sewer-net-app}.${COMMON_DOMAIN:-example.com}'
+    networks:
+      sewernet: {}
+      shared-net: {}
+    restart: unless-stopped
+
+# Private by isolation, not `internal`: backend still needs egress to the
+# external Matrix homeserver.
+networks:
+  sewernet:
+    driver: bridge
+  shared-net:
+    external: true

@@ -1,0 +1,80 @@
+{
+  "name": "@sewer-net/landing",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "landing",
+    "sourceRoot": "apps/landing/src",
+    "targets": {
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/landing",
+          "command": "tsc --noEmit -p tsconfig.json"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "!{projectRoot}/.next/**/*",
+          "!{projectRoot}/dist/**/*",
+          "!{projectRoot}/out/**/*",
+          "!{projectRoot}/test-output/**/*",
+          "{workspaceRoot}/tsconfig.base.json",
+          { "externalDependencies": ["typescript"] }
+        ]
+      },
+      "build": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["^build", "^typecheck"],
+        "cache": true,
+        "inputs": [
+          "default",
+          "^default",
+          { "externalDependencies": ["next"] },
+          { "dependentTasksOutputFiles": "**/*.d.ts", "transitive": true }
+        ],
+        "outputs": ["{workspaceRoot}/apps/landing/out"],
+        "options": {
+          "cwd": "apps/landing",
+          "tty": false,
+          "command": "next build"
+        }
+      },
+      "dev": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/landing",
+          "command": "next dev"
+        }
+      },
+      "start": {
+        "executor": "@nx/web:file-server",
+        "continuous": true,
+        "dependsOn": ["build"],
+        "options": {
+          "buildTarget": "landing:build",
+          "staticFilePath": "apps/landing/out",
+          "host": "0.0.0.0",
+          "port": 4200
+        }
+      },
+      "serve-static": {
+        "executor": "@nx/web:file-server",
+        "continuous": true,
+        "dependsOn": ["build"],
+        "options": {
+          "buildTarget": "landing:build",
+          "staticFilePath": "apps/landing/out",
+          "host": "0.0.0.0",
+          "port": 4200
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "next": "~16.4.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

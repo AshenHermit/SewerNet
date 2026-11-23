@@ -1,0 +1,32 @@
+# Synthetic, credential-free overlay for local/CI HTTP smoke tests.
+# No published ports — smoke test runs inside the stack at http://reverse-proxy:80
+# Overrides shared-net from external to a local bridge so CI is self-contained.
+services:
+  reverse-proxy:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.router
+      args:
+        SITE_HOST: sewer-net.example.test
+        APP_HOST: sewer-net-app.example.test
+    ports:
+      - '127.0.0.1:8083:80'
+    environment:
+      SITE_HOST: sewer-net.example.test
+      APP_HOST: sewer-net-app.example.test
+    depends_on:
+      backend:
+        condition: service_started
+        required: true
+      landing:
+        condition: service_started
+        required: true
+    networks:
+      - sewernet
+      - shared-net
+
+networks:
+  sewernet: {}
+  shared-net:
+    external: false
+    driver: bridge
