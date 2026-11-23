@@ -21,4 +21,10 @@ services:
         condition: service_started
         required: true
     networks:
-      services: {}
+      - sewernet
+      - shared-net
+
+networks:
+  sewernet: {}
+  shared-net:
+    external: true

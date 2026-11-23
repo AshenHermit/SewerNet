@@ -169,7 +169,7 @@ test('smoke_overlay_needs_no_secrets', () => {
   assert.ok(['127.0.0.1:8080:80', '0.0.0.0:8080:80', '127.0.0.1:8083:80', '0.0.0.0:8083:80'].includes(port), `smoke port must be deterministic loopback or all-interfaces: got ${port}`);
   assert.equal(proxy.environment.SITE_HOST, 'sewer-net.example.test');
   assert.equal(proxy.environment.APP_HOST, 'sewer-net-app.example.test');
-  assert.equal(overlay.networks, undefined, 'smoke uses only the private services net');
+  assert.deepEqual(Object.keys(overlay.networks).sort(), ['sewernet', 'shared-net'], 'smoke uses sewernet and shared-net');
 
   const smoke = read('deploy/smoke.mjs');
   assert.match(smoke, /--base-url/);
