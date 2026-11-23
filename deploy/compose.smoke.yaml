@@ -4,6 +4,8 @@ services:
   reverse-proxy-smoke:
     container_name: reverse-proxy
     build:
+      context: .
+      dockerfile: deploy/Dockerfile.router
       args:
         SITE_HOST: sewer-net.example.test
         APP_HOST: sewer-net-app.example.test
