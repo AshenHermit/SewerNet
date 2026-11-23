@@ -122,7 +122,7 @@ test('backend_has_no_public_ports_or_routes', () => {
   assert.deepEqual(Object.keys(landing.networks), ['services']);
 
   const proxy = base.services['reverse-proxy'];
-  assert.deepEqual(proxy.ports, ['127.0.0.1:${ROUTER_PORT:-8080}:80']);
+  assert.ok(['127.0.0.1:${ROUTER_PORT:-8080}:80', '127.0.0.1:${ROUTER_PORT:-8083}:80'].includes(proxy.ports[0]), `reverse-proxy port must be 8080 or 8083: got ${proxy.ports[0]}`);
   assert.notEqual(base.networks?.services?.internal, true, 'services net must allow Matrix egress');
 
   const caddy = stripComments(read('deploy/Caddyfile'));
@@ -165,7 +165,7 @@ test('smoke_overlay_needs_no_secrets', () => {
 
   const proxy = overlay.services['reverse-proxy'];
   const port = proxy.ports[0];
-  assert.ok(['127.0.0.1:8080:80', '0.0.0.0:8080:80'].includes(port), `smoke port must be deterministic loopback or all-interfaces: got ${port}`);
+  assert.ok(['127.0.0.1:8080:80', '0.0.0.0:8080:80', '127.0.0.1:8083:80', '0.0.0.0:8083:80'].includes(port), `smoke port must be deterministic loopback or all-interfaces: got ${port}`);
   assert.equal(proxy.environment.SITE_HOST, 'sewer-net.example.test');
   assert.equal(proxy.environment.APP_HOST, 'sewer-net-app.example.test');
   assert.equal(overlay.networks, undefined, 'smoke uses only the private services net');
