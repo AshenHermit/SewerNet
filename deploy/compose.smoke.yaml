@@ -3,6 +3,7 @@
 # loopback mapping with a host-accessible one.
 services:
   reverse-proxy:
+    container_name: reverse-proxy-smoke
     build:
       args:
         SITE_HOST: sewer-net.example.test
