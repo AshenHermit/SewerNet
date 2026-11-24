@@ -34,18 +34,19 @@ jobs:
         with:
           node-version: 24.11.0
 
-      - name: Restore npm download cache
+      - name: Restore pnpm store cache
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
-          path: ~/.npm/_cacache
-          key: npm-${{ runner.os }}-node-24.11.0-npm-11.6.1-${{ hashFiles('package-lock.json') }}
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-node-24.11.0-pnpm-10.34.9-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            npm-${{ runner.os }}-node-24.11.0-npm-11.6.1-
+            pnpm-${{ runner.os }}-node-24.11.0-pnpm-10.34.9-
 
-      - name: Pin npm
+      - name: Activate pnpm
         run: |
-          npm install --global npm@11.6.1
-          npm --version
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+          pnpm --version
 
       - name: Restore Nx cache
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
@@ -54,18 +55,18 @@ jobs:
           # outputs (landing `apps/landing/.next/!(cache)`, web `apps/web/dist`).
           # Release workflows must not restore it.
           path: .nx/cache
-          key: nx-${{ runner.os }}-node-24.11.0-npm-11.6.1-${{ hashFiles('package-lock.json', 'nx.json', 'tsconfig.base.json', 'tsconfig.json') }}
+          key: nx-${{ runner.os }}-node-24.11.0-pnpm-10.34.9-${{ hashFiles('pnpm-lock.yaml', 'nx.json', 'tsconfig.base.json', 'tsconfig.json') }}
           restore-keys: |
-            nx-${{ runner.os }}-node-24.11.0-npm-11.6.1-
+            nx-${{ runner.os }}-node-24.11.0-pnpm-10.34.9-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Check CI policy (pre-build)
         run: node --test "tools/ci/workspace-policy.test.mjs" "tools/ci/workflow-policy.test.mjs" "tools/ci/docker-policy.test.mjs" "tools/ci/compose-policy.test.mjs" "tools/ci/desktop-policy.test.mjs" "tools/ci/matrix-widget-api-freeze.test.mjs"
 
       - name: Run full workspace gate
-        run: npx nx run-many -t typecheck,lint,test,build
+        run: pnpm nx run-many -t typecheck,lint,test,build
 
       - name: Check CI policy (post-build)
         run: node --test "tools/ci/deployment-build.test.mjs" "tools/release/*.test.mjs"
@@ -87,7 +88,7 @@ jobs:
           retention-days: 7
 
       - name: Run desktop configuration policy tests
-        run: npm run desktop:test --workspace=@sewer-net/desktop
+        run: pnpm --filter @sewer-net/desktop run desktop:test
 
   # Linux, read-only: build the three images, boot the stack under a uniquely
   # named CI project, exercise HTTP routing with synthetic hosts, then tear it
@@ -117,8 +118,13 @@ jobs:
         with:
           node-version: 24.11.0
 
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       # With Docker present here, the resolved `compose config --format json`
       # assertions in this file actually execute (they skip elsewhere).
@@ -169,8 +175,13 @@ jobs:
         with:
           node-version: 24.11.0
 
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Install pinned Rust MSVC toolchain
         shell: pwsh
@@ -191,7 +202,7 @@ jobs:
         run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 
       - name: Build unsigned NSIS bundle
-        run: npx nx run desktop:bundle --skip-nx-cache
+        run: pnpm nx run desktop:bundle --skip-nx-cache
 
       - name: Upload test reports
         if: failure()

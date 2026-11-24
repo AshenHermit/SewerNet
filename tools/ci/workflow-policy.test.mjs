@@ -13,8 +13,9 @@ const workspaceRoot = path.resolve(
 const workflowsDir = path.join(workspaceRoot, '.github', 'workflows');
 
 const REQUIRED_NODE_VERSION = '24.11.0';
-const REQUIRED_NPM_VERSION = '11.6.1';
-const FULL_GATE_COMMAND = 'npx nx run-many -t typecheck,lint,test,build';
+const REQUIRED_PNPM_VERSION = '10.34.9';
+const FULL_GATE_COMMAND = 'pnpm nx run-many -t typecheck,lint,test,build';
+const FROZEN_INSTALL_COMMAND = 'pnpm install --frozen-lockfile';
 
 // Actions may only come from the official `actions` org, pinned to a commit
 // SHA and documented with the release tag.
@@ -35,9 +36,9 @@ const ALLOWED_ARTIFACT_PATHS = [
   'libs/*/test-output',
 ];
 
-// Cache allowlist for the `javascript` job: npm download cache and the local
+// Cache allowlist for the `javascript` job: pnpm store cache and the local
 // Nx cache for the unsigned JavaScript checks only.
-const ALLOWED_CACHE_PATHS = ['~/.npm/_cacache', '.nx/cache'];
+const ALLOWED_CACHE_PATHS = ['~/.local/share/pnpm/store', '.nx/cache'];
 
 // Packaging/signing outputs must never be cached or uploaded by any job. Later
 // plans may add native (cargo) and Docker jobs, but those stay build-only:
@@ -178,7 +179,11 @@ test('checks_run_full_workspace_nonwatch', () => {
     .map((step) => step.run);
 
   assert.ok(runs.includes(FULL_GATE_COMMAND));
-  assert.ok(runs.includes('npm ci'));
+  assert.ok(runs.includes(FROZEN_INSTALL_COMMAND));
+  assert.ok(
+    runs.every((run) => !/\bnpm ci\b|\bnpx nx\b/.test(run)),
+    'CI checks must use pnpm install and pnpm nx',
+  );
   assert.ok(
     runs.some(
       (run) =>
@@ -194,8 +199,8 @@ test('checks_run_full_workspace_nonwatch', () => {
     'deployment-build policy tests must run after the Nx gate',
   );
   assert.ok(
-    runs.some((run) => run.includes(`npm@${REQUIRED_NPM_VERSION}`)),
-    `npm ${REQUIRED_NPM_VERSION} must be pinned in the runner`,
+    runs.some((run) => run.includes(`pnpm@${REQUIRED_PNPM_VERSION}`)),
+    `pnpm ${REQUIRED_PNPM_VERSION} must be pinned in the runner`,
   );
   assert.ok(
     runs.every((run) => !/--watch|\bwatch\b/.test(run)),
@@ -304,7 +309,7 @@ test('artifacts_are_allowlisted', () => {
   assert.ok(webUpload, 'web build must be uploaded explicitly');
 });
 
-test('javascript_cache_roots_are_npm_and_nx_only', () => {
+test('javascript_cache_roots_are_pnpm_and_nx_only', () => {
   const { job } = readJob('checks.yml', 'javascript');
   const steps = jobSteps(job);
   const cacheSteps = actionStepsIn(steps).filter((step) =>
@@ -314,14 +319,14 @@ test('javascript_cache_roots_are_npm_and_nx_only', () => {
   assert.equal(
     cacheSteps.length,
     2,
-    'the javascript job configures only the npm and Nx caches',
+    'the javascript job configures only the pnpm and Nx caches',
   );
 
   const cachedPaths = cacheSteps.flatMap(stepPaths).sort();
   assert.deepEqual(
     cachedPaths,
     [...ALLOWED_CACHE_PATHS].sort(),
-    'cache roots stay limited to the npm download cache and .nx/cache',
+    'cache roots stay limited to the pnpm store and .nx/cache',
   );
 
   for (const candidate of cachedPaths) {
@@ -339,12 +344,12 @@ test('javascript_cache_roots_are_npm_and_nx_only', () => {
       'cache key must include Node version',
     );
     assert.ok(
-      key.includes(REQUIRED_NPM_VERSION),
-      'cache key must include npm version',
+      key.includes(REQUIRED_PNPM_VERSION),
+      'cache key must include pnpm version',
     );
     assert.match(
       key,
-      /hashFiles\([^)]*package-lock\.json/,
+      /hashFiles\([^)]*pnpm-lock\.yaml/,
       'cache key must include the lockfile hash',
     );
     assert.ok(!/secrets/.test(key));
@@ -357,16 +362,16 @@ test('javascript_cache_roots_are_npm_and_nx_only', () => {
   assert.match(nxCacheKey, /hashFiles\([^)]*tsconfig\.base\.json/);
 
   // Caches must be restored before the steps that consume them.
-  const npmCacheIndex = steps.findIndex((step) =>
-    stepPaths(step).includes('~/.npm/_cacache'),
+  const pnpmCacheIndex = steps.findIndex((step) =>
+    stepPaths(step).includes('~/.local/share/pnpm/store'),
   );
   const nxCacheIndex = steps.findIndex((step) =>
     stepPaths(step).includes('.nx/cache'),
   );
-  const installIndex = steps.findIndex((step) => step.run === 'npm ci');
+  const installIndex = steps.findIndex((step) => step.run === FROZEN_INSTALL_COMMAND);
   const gateIndex = steps.findIndex((step) => step.run === FULL_GATE_COMMAND);
 
-  assert.ok(npmCacheIndex >= 0 && npmCacheIndex < installIndex);
+  assert.ok(pnpmCacheIndex >= 0 && pnpmCacheIndex < installIndex);
   assert.ok(nxCacheIndex >= 0 && nxCacheIndex < gateIndex);
 
   for (const name of ['ci.yml', 'checks.yml']) {
@@ -445,7 +450,7 @@ test('signing_secrets_only_in_protected_job', () => {
   assert.match(raw, /TAURI_SIGNING_PRIVATE_KEY/);
   assert.match(raw, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
   assert.match(raw, /TAURI_UPDATER_PUBLIC_KEY/);
-  assert.match(raw, /npx nx run desktop:bundle --skip-nx-cache/);
+  assert.match(raw, /pnpm nx run desktop:bundle --skip-nx-cache/);
   assert.ok(!/printenv|env\s*\|\s*sort|Write-Output\s+\$env:TAURI/.test(raw));
   for (const [jobName, job] of workflowJobs(workflow)) {
     if (jobName !== 'signed_windows') {

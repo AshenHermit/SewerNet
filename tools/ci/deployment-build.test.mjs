@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
 
 const workspaceRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -78,19 +79,20 @@ test('deployment_docs_distinguish_internal_http_and_external_tls', () => {
 test('backend_generated_manifest_contains_runtime_only', () => {
   const distDir = path.join(workspaceRoot, 'apps', 'backend', 'dist');
   const manifestPath = path.join(distDir, 'package.json');
-  const lockPath = path.join(distDir, 'package-lock.json');
+  const lockPath = path.join(distDir, 'pnpm-lock.yaml');
+  const workspacePath = path.join(distDir, 'pnpm-workspace.yaml');
 
   assert.ok(fs.statSync(path.join(distDir, 'main.js')).isFile(), 'backend build must include main.js');
   assert.ok(fs.statSync(manifestPath).isFile(), 'backend prune must generate package.json');
-  assert.ok(fs.statSync(lockPath).isFile(), 'backend prune must generate package-lock.json');
+  assert.ok(fs.statSync(lockPath).isFile(), 'backend prune must generate pnpm-lock.yaml');
+  assert.ok(fs.statSync(workspacePath).isFile(), 'backend prune must generate pnpm-workspace.yaml');
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  const lock = parseYaml(fs.readFileSync(lockPath, 'utf8'));
   const runtimeDependencies = [
     '@nestjs/common',
     '@nestjs/core',
     '@nestjs/platform-express',
-    '@sewer-net/types',
     'reflect-metadata',
     'rxjs',
     'tslib',
@@ -99,9 +101,12 @@ test('backend_generated_manifest_contains_runtime_only', () => {
 
   assert.deepEqual(Object.keys(manifest.dependencies ?? {}).sort(), runtimeDependencies.sort());
   assert.deepEqual(manifest.devDependencies ?? {}, {}, 'runtime manifest must not include dev dependencies');
-  assert.deepEqual(lock.packages?.['']?.devDependencies ?? {}, {}, 'runtime lock must not include dev dependencies');
+  assert.deepEqual(lock.importers?.['.']?.devDependencies ?? {}, {}, 'runtime lock must not include dev dependencies');
   assert.equal(manifest.dependencies.nx, undefined);
   assert.equal(manifest.dependencies.typescript, undefined);
   assert.equal(manifest.devDependencies?.['@nestjs/testing'], undefined);
-  assert.equal(lock.packages?.['node_modules/@nestjs/testing'], undefined);
+  assert.ok(
+    !Object.keys(lock.packages ?? {}).some((key) => key.startsWith('@nestjs/testing@')),
+    'runtime lock must not include @nestjs/testing',
+  );
 });

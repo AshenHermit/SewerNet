@@ -23,22 +23,23 @@ deploy/       # prod docker-compose, Dockerfiles, HTTP-роутер, smoke, READ
 
 ## Быстрый старт
 
-Требуется Node.js (LTS) и npm.
+Требуется Node.js 24.11.0. pnpm 10.34.9 закреплён в `packageManager` и
+активируется через corepack (`corepack enable && corepack prepare pnpm@10.34.9 --activate`).
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 
 # веб-клиент (http://localhost:4200, /api проксируется на :3000)
-npx nx serve web
+pnpm nx serve web
 
 # backend proxy (http://localhost:3000/api)
-npx nx serve backend
+pnpm nx serve backend
 
 # лендинг / dev log
-npx nx serve landing
+pnpm nx serve landing
 
 # Storybook proxy-компонентов
-npx nx storybook ui
+pnpm nx storybook ui
 ```
 
 ## Проверка воркспейса и CI
@@ -46,7 +47,7 @@ npx nx storybook ui
 Полная JS-проверка воркспейса (те же шаги выполняет Linux CI):
 
 ```bash
-npx nx run-many -t typecheck,lint,test,build
+pnpm nx run-many -t typecheck,lint,test,build
 ```
 
 - Node-тесты политики CI (workflow YAML, кэши, артефакты):
@@ -102,7 +103,7 @@ E2EE — rust-crypto, authenticated media — через service worker
 Интерфейс на en/ru через Lingui. Извлечение строк:
 
 ```bash
-npx nx run web:extract-i18n
+pnpm nx run web:extract-i18n
 ```
 
 Каталоги: `apps/web/src/locales/{en,ru}.po`.

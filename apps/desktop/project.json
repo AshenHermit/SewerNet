@@ -7,7 +7,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run desktop:build",
+        "command": "pnpm run desktop:build",
         "cwd": "apps/desktop"
       },
       "outputs": ["{workspaceRoot}/apps/desktop/dist"]
@@ -15,7 +15,7 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run desktop:dev",
+        "command": "pnpm run desktop:dev",
         "cwd": "apps/desktop"
       },
       "cache": false
@@ -23,7 +23,7 @@
     "bundle": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run desktop:bundle --",
+        "command": "pnpm run desktop:bundle --",
         "cwd": "apps/desktop"
       },
       "cache": false
@@ -31,7 +31,7 @@
     "native-test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run desktop:native-test",
+        "command": "pnpm run desktop:native-test",
         "cwd": "apps/desktop"
       },
       "cache": false
@@ -39,7 +39,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npm run desktop:test",
+        "command": "pnpm run desktop:test",
         "cwd": "apps/desktop"
       },
       "cache": false

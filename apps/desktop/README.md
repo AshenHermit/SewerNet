@@ -7,20 +7,20 @@ Windows desktop shell using Tauri 2 and the shared `apps/web` Vite application. 
 From repository root:
 
 ```powershell
-npx nx run desktop:dev
+pnpm nx run desktop:dev
 ```
 
 This starts the existing web Vite dev server on `http://localhost:4200` and opens Tauri's local `main` window. To build just the shared desktop-mode frontend:
 
 ```powershell
-npx nx run desktop:build
+pnpm nx run desktop:build
 ```
 
 The frontend output is `apps/desktop/dist`, separate from browser `apps/web/dist`. Native Rust code and packaging run on Windows with the Rust stable toolchain (currently 1.100.0), the MSVC C++ build tools, Windows SDK, and WebView2 installed:
 
 ```powershell
-npx nx run desktop:native-test
-npx nx run desktop:bundle --skip-nx-cache
+pnpm nx run desktop:native-test
+pnpm nx run desktop:bundle --skip-nx-cache
 ```
 
 The bundle target creates an unsigned NSIS package. It does not configure production updater metadata, signing keys, or release secrets. Web typecheck and lint remain on the existing `web` project.

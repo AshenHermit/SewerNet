@@ -2,15 +2,18 @@
 FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS builder
 WORKDIR /workspace
 
-COPY package.json package-lock.json ./
+RUN corepack enable && corepack prepare pnpm@10.34.9 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY patches patches
 COPY apps/web/package.json apps/web/package.json
 COPY libs libs
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 COPY apps/web apps/web
 COPY nx.json tsconfig.base.json tsconfig.json lingui.config.ts ./
-RUN npx nx sync
-RUN npx nx build web --configuration=production
+RUN pnpm nx sync
+RUN pnpm nx build web --configuration=production
 
 FROM caddy:2.10.2-alpine@sha256:d8c17a862962def15cde69863a3a463f25a2664942eafd7bdbf050e9c3116b83
 

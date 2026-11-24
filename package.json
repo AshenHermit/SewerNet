@@ -79,11 +79,7 @@
     "webpack-dev-server": "^5.2.1",
     "yaml": "^2.9.1"
   },
-  "packageManager": "npm@11.6.1",
-  "workspaces": [
-    "apps/*",
-    "libs/*"
-  ],
+  "packageManager": "pnpm@10.34.9",
   "dependencies": {
     "@lingui/core": "^6.12.0",
     "@lingui/react": "^6.12.0",

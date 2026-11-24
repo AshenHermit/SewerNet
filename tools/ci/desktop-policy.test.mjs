@@ -151,9 +151,9 @@ test('desktop_frontend_is_shared_and_separate', async () => {
     assert.ok(packageJson.scripts[`desktop:${target}`], `missing desktop:${target} script`);
   }
   assert.equal(project.targets.build.executor, 'nx:run-commands');
-  assert.equal(project.targets.build.options.command, 'npm run desktop:build');
-  assert.equal(project.targets['native-test'].options.command, 'npm run desktop:native-test');
-  assert.equal(project.targets.test.options.command, 'npm run desktop:test');
+  assert.equal(project.targets.build.options.command, 'pnpm run desktop:build');
+  assert.equal(project.targets['native-test'].options.command, 'pnpm run desktop:native-test');
+  assert.equal(project.targets.test.options.command, 'pnpm run desktop:test');
   assert.equal(project.targets['native-test'].cache, false);
 });
 
@@ -171,11 +171,11 @@ test('native_targets_are_not_in_linux_run_many', async () => {
   assert.match(workflow, /cargo clippy --manifest-path apps\/desktop\/src-tauri\/Cargo\.toml --all-targets -- -D warnings/);
   assert.doesNotMatch(workflow, /1\.90\.0/);
   assert.match(workflow, /cargo test --manifest-path apps\/desktop\/src-tauri\/Cargo\.toml/);
-  assert.match(workflow, /npx nx run desktop:bundle --skip-nx-cache/);
+  assert.match(workflow, /pnpm nx run desktop:bundle --skip-nx-cache/);
   assert.doesNotMatch(workflow, /run-many[^\n]*desktop:(?:native-test|bundle)/);
   assert.equal(project.targets['native-test'].executor, 'nx:run-commands');
   assert.equal(project.targets['native-test'].options.cwd, 'apps/desktop');
-  assert.equal(project.targets['native-test'].options.command, 'npm run desktop:native-test');
+  assert.equal(project.targets['native-test'].options.command, 'pnpm run desktop:native-test');
 });
 
 test('capabilities_are_local_main_only', async () => {
