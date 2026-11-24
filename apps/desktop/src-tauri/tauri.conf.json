@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "org.sewernet.desktop",
   "build": {
-    "beforeDevCommand": "npx nx run web:serve",
+    "beforeDevCommand": "pnpm nx run web:serve",
     "devUrl": "http://localhost:4200",
-    "beforeBuildCommand": "npm run desktop:build",
+    "beforeBuildCommand": "pnpm run desktop:build",
     "frontendDist": "../dist"
   },
   "app": {

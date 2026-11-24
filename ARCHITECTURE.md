@@ -85,10 +85,10 @@ SewerNet — кастомный кроссплатформенный Matrix-кл
 Команды проверки:
 
 ```bash
-npx nx run-many -p ui,web -t typecheck,lint,test     # unit + типы + lint
-npx nx run ui:build-storybook                        # harness собирается
-npx nx storybook ui --port=6006                      # ручная browser-матрица
-npx nx serve web                                     # auth/status экраны
+pnpm nx run-many -p ui,web -t typecheck,lint,test     # unit + типы + lint
+pnpm nx run ui:build-storybook                        # harness собирается
+pnpm nx storybook ui --port=6006                      # ручная browser-матрица
+pnpm nx serve web                                     # auth/status экраны
 ```
 
 

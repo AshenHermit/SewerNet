@@ -14,7 +14,7 @@
    - Мерж разрешен только с зелёной CI;
    - Связывайте issues с PR;
    - Обязательный code review (одобрить хотя бы одному core-разработчику).
-   - CI scaffold есть (`.github/workflows/ci.yml` → reusable `checks.yml`: полный JS gate + policy tests); зелёный GitHub-run ещё не подтверждён, native/Docker jobs добавят следующие планы. До зелёного CI локальный `npx nx run-many -t typecheck,lint,test,build` обязателен перед PR.
+   - CI scaffold есть (`.github/workflows/ci.yml` → reusable `checks.yml`: полный JS gate + policy tests); зелёный GitHub-run ещё не подтверждён, native/Docker jobs добавят следующие планы. До зелёного CI локальный `pnpm nx run-many -t typecheck,lint,test,build` обязателен перед PR.
 4. **Структура веток**:
    - `main` – стабильная версия;
    - `feat/xxx`, `bugfix/xxx` – для задач и багов.
@@ -24,7 +24,7 @@
    - Выпуск релизов через GitHub Actions по тегам.
 6. **Документация**:
    - README: в корне и в каждой библиотеке `libs/*`;
-   - Storybook для proxy-компонентов (`libs/ui`, `npx nx storybook ui`);
+   - Storybook для proxy-компонентов (`libs/ui`, `pnpm nx storybook ui`);
    - Спеки и планы фич — `docs/superpowers/{specs,plans}`;
    - Лендинг/dev log — `apps/landing`.
 
@@ -44,13 +44,13 @@
 ## Команды разработки
 
 ```bash
-npx nx serve web       # веб-клиент: http://localhost:4200 (/api проксируется на :3000)
-npx nx serve backend   # REST-прокси: http://localhost:3000/api
-npx nx serve landing   # лендинг / dev log (Next.js)
-npx nx storybook ui    # Storybook proxy-компонентов
+pnpm nx serve web       # веб-клиент: http://localhost:4200 (/api проксируется на :3000)
+pnpm nx serve backend   # REST-прокси: http://localhost:3000/api
+pnpm nx serve landing   # лендинг / dev log (Next.js)
+pnpm nx storybook ui    # Storybook proxy-компонентов
 
-npx nx run-many -t typecheck,lint,test,build   # полная проверка воркспейса
-npx nx run web:extract-i18n                    # извлечение строк Lingui в locales/*.po
+pnpm nx run-many -t typecheck,lint,test,build   # полная проверка воркспейса
+pnpm nx run web:extract-i18n                    # извлечение строк Lingui в locales/*.po
 ```
 
 - Тесты: vitest + jsdom (`web`, `landing`, `ui`, `icons`, `utils`); jest (`backend`).

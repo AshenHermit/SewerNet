@@ -75,8 +75,12 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24.11.0
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Activate pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.34.9 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Install Rust MSVC toolchain
         shell: pwsh
         run: |
@@ -115,7 +119,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          npx nx run desktop:bundle --skip-nx-cache --args="--config src-tauri/tauri.release.generated.json"
+          pnpm nx run desktop:bundle --skip-nx-cache --args="--config src-tauri/tauri.release.generated.json"
           if ($LASTEXITCODE -ne 0) { throw 'Signed NSIS build failed' }
       - name: Collect only allowlisted release assets
         shell: pwsh

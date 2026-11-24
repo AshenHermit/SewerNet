@@ -87,9 +87,19 @@ test('context_excludes_credentials_env_keys_and_agents', () => {
 });
 
 test('runtime_has_no_dev_dependencies', () => {
-  assert.match(backendDockerfile, /npm ci --omit=dev/);
+  assert.match(backendDockerfile, /pnpm install --frozen-lockfile --prod/);
   assert.match(backendDockerfile, /COPY --from=runtime-deps[^\n]*\/app\/node_modules \.\/node_modules/);
   assert.doesNotMatch(backendDockerfile, /COPY --from=builder .*node_modules/);
+});
+
+test('docker_builds_use_pnpm_via_corepack', () => {
+  for (const dockerfile of [backendDockerfile, routerDockerfile, landingDockerfile]) {
+    assert.match(dockerfile, /corepack enable && corepack prepare pnpm@10\.34\.9 --activate/);
+    assert.match(dockerfile, /COPY package\.json pnpm-lock\.yaml pnpm-workspace\.yaml \.npmrc/);
+    assert.match(dockerfile, /pnpm install --frozen-lockfile/);
+    assert.match(dockerfile, /pnpm nx sync/);
+    assert.doesNotMatch(dockerfile, /\bnpm ci\b|\bnpx nx\b|package-lock\.json/);
+  }
 });
 
 test('backend_runs_nonroot_with_healthcheck', () => {

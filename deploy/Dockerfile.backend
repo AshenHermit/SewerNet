@@ -2,23 +2,30 @@
 FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS build
 WORKDIR /workspace
 
-COPY package.json package-lock.json ./
+RUN corepack enable && corepack prepare pnpm@10.34.9 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY patches patches
 COPY apps/backend/package.json apps/backend/package.json
 COPY libs/types libs/types
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 COPY apps/backend apps/backend
 COPY nx.json tsconfig.base.json tsconfig.json eslint.config.mjs ./
 COPY tools/ci/prune-backend-manifest.mjs tools/ci/prune-backend-manifest.mjs
-RUN npx nx sync
-RUN npx nx build backend --configuration=production \
-    && npx nx run backend:prune
+RUN pnpm nx sync
+RUN pnpm nx build backend --configuration=production \
+    && pnpm nx run backend:prune
 
 FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS runtime-deps
 WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@10.34.9 --activate
+
+COPY --from=build /workspace/.npmrc ./.npmrc
 COPY --from=build /workspace/apps/backend/dist/package.json ./package.json
-COPY --from=build /workspace/apps/backend/dist/package-lock.json ./package-lock.json
-RUN npm ci --omit=dev
+COPY --from=build /workspace/apps/backend/dist/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile --prod
 
 FROM node:24.11.0-bookworm-slim@sha256:87ccbf5cc428351bc8e242a9e43ceb998ec546c33a08fe77a839227c9142ab7e AS runtime
 ENV NODE_ENV=production
